@@ -1,0 +1,490 @@
+# PRD: Keel — a Self-Improving, Token-Efficient Engineering Harness
+
+- **Status:** Draft for review
+- **Date:** 2026-07-02
+- **Working name:** Keel (the small stable spine everything else hangs off; final name is an open question, §15)
+- **Deliverable scope:** This PRD covers the product from feedback ingestion through build and verification. Deployment and production monitoring are adjacent concerns (§2.2, §8.7).
+
+---
+
+## 1. Overview & Problem Statement
+
+Engineers using coding agents today lose value in three compounding ways:
+
+1. **Ambiguity in, rework out.** Agents are given prose task descriptions that admit multiple reasonable interpretations. The agent picks one; the engineer wanted another. The cost is paid as review cycles, corrections, and re-runs — the most expensive tokens are the ones spent redoing work.
+2. **Token waste.** Sessions load whole files when a signature would do, models narrate when they should act, generated code carries comments nobody asked for, and frontier models are used for mechanical work a small model does equally well.
+3. **No feedback loop.** Every session starts from zero. The lessons of yesterday's session — which skill helped, which instruction was ignored, which model wasted effort — evaporate. Configuration (skills, rules, MCP servers, agents) accumulates by intuition, never by evidence. Nobody can answer "does skill X actually make outcomes better?"
+
+Keel is an open-source harness that attacks all three:
+
+- **Ambiguity** is eliminated structurally: work flows through specs written in a constrained format where every behavioral claim must compile to an executable obligation (a property-based test or a formal-model check). A claim that cannot be compiled is, by definition, vague — and is rejected before build starts.
+- **Token waste** is attacked by a learned router (right model, effort, context, and agent per step) and a context compiler (minimal task bundles instead of raw file loads), plus efficiency rules (verbosity control, comment suppression, compression).
+- **The missing feedback loop** is the core of the product: telemetry from every session feeds a postmortem compiler that proposes improvements to the harness's own configuration, and a built-in eval harness gates those changes — only measurable improvements are applied, and regressions auto-revert.
+
+The unifying design idea: **everything the system can change about itself is a versioned, evaluable, revertible artifact ("pack")**, and one uniform mechanism — propose diff → eval gate → apply → monitor → revert — governs all self-improvement.
+
+## 2. Goals & Non-Goals
+
+### 2.1 Goals
+
+- G1. Raise the fraction of agent tasks that are accepted **first pass**, without human correction or rework.
+- G2. Reduce **tokens per accepted change** without reducing acceptance quality.
+- G3. Make specs the **single source of truth**: unambiguous, executable, drift-detected against code.
+- G4. Make the harness **self-improving**: each session's telemetry can change future sessions' configuration, gated by evidence.
+- G5. Provide a built-in **eval tool** that answers, with statistics rather than vibes: "is this skill / MCP server / agent / rule / model choice helping?"
+- G6. Route every SDLC step to the **cheapest configuration that meets the quality bar**, including custom fine-tuned agents.
+- G7. Ship as a usable **open-source product**: installable, documented, privacy-respecting, community-extensible.
+
+### 2.2 Non-Goals
+
+- NG1. **Deployment pipelines and production monitoring.** Keel does not deploy code or observe production. It defines a *signal ingestion contract* (§8.7) so external deployment/monitoring systems can feed the feedback stage, and sketches what a future integration looks like — but building those pipelines is out of scope.
+- NG2. **Replacing the underlying agent runtime.** V1 layers on Claude Code (§5.4); it does not reimplement session management, permissions, or tool execution.
+- NG3. **General project management.** Keel maintains an idea backlog derived from signals; it is not a Jira replacement.
+- NG4. **Proving arbitrary user code correct.** Full formal verification is an escalation tier applied to qualifying components (§7.4), not a promise for all code.
+
+## 3. North-Star Metrics & Success Criteria
+
+Two north stars; every mechanism in this PRD must justify itself against one of them.
+
+| Metric | Definition | Direction |
+|---|---|---|
+| **FPAR** — First-Pass Acceptance Rate | % of tasks whose output is accepted with zero human corrective edits and zero re-prompts that change the requirement | ↑ |
+| **TPAC** — Tokens per Accepted Change | Total tokens (all models, all steps, including eval overhead attributable to the task) divided by accepted changes | ↓ |
+
+Secondary metrics (diagnostic, feed the improvement loop):
+
+- Retry rate (agent-internal re-attempts per task)
+- Correction rate (human edits to agent output within 24h of acceptance)
+- Spec-drift incidents (code/spec hash mismatch events, §6.4)
+- Eval gate pass rate for proposed improvements (too low = postmortem compiler is noisy; too high = gate may be weak)
+- Ambiguity catch rate (spec defects found by divergence testing before build vs. discovered during/after build)
+- Routing regret (estimated tokens wasted by routing to a stronger config than needed, from bandit counterfactuals)
+
+Success criteria for v1 (measured on the maintainers' own usage plus opt-in community telemetry):
+
+- S1. FPAR improves ≥ 15 percentage points on the benchmark suite versus the same tasks run on vanilla Claude Code with the same base model.
+- S2. TPAC improves ≥ 30% on the benchmark suite under the same comparison.
+- S3. The eval tool can detect a deliberately-injected harmful rule (a "regression canary" pack) with ≥ 95% probability at the configured sample sizes.
+- S4. At least one self-proposed improvement passes the eval gate and survives 30 days without revert.
+
+## 4. Personas & Primary Use Cases
+
+- **P1 — Solo OSS engineer, greenfield.** Starts a new project with Keel from day one. Wants: ideas → PRD → spec → code with minimal back-and-forth, and confidence the config is actually tuned rather than cargo-culted.
+- **P2 — Team engineer, brownfield.** Adopts Keel on an existing codebase. Wants: spec excavation to bootstrap invariants from existing code/tests, drift detection from then on, and evidence before the team standardizes on a skill/MCP loadout.
+- **P3 — Pack contributor.** Builds a skill/rule/routing pack and submits it. Wants: a clear contract, and an objective bar — the eval gate — rather than maintainer taste, for whether the pack merges.
+- **P4 — Harness operator.** Runs Keel long-term. Wants: a changelog of every self-applied change, one-command revert, and hard guarantees the system cannot modify its own safety mechanisms.
+
+Primary use cases:
+
+- UC1. "Take this feature request through ideation → PRD → spec → build → verify."
+- UC2. "Is `ponytail` (or any pack) actually improving my outcomes? Run the ablation."
+- UC3. "Mine my last 50 sessions and propose config improvements; apply what proves out."
+- UC4. "Retrofit specs onto this existing service and alert me when code drifts from them."
+- UC5. "Route this refactor's mechanical steps to a cheap model, its design step to a frontier model, and its domain-specific migration step to our fine-tuned agent."
+
+## 5. Architecture: Kernel + Evolvable Packs
+
+### 5.1 Overview
+
+Keel is a **small human-governed kernel** plus **versioned packs** for everything else.
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                         KERNEL (stable, human-governed)     │
+│  ┌───────────┐ ┌──────────────┐ ┌────────┐ ┌─────────────┐ │
+│  │ Telemetry │ │ Eval Harness │ │ Router │ │ Artifact    │ │
+│  │           │ │  (gate)      │ │        │ │ Store       │ │
+│  └─────┬─────┘ └──────┬───────┘ └───┬────┘ └──────┬──────┘ │
+└────────┼──────────────┼─────────────┼─────────────┼────────┘
+         │              │             │             │
+   events in      gates diffs    reads policy   traceability
+         │              │        packs          hashes
+┌────────┴──────────────┴─────────────┴─────────────┴────────┐
+│                    PACKS (versioned, evolvable)             │
+│  stage packs · efficiency packs · spec tooling · routing    │
+│  tables · eval suites · agent registry entries              │
+└─────────────────────────────────────────────────────────────┘
+              ▲                                    │
+              │ eval-gated diffs                   │ configure
+┌─────────────┴──────────────┐        ┌────────────▼──────────┐
+│  Self-Improvement Loop     │◄───────│  SDLC Pipeline        │
+│  (postmortem compiler)     │ mined  │  feedback→…→verify    │
+└────────────────────────────┘ from   └───────────────────────┘
+```
+
+### 5.2 The Kernel
+
+Four components, and only four. The kernel is deliberately small so it can be held to the top of the rigor ladder (§7.4) and so the self-improvement loop has a crisp boundary it may never cross (§9.3).
+
+1. **Telemetry** (§6.1) — turns session transcripts into structured events.
+2. **Eval harness** (§6.2) — benchmark suites, ablation, counterfactual replay, statistical gating.
+3. **Router** (§6.3) — per-step policy: model, effort, context loadout, agent.
+4. **Artifact store** (§6.4) — specs/PRDs/ERDs/ADRs with hash-linked traceability and drift detection.
+
+### 5.3 Packs
+
+A **pack** is a versioned directory with a manifest, containing any subset of: skills/prompt fragments, rules (e.g., comment suppression), routing table entries, agent registry entries, spec tooling (generators, templates), and eval suites. Properties:
+
+- **Versioned:** semver; the installed set is pinned by a **lockfile**.
+- **Evaluable:** any pack can be ablated (on/off) in the eval harness; every eval result records the lockfile hash it ran under, making results reproducible and comparable.
+- **Diffable & revertible:** self-improvement operates only by proposing diffs to packs; every applied diff is a changelog entry with a one-command revert.
+- **Uniform:** a community-contributed skill, an auto-generated rule tweak, and a routing table are the same kind of object, governed by the same gate.
+
+### 5.4 Form Factor: Three Options Compared
+
+| Criterion | (A) Claude Code-native layer | (B) Standalone CLI on Agent SDK | (C) Hybrid: CC layer + external services |
+|---|---|---|---|
+| Build cost | Lowest — skills/hooks/subagents/plugins | Highest — rebuild session mgmt, permissions, context handling | Medium |
+| Control over loop (routing, context assembly) | Partial — hooks can steer but not fully own the loop | Total | Inner loop partial; outer loop (evals, replay, telemetry) total |
+| Eval isolation (run benchmarks headless, repeatably) | Weak — evals inside interactive sessions are awkward | Strong | Strong — eval runner is an external CLI driving headless sessions |
+| Telemetry depth | Transcripts + hooks give most of what we need | Everything | Transcripts + hooks; external store does aggregation |
+| Lock-in | Claude Code only | None (but v1 would still target Claude models) | Inner loop CC; outer components runtime-agnostic by design |
+| Self-improvement mechanics | Config/skill files are already the unit of change — natural fit | Must invent equivalent | Same natural fit, plus out-of-session gating |
+
+**Decision: v1 ships as (C), the hybrid.** A Claude Code-native plugin (skills, hooks, subagents, slash commands) provides the inner loop; three external components — the **eval runner CLI**, the **telemetry store**, and the **replay engine** — run outside sessions, because gating and replay must be headless, repeatable, and isolated from the session being measured.
+
+**Migration criteria to (B), a standalone Agent SDK harness** (documented so the community can hold us to it): we migrate if (a) routing requires mid-turn model switching that hooks cannot express, or (b) the context compiler needs byte-level control of the prompt that Claude Code does not expose, or (c) ≥ 2 of the kernel's components are blocked by Claude Code release timing for > 1 quarter. The external components are runtime-agnostic from day one so migration replaces only the inner-loop plugin.
+
+## 6. Kernel Component Requirements
+
+Requirements use EARS syntax. Each carries an **Obligation** — the executable check that makes the requirement testable (dogfooding §7.2: a requirement without an obligation is vague by our own definition).
+
+### 6.1 Telemetry
+
+Turns raw session transcripts and tool logs into a structured event stream.
+
+**Event schema (minimum):** session id, task id, SDLC step, timestamp, model + effort used, packs active (lockfile hash), tokens in/out per step, retries, tool errors, human interventions (classified: correction / clarification / approval), diff churn (lines added then removed within the session), test outcomes, spec-drift events.
+
+- **TEL-1.** When a session ends, the telemetry component shall emit a structured event record for every SDLC step executed in that session.
+  *Obligation:* PBT — for any generated synthetic transcript containing N step boundaries, parsing yields exactly N step records with token counts that sum to the transcript total.
+- **TEL-2.** The telemetry component shall store all events locally by default, and shall transmit no event off-machine unless the operator has explicitly opted in.
+  *Obligation:* integration test — with opt-in unset, a network-recording harness observes zero outbound telemetry calls across a full session.
+- **TEL-3.** Where the operator has opted into sharing, the telemetry component shall strip source code content, file paths, and prompt text from shared events, sharing only numeric/categorical fields.
+  *Obligation:* PBT — for any event containing marker strings planted in code/path/prompt fields, the serialized shared payload contains no marker.
+- **TEL-4.** When a human intervention occurs, the telemetry component shall classify it as correction, clarification, or approval, and shall link it to the artifact hash it concerns.
+  *Obligation:* golden-set test — ≥ 90% classification agreement with a hand-labeled intervention corpus.
+- **TEL-5.** If telemetry capture fails during a session, then the harness shall continue the session, mark the session's records as incomplete, and exclude them from eval computations.
+  *Obligation:* fault-injection test — killing the collector mid-session neither aborts the session nor lets the partial record enter a gate computation.
+
+### 6.2 Eval Harness
+
+The gate. Two layers — **benchmark suites** (causal, curated) and **live telemetry** (ecological, passive) — plus **counterfactual replay** bridging them.
+
+**Benchmark suites.** A suite is a pack containing golden tasks: input (repo state + task statement + spec), expected outcome checks (tests that must pass, properties that must hold, artifacts that must exist), and budget ceilings. Suites are runnable headless via the eval runner CLI.
+
+**Ablation.** Because every capability is a pack, "does X help?" is: run suite with lockfile L and with L∖{X}, paired per task, compare FPAR/TPAC.
+
+**Counterfactual replay.** The replay engine re-executes past real sessions' tasks under a candidate configuration (same task statement, same starting repo state, captured at session start) and scores outcomes with the same checks. This gives candidate changes exposure to *real* work distribution before they touch live sessions.
+
+- **EVAL-1.** The eval harness shall support running any benchmark suite under any two lockfile configurations and shall report paired per-task deltas for FPAR, TPAC, and suite-specific checks.
+  *Obligation:* self-test suite — a fixture pack with a known injected effect produces the expected sign of delta on every run.
+- **EVAL-2.** The eval harness shall approve a candidate diff only if the configured statistical test (default: paired bootstrap on FPAR and TPAC, α = 0.05) shows non-inferiority on **both** north-star metrics **and** improvement in at least one, at no less than the suite's configured minimum sample size.
+  *Obligation:* statistical unit tests — synthetic result distributions with known effect sizes are accepted/rejected at the configured error rates (±2%); underpowered runs (n below minimum) are always rejected regardless of observed delta.
+- **EVAL-3.** If a benchmark task is non-deterministic across identical configurations beyond a configured variance threshold, then the eval harness shall quarantine the task and exclude it from gating until re-approved by a human.
+  *Obligation:* flakiness detector test — a deliberately random fixture task is quarantined within K runs (K configured, default 5).
+- **EVAL-4.** The eval harness shall record, for every eval run: lockfile hash, suite version, base model versions, seed, and per-task raw results, sufficient to reproduce the comparison.
+  *Obligation:* round-trip test — re-running from a recorded manifest reproduces identical pass/fail verdicts for deterministic tasks.
+- **EVAL-5.** When a candidate diff passes benchmarks, the eval harness shall additionally require counterfactual replay on a sample of recent real sessions (default: 10) with non-inferior outcomes before the diff is eligible for auto-apply.
+  *Obligation:* integration test — a diff that improves benchmarks but degrades replayed real tasks is rejected.
+- **EVAL-6.** Eval suites that gate self-improvement shall be modifiable only through human-approved changes; the self-improvement loop shall have no write path to them (see LOOP-4).
+  *Obligation:* permission test — a loop-originated diff targeting an eval-suite pack is rejected at the kernel boundary with an audit log entry.
+
+### 6.3 Router
+
+Maps `(SDLC step, task features)` → `(model, effort, context loadout, agent)`.
+
+**Task features** (initial set): step type, estimated task size (files touched), language/framework, novelty (similarity to past tasks), criticality tier of the touched spec (§7.4), and repo.
+
+**Routing targets** are entries in an open **agent registry** (a pack): base models at effort tiers, subagent definitions, and custom/fine-tuned agents with declared capabilities (e.g., "payments-domain migration agent"). Fine-grained routing to business-specific agents is a first-class case, not an extension.
+
+**Learning.** The routing policy is a pack (a table plus a scoring model). It improves two ways: (a) offline — eval-gated diffs like any pack, using benchmark + replay evidence; (b) online — a conservative contextual bandit that may only explore *downward* in cost (try the cheaper config) on low-criticality tasks, with automatic escalation on failure.
+
+- **RTR-1.** When an SDLC step begins, the router shall select model, effort, context loadout, and agent from the active routing policy pack and shall record the decision and its feature vector in telemetry.
+  *Obligation:* PBT — for any feature vector, the router returns a target present in the registry, and the decision record round-trips through telemetry.
+- **RTR-2.** If a routed step fails its verification checks, then the router shall escalate the retry to the next-stronger configuration on the policy's escalation ladder and shall record the escalation as a routing-regret event.
+  *Obligation:* integration test — an injected failure at a cheap tier produces exactly one escalation and one regret event.
+- **RTR-3.** While a task touches a spec at criticality tier T2 or above (§7.4), the router shall not select exploratory (bandit) configurations, only the policy's exploit configuration.
+  *Obligation:* PBT — no generated sequence of bandit decisions ever assigns an exploration arm to a T2+ feature vector.
+- **RTR-4.** The router shall support routing to registered custom agents, matched on declared capabilities, and shall fall back to the default agent when no capability matches.
+  *Obligation:* unit tests — capability match, no-match fallback, and ambiguous-match (most specific wins) all covered.
+- **RTR-5.** Online policy updates shall adjust only selection weights within the human-approved policy structure; structural changes to the policy (new arms, new features) go through the eval gate as pack diffs.
+  *Obligation:* schema test — the online updater's write surface is limited to the weights field; any other mutation is rejected.
+
+### 6.4 Artifact Store
+
+Specs, PRDs, ERDs, ADRs live **in the target repo** (not in Keel's own state), under a conventional directory, so they travel with the code and survive Keel's removal.
+
+**Traceability.** Every artifact carries content hashes of its upstream artifacts: `feedback signal → idea → PRD section → spec clause → code region → test/property`. Code regions link back via spec-clause IDs referenced in committed metadata (not code comments — see §12.3). Drift is mechanical: if an upstream hash no longer matches, everything downstream is flagged stale.
+
+- **ART-1.** When an artifact is created or modified, the artifact store shall record the content hashes of its declared upstream artifacts.
+  *Obligation:* PBT — for any generated artifact DAG, every node's recorded upstream hashes match the current upstream contents iff no intervening edit occurred.
+- **ART-2.** When any artifact changes, the artifact store shall flag all downstream artifacts whose recorded upstream hash no longer matches, within the same session or on next harness activation.
+  *Obligation:* PBT — for any edit to any node in a generated DAG, exactly its transitive downstream set is flagged.
+- **ART-3.** The artifact store shall detect spec-code drift in both directions: code changed under an unchanged spec clause, and spec clause changed over unchanged code.
+  *Obligation:* integration test — both directions raise distinct drift events.
+- **ART-4.** If a build step is requested for a task whose spec is flagged stale or non-authoritative (§7.5) beyond its tier's allowance, then the harness shall block the build step and route to spec repair instead.
+  *Obligation:* integration test — a stale-spec task cannot reach the build stage without a recorded human override.
+
+## 7. Spec System
+
+The anti-vagueness core. Specs are the contract between planning and build.
+
+### 7.1 Spec Format
+
+A constrained, reviewable DSL (YAML/Markdown hybrid; exact syntax is an implementation-plan decision) with these clause types:
+
+- **Requirements** in EARS form (ubiquitous / event-driven / state-driven / unwanted-behavior / optional-feature) — as used throughout §6.
+- **Invariants** — properties that must hold in every reachable state of the component.
+- **Pre/postconditions** on operations.
+- **Domain definitions** — types, ranges, units, enumerations (feeds PBT generators).
+- **Criticality tier** (§7.4) and **authority status** (§7.5).
+
+### 7.2 The Compile-to-Obligation Rule
+
+**Every behavioral claim in a spec must compile to an executable obligation**: a property-based test (via Hypothesis/fast-check-class frameworks), a formal-model check (§7.4), or — where a direct oracle is impossible — a metamorphic relation (e.g., "resizing then cropping equals cropping the scaled region"). The spec compiler attempts compilation at spec time:
+
+- **SPEC-1.** When a spec is submitted, the spec compiler shall attempt to compile every requirement, invariant, and pre/postcondition into at least one executable obligation, and shall reject the spec listing every clause that failed to compile.
+  *Obligation:* golden corpus — a suite of deliberately vague clauses ("should be fast", "handles errors gracefully") is 100% rejected with clause-level diagnostics; a suite of well-formed clauses compiles 100%.
+- **SPEC-2.** The spec compiler shall generate PBT generators from domain definitions, so that obligations run against the spec's declared input domains rather than ad-hoc examples.
+  *Obligation:* PBT-of-PBT — generated generators produce only values satisfying the declared domain constraints, verified by sampling.
+- **SPEC-3.** If a clause is behavioral but genuinely oracle-free (no property, model, or metamorphic relation exists), then the spec compiler shall require an explicit human-signed `unverifiable` annotation with justification, and shall report the ratio of unverifiable clauses per spec.
+  *Obligation:* lint test — an unannotated uncompilable clause blocks the spec; an annotated one passes but increments the reported ratio.
+
+### 7.3 Divergence Testing (the Ambiguity Linter)
+
+Compilation catches vagueness; divergence testing catches *under-specification* — clauses that compile but still admit materially different implementations.
+
+- **SPEC-4.** Where a spec is marked for divergence testing (default: all new specs at tier T1+), the harness shall have two isolated agents implement the spec independently, run both against the compiled obligation suite plus a shared behavioral probe set, and report any input where the two implementations' observable behavior differs.
+  *Obligation:* fixture test — a spec with a known planted ambiguity (unspecified rounding rule) yields a reported divergence naming the probe input; a tightened version of the same spec yields none.
+- **SPEC-5.** When divergence is found, the harness shall route the spec back to planning with the divergent inputs attached as mandatory new clauses, and shall not proceed to build.
+  *Obligation:* integration test — the divergent spec cannot reach build; the repaired spec can.
+
+Divergence testing is expensive (two implementations); the router treats it as a budgeted step and the eval loop tunes *when it pays for itself* (e.g., perhaps only for T1+ or for specs above a size threshold — that threshold is a routing-policy parameter, learned, not hardcoded).
+
+### 7.4 The Rigor Ladder
+
+| Tier | Applies to | Required rigor |
+|---|---|---|
+| **T0 — floor** | All code | Compiled obligations (PBT/metamorphic) from the spec |
+| **T1 — stateful** | Components with nontrivial state machines, concurrency, or distributed interaction | T0 + a TLA+/Alloy (or equivalent) model of the state machine, model-checked; obligations include conformance checks between code and model where feasible |
+| **T2 — critical** | Money paths, security boundaries, data-loss paths, and Keel's own self-improvement loop | T1 + full formal treatment of the core logic: refinement types or a proof-assistant development (Lean) for the critical kernel of the component, with the verified core wrapped by conventionally-tested adapters |
+
+**Escalation criteria** (mechanical, checked at spec time): a component is T1 if its spec declares more than one persistent state variable mutated by more than one event source, or any concurrent access; T2 if its spec touches declared money/security/data-loss domains or modifies Keel's own packs. Humans may raise a tier, never lower one below the mechanical result.
+
+- **SPEC-6.** When a spec's declared domains or state structure meet an escalation criterion, the spec compiler shall assign the corresponding tier automatically and shall reject human annotations that lower it.
+  *Obligation:* unit tests over a criteria fixture matrix; lowering attempts rejected.
+
+### 7.5 Spec Excavation (Brownfield)
+
+For existing codebases: Keel infers candidate specs from code, tests, types, and observed behavior (agent-driven analysis), and marks every inferred clause **non-authoritative**.
+
+- **SPEC-7.** The excavation tool shall emit inferred spec clauses with `authority: inferred`, each linked to the code evidence it was inferred from, and the harness shall treat inferred clauses as drift *detectors* (alert on violation) but not build *blockers* until a human promotes them to `authority: confirmed`.
+  *Obligation:* integration test — violating an inferred clause raises an alert but allows build; violating a confirmed clause blocks per ART-4.
+- **SPEC-8.** When an inferred clause has survived N sessions (default 20) without violation or human edit, the harness shall queue it for one-click human promotion, batched.
+  *Obligation:* unit test on the promotion queue logic.
+
+Greenfield-first: the v1 benchmark suite and default packs optimize the spec-from-day-one flow; excavation ships in v1 but its depth (how much it infers) grows via the improvement loop.
+
+## 8. SDLC Pipeline: Stage-by-Stage Requirements
+
+The pipeline: **feedback → ideation → planning → spec → build → verify**. Each stage is a pack (evolvable); the kernel provides the rails (routing, telemetry, artifacts, gating).
+
+### 8.1 Feedback Ingestion
+
+An inbox of signals: human feedback, issues, telemetry insights (e.g., "spec drift cluster in module X"), and — via the §8.7 contract — external production signals.
+
+- **PIPE-1.** When a signal arrives, the harness shall normalize it into a signal record (source, evidence links, affected artifacts if known) and triage it into the idea backlog with an agent-drafted, human-editable priority rationale.
+  *Obligation:* schema validation + golden triage set (≥ 80% agreement with hand triage on priority bucket).
+
+### 8.2 Ideation
+
+- **PIPE-2.** When an idea is taken up, the harness shall draft a problem statement with explicit unknowns and shall interview the human on unknowns before any solutioning (one question at a time; interviewing style itself is a pack).
+  *Obligation:* transcript lint — no solution content precedes the last open unknown's resolution in the stage transcript.
+
+### 8.3 Planning (PRD / ERD / ADR)
+
+- **PIPE-3.** The planning stage shall produce a PRD whose behavioral sections are written as EARS clauses ready for spec compilation, and an ERD for data-model changes.
+  *Obligation:* the PRD's clauses are run through the spec compiler in lint mode; compile rate is reported and gated (default ≥ 90%).
+- **PIPE-4.** When a session makes an architecturally significant decision (heuristics: choosing between explored alternatives, adding a dependency, changing a boundary), the harness shall auto-draft an ADR capturing context, options considered, and decision, linked into traceability, for human confirmation.
+  *Obligation:* golden set — sessions with known decision points yield ADR drafts for ≥ 80% of them; no ADR is finalized without human confirmation.
+
+### 8.4 Spec
+
+Covered by §7. Pipeline integration:
+
+- **PIPE-5.** The spec stage shall not complete until SPEC-1 compilation passes and, where required, SPEC-4 divergence testing passes.
+  *Obligation:* covered by SPEC-1/4/5 obligations plus a pipeline-order integration test.
+
+### 8.5 Build
+
+- **PIPE-6.** When a build step begins, the harness shall assemble the agent's context exclusively through the context compiler (§12.1): the compiled task bundle, the relevant spec clauses, and the step's loadout — not raw whole-file dumps by default.
+  *Obligation:* context audit test — for benchmark tasks, the assembled context contains no file content beyond the bundle manifest (override requires a recorded justification event).
+- **PIPE-7.** The build stage shall run obligations relevant to touched spec clauses continuously (on each substantive edit batch), not only at stage end.
+  *Obligation:* integration test — an edit violating an invariant is flagged before the stage completes.
+
+### 8.6 Verify
+
+- **PIPE-8.** The verify stage shall run: the full compiled obligation suite for touched clauses, the repo's conventional tests, drift checks (ART-3), and budget conformance (did the task exceed its routed token budget), and shall emit a structured verification report into telemetry.
+  *Obligation:* report schema validation + fixture tasks exercising each failure class.
+- **PIPE-9.** If verification fails, then the harness shall classify the failure (code defect / spec defect / obligation defect) before retrying, and shall route spec defects back to the spec stage rather than patching code to match a wrong spec.
+  *Obligation:* fixture set — planted spec-defect failures result in spec-stage routing, not code edits.
+
+### 8.7 Adjacent Concern: Deployment & Production Signals (out of scope, contract only)
+
+Keel defines a **signal ingestion contract**: a versioned schema (JSON) for external systems to post signals — deploy outcomes, incident summaries, SLO breaches, user-facing error clusters — each with severity, evidence links, and optional artifact references. Anything conforming lands in the §8.1 inbox. A future "Keel Deploy" companion (release gating on spec conformance, canary interpretation feeding signals back) is sketched in an appendix-level ADR when work begins; nothing in v1 depends on it.
+
+- **PIPE-10.** The harness shall accept and triage any signal conforming to the published contract schema without knowledge of its producer.
+  *Obligation:* contract tests with synthetic producers.
+
+## 9. Self-Improvement Loop
+
+### 9.1 Mechanism
+
+After each session (or batch), the **postmortem compiler** runs:
+
+1. **Mine:** analyze transcripts + telemetry for friction: retries, corrections, escalations, budget overruns, drift, ambiguity found late.
+2. **Compile lessons:** structured findings ("rule R was overridden by the human 4/5 times in context C", "routing sent T0 renames to a frontier model").
+3. **Propose:** candidate pack diffs (edit a rule, adjust a routing weight structure, add a benchmark task capturing a novel failure, tweak a stage prompt), each linked to its evidence.
+4. **Gate:** eval harness — benchmarks (EVAL-1/2) then counterfactual replay (EVAL-5).
+5. **Apply:** auto-apply passing diffs; changelog entry with evidence, eval results, lockfile before/after.
+6. **Monitor:** live telemetry watches post-apply metrics; regression triggers auto-revert.
+
+- **LOOP-1.** When the postmortem compiler proposes a diff, the proposal shall include machine-checkable links to the telemetry evidence that motivated it.
+  *Obligation:* schema validation — proposals without resolvable evidence links are rejected pre-gate.
+- **LOOP-2.** The harness shall apply a loop-originated diff only after it passes the eval gate per EVAL-2 and EVAL-5, and shall record a changelog entry sufficient to revert it in one command.
+  *Obligation:* end-to-end test — apply then revert restores the exact prior lockfile hash.
+- **LOOP-3.** While a recently applied diff is within its monitoring window (default 14 days or 30 sessions, whichever is later), if live FPAR or TPAC regresses beyond the configured threshold attributable to sessions using that diff, then the harness shall auto-revert the diff and mark it quarantined.
+  *Obligation:* simulation test — injected post-apply regression triggers revert within the window; quarantined diffs cannot be re-proposed without human release.
+
+### 9.2 State Machine (formally specified — this component is T2 by its own rules)
+
+States per proposal: `proposed → gated → {rejected, approved} → applied → monitoring → {stable, reverted → quarantined}`. The loop's state machine is specified in TLA+ and model-checked with at least these invariants:
+
+- **I1 (gate soundness):** no proposal reaches `applied` without passing through `approved`.
+- **I2 (bounded concurrency):** at most K proposals (default 3) in `monitoring` simultaneously, so regressions are attributable.
+- **I3 (revert liveness):** from any `monitoring` state with a regression signal, `reverted` is reachable without human action.
+- **I4 (no self-target):** no proposal's diff target is the kernel, the eval suites, or the loop's own specification (see §9.3).
+- **I5 (monotone audit):** the changelog is append-only; revert adds an entry, never removes one.
+
+- **LOOP-5.** The implementation shall include conformance checks linking the TLA+ model's actions to the implementation's state transitions.
+  *Obligation:* model-based test — generated action sequences from the model executed against the implementation reach the same states.
+
+### 9.3 Safety Invariants (Goodhart Protection)
+
+The evaluator must never grade its own homework, and the loop must never widen its own authority:
+
+- **LOOP-4.** The self-improvement loop shall have no write path to: kernel code/config, eval suite packs, the loop's own state-machine specification, or the safety thresholds in EVAL-2/LOOP-3. Changes to any of these require human approval through the normal (non-loop) contribution path.
+  *Obligation:* permission tests at the kernel boundary (shared with EVAL-6) — loop-originated diffs targeting each protected surface are rejected and audited; enforced by the artifact store's write ACL, not by prompt instructions.
+
+The loop *may* propose **new benchmark tasks** (capturing observed failures) — additions only, into a staging suite that gates nothing until a human promotes it. This grows eval coverage without letting the loop weaken the gate.
+
+- **LOOP-6.** Loop-proposed benchmark tasks shall enter a non-gating staging suite and shall join a gating suite only via human promotion.
+  *Obligation:* integration test — a staged task never appears in a gate computation pre-promotion.
+
+## 10. The Eval Tool (Operator-Facing)
+
+The kernel's eval harness (§6.2) exposed as a first-class CLI — the answer to "is X worth it?":
+
+```
+keel eval ablate <pack>[@version] --suite <suite> [--paired] [--n <min>]
+keel eval compare <lockfileA> <lockfileB> --suite <suite>
+keel eval replay --sessions <selector> --config <lockfile>
+keel eval report [--since <date>]     # live-telemetry trends by pack/config
+keel eval suite add|quarantine|promote ...
+```
+
+- **EVT-1.** `ablate` shall produce a verdict (helps / hurts / underpowered / no-effect) with effect sizes and confidence intervals for FPAR and TPAC, never a bare pass/fail.
+  *Obligation:* output schema test + the EVAL-2 statistical unit tests.
+- **EVT-2.** The eval tool shall evaluate any pack type uniformly — skills, MCP server enablement, agents, rules, routing tables — because each is togglable in a lockfile.
+  *Obligation:* matrix test — one fixture of each pack type runs through `ablate` successfully.
+- **EVT-3.** The eval tool shall maintain a public (in-repo) results ledger for the default suites, so the community can see which packs have evidence.
+  *Obligation:* ledger schema validation; CI check that merged packs have a ledger entry.
+
+Benchmark suite content for v1: (a) a seed suite of ~30 curated tasks spanning the pipeline stages, greenfield-weighted per §7.5; (b) regression canaries (S3, §3); (c) the operator's own promoted tasks from LOOP-6. Suite growth is itself part of the improvement loop.
+
+## 11. Routing (Product-Level Behavior)
+
+§6.3 gave kernel requirements; this section fixes product behavior:
+
+- **Default policy shipped with v1** (a pack, human-tuned initially): frontier model + high effort for ideation/planning/spec and any T1+ build step; mid-tier for T0 build; small model for mechanical steps (renames, formatting, lockfile edits, changelog writing); verify runs at mid-tier with escalation on failure per RTR-2.
+- **Custom agent onboarding:** `keel agents register <manifest>` — manifest declares capabilities (domains, languages, task types), cost class, and constraints. Registered agents immediately become routing candidates for matching feature vectors (RTR-4) and appear in ablation (EVT-2), so their value is measurable from day one.
+- **Learning cadence:** online bandit adjusts weights continuously within RTR-3/RTR-5 bounds; structural policy changes ship as loop proposals through the gate.
+- **Transparency:** every routing decision is visible (`keel route explain <task>`), showing the feature vector, chosen target, and the counterfactual cost of the next candidates — this is also the operator's lever for spotting misroutes to report as signals.
+
+## 12. Token-Efficiency Mechanisms
+
+All efficiency mechanisms are packs (evaluable via EVT-2 — efficiency claims get proven, not asserted).
+
+### 12.1 Context Compiler
+
+Builds a minimal task bundle instead of loading raw files: compressed repo map (symbol-level, headroom-style compression), the spec clauses the task touches, interface signatures of neighbors (not bodies), and the invariants in force. Bodies load on demand, recorded as bundle-miss events that feed compiler improvement.
+
+- **CTX-1.** The context compiler shall produce, for any task, a bundle whose token count and content manifest are recorded in telemetry, including subsequent on-demand loads (bundle misses).
+  *Obligation:* PBT — bundle token accounting matches actual context tokens within 2%.
+- **CTX-2.** Bundle-miss rate per task type shall be a tracked metric; the improvement loop may propose compiler heuristic changes gated on: bundle-miss rate down without FPAR down.
+  *Obligation:* covered by EVAL-2 applied to compiler packs.
+
+### 12.2 Verbosity & Behavior Rules
+
+Ponytail-class rules — terse output, act-don't-narrate, no speculative abstraction — ship as default efficiency packs, each with a ledger entry (EVT-3) demonstrating effect.
+
+### 12.3 Comment & Code-Noise Suppression
+
+- **CTX-3.** The build stage shall enforce (via rules + a lint pass) that generated code contains no comments beyond: constraint comments the spec requires, and annotations the repo's own conventions require. Traceability uses spec-clause metadata, not code comments.
+  *Obligation:* lint fixture — generated outputs for the benchmark suite are comment-audited; violations fail verify.
+
+### 12.4 Per-Step Budgets
+
+- **CTX-4.** The router shall attach a token budget to every routed step (from policy, by task features); when a step exceeds budget, the harness shall record an overrun event and, at 2× budget, pause for triage (continue / escalate / re-spec) rather than burning on.
+  *Obligation:* integration test — a runaway fixture step pauses at 2× with a triage prompt; the overrun event carries attribution.
+
+## 13. Open-Source Product Requirements
+
+- **OSS-1 Packaging.** One-command install (`npx keel init` or equivalent) that: installs the CC plugin, the eval runner CLI, and the local telemetry store; detects existing Claude Code config and layers non-destructively.
+  *Obligation:* clean-machine CI install test on macOS + Linux.
+- **OSS-2 Privacy.** Telemetry local-first (TEL-2/3); the privacy policy is a repo document; shared-telemetry schema is published and versioned; no shared field may contain free text.
+  *Obligation:* schema-level enforcement test (superset of TEL-3).
+- **OSS-3 Versioning.** Kernel and packs semver independently; lockfile pins everything; kernel upgrades never auto-apply (human-governed, §9.3 consistency).
+  *Obligation:* upgrade-path test — a project pinned to old packs runs unchanged after a kernel minor upgrade.
+- **OSS-4 Contribution model.** Community packs merge only with: manifest + declared eval evidence (an `ablate` run on the public seed suite, reproducible via EVAL-4) + ledger entry. The eval gate replaces maintainer taste as the bar — this is the project's distinctive OSS mechanic and is documented prominently.
+  *Obligation:* CI contribution-gate test — a PR adding a pack without reproducible eval evidence fails CI.
+- **OSS-5 Docs.** Quickstart (greenfield UC1 in < 30 minutes), brownfield adoption guide (UC4), pack-author guide (P3), and the safety/self-improvement model (§9) documented for operators (P4).
+  *Obligation:* docs CI — quickstart executed end-to-end in CI against each release.
+
+## 14. Failure Modes & Mitigations
+
+| Failure mode | Risk | Mitigation |
+|---|---|---|
+| **Underpowered evals** — gate approves noise | Bad changes accumulate | EVAL-2 hard minimum sample sizes; underpowered = rejected, never "probably fine"; S3 canary measures detection power continuously |
+| **Goodharting the gate** — loop optimizes metrics, not outcomes | Metric-good, work-bad | LOOP-4 write-ACL (loop cannot touch suites/thresholds); LOOP-6 staged suite growth; correction-rate (post-acceptance human edits) tracked as a gate metric so "accepted fast but wrong" is visible |
+| **Runaway improvement loop** — cascading self-changes | Unattributable behavior | I2 bounded concurrent monitoring (≤ 3); model-checked state machine; kernel/loop-spec immutable to the loop |
+| **Revert storms** — reverts triggering re-proposals triggering reverts | Thrash | Quarantine on revert (LOOP-3): reverted diffs need human release; I5 append-only audit for diagnosis |
+| **Routing misfires** — cheap model on a hard task | Failed steps, wasted retries | RTR-2 escalation ladder (bounded: one failure = escalate); RTR-3 no exploration on T2+; regret tracked and mined |
+| **Benchmark overfitting** — packs tuned to the suite | Suite-good, real-work-bad | EVAL-5 mandatory counterfactual replay on real sessions; suite grows from real failures (LOOP-6) |
+| **Telemetry loss/corruption** | Blind improvement decisions | TEL-5 incomplete-session exclusion; gates fail closed on missing data (rejection, not assumption) |
+| **Spec-compiler false confidence** — vague clause compiles to a weak obligation | Ambiguity leaks through | SPEC-4 divergence testing as the second, independent net; ambiguity-catch-rate metric (§3) monitors the leak rate |
+| **Drift-flag fatigue** — brownfield floods of stale flags | Operators ignore drift | SPEC-7 inferred clauses alert-only; batched promotion (SPEC-8); flag volume is a tracked metric the loop may tune |
+| **Kernel bug in the gate itself** | Everything downstream unsound | Kernel is T2 on its own ladder: state machine model-checked, gate statistics unit-tested against known distributions, EVAL-4 reproducibility for post-hoc audit |
+
+## 15. Phased Delivery & Open Questions
+
+Walking skeleton first — the full loop, thin — then deepen. Each phase is release-able.
+
+- **Phase 0 — Rails.** Kernel scaffolding: telemetry capture (TEL-1/2/5), artifact store with hashing (ART-1/2), lockfile + pack format, CC plugin shell. *Exit: a session produces telemetry and traceable artifacts.*
+- **Phase 1 — Specs that bite.** Spec DSL + compiler (SPEC-1/2/3), obligation execution in verify (PIPE-8), drift detection (ART-3/4). *Exit: a vague spec is rejected; a violated invariant blocks verify.*
+- **Phase 2 — Eval tool.** Eval runner CLI, seed benchmark suite, ablation + statistical gating (EVAL-1..4, EVT-1..3). *Exit: `keel eval ablate ponytail` returns a defensible verdict.*
+- **Phase 3 — Routing.** Registry, default policy, escalation, budgets (RTR-1..4, CTX-4), context compiler v1 (CTX-1). *Exit: measured TPAC drop on the suite vs. Phase 2.*
+- **Phase 4 — The loop.** Postmortem compiler, TLA+ model + conformance (LOOP-1..6), counterfactual replay (EVAL-5), monitoring/revert. *Exit: S4 — one self-proposed change passes the gate and sticks.*
+- **Phase 5 — Open source.** Packaging, docs, privacy, contribution gate (OSS-1..5), divergence testing GA (SPEC-4/5), spec excavation (SPEC-7/8), bandit routing (RTR-5) — ordered within the phase by eval evidence.
+
+**Open questions**
+
+1. **Product name.** "Keel" is a working name; needs a trademark/npm/GitHub availability check.
+2. **Spec DSL concrete syntax** — YAML-embedded-in-Markdown vs. a dedicated file format; decided in the implementation plan with samples.
+3. **Replay fidelity** — how much session environment (repo state snapshotting strategy, tool versions) must be captured for EVAL-5 replay to be trustworthy; prototype in Phase 2, harden in Phase 4.
+4. **Divergence-testing default scope** — T1+ only vs. all specs; ship conservative (T1+), let the eval loop earn a broader default.
+5. **Shared-telemetry aggregation** — whether an opt-in community dashboard (cross-user pack ledgers) is worth the privacy surface; revisit at Phase 5.
+
+## 16. Traceability of This Document
+
+This PRD's behavioral sections follow the format they mandate: EARS clauses with obligations (§6–§13). When the spec compiler exists (Phase 1), this document becomes its first excavation target: clauses TEL-* through OSS-* compile into the harness's own conformance suite, and this PRD enters the artifact store as the root of Keel's own traceability DAG.
