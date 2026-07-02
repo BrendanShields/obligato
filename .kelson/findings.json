@@ -801,7 +801,7 @@
       "summary": "CTX-1 admitted two empty-bundle readings (synthetic preamble recording nonzero vs empty string recording zero) and left the tokenizer identity unpinned across implementations",
       "root_cause": "spec_gap",
       "fix": "CTX-5 added: one pinned tokenizer both sides recorded on events, session usage never participates, empty bundle records exactly zero",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-057"
     },
@@ -816,7 +816,7 @@
       "summary": "CTX-4 admitted diverging continue-headroom semantics (one-more-budget vs next whole multiple) and unnamed headless cap-exhausted terminal state",
       "root_cause": "spec_gap",
       "fix": "RPOL-6 + §3.1 added pinning latched thresholds, durable pause, one-budget continue headroom, headless escalate-then-block, minimal attribution set",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-058"
     },
@@ -831,7 +831,7 @@
       "summary": "per-section-sum accounting cannot satisfy the 2% bound on small bundles — a single BPE seam merge exceeds the whole tolerance (fast-check shrunk a 5-item counterexample); CTX-5 as first written pinned the failing derivation as the recorded count",
       "root_cause": "spec_contradiction",
       "fix": "recorded count respecified as exact whole-text tokenization; per-section manifest sums become the independent verification route; CTX-1 PBT verifies both routes",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-059"
     },
@@ -845,7 +845,7 @@
       "summary": "budget event queries ordered by ULID, which does not sort within one millisecond — burst-ordering assertions (1x-then-2x-then-pause) failed nondeterministically",
       "root_cause": "design_bug",
       "fix": "event-stream queries order by rowid (insertion order); comment pins the constraint",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-060"
     },
@@ -861,7 +861,7 @@
       "summary": "ERD not rippled: ROUTING_DECISION diverged from shipped table, bundle/budget event tables had no ERD entities, and the capability-override vs rule-target distinction was unrecorded",
       "root_cause": "spec_gap",
       "fix": "ERD §5 rewritten to the shipped model; routing_decision gains matched_by (rule|capability) in schema+migration+code",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-061"
     },
@@ -876,7 +876,7 @@
       "summary": "eval routing integration fabricated langCounts {typescript:1} — a dominance never derived from files — so recorded RTR-1 vectors carried a made-up feature; per-task extraction is a real deferral",
       "root_cause": "silent_divergence",
       "fix": "fabricated count dropped (lang honestly falls back to unknown); per-task feature extraction deferred to Phase 4 pipeline, recorded here",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-062"
     },
@@ -891,7 +891,7 @@
       "summary": "post-hoc headless resolution recorded triage_resolved action=escalate that would never be acted on — false telemetry; unparseable usage silently skipped accounting",
       "root_cause": "silent_divergence",
       "fix": "post-session 2x pauses now stay open (the durable pause is the honest record); unparseable usage logs a diagnostic",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-063"
     },
@@ -906,7 +906,7 @@
       "summary": "CTX-1 2% bound was discharged self-referentially (recorded and actual were the same countTokens call on the same string) and the designated per-section verification route was never summed",
       "root_cause": "test_blindspot",
       "fix": "realistic-size fixture asserts manifest sums + separators within 2% of the recorded count — the independent derivation CTX-5 designates",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-064"
     },
@@ -921,7 +921,7 @@
       "summary": "§3.1 pinned >= for all thresholds but both divergence readers and CTX-4 text use strict > for 1x; code was strict, spec said otherwise, equality boundary untested",
       "root_cause": "spec_contradiction",
       "fix": "§3.1 respecified (1x strictly exceeds, 2x inclusive); boundary cases added (==budget no event, ==2x pauses)",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-065"
     },
@@ -935,7 +935,7 @@
       "summary": "targetBudget derivation existed only as a code comment and could grab a rule from a different step; escalate() triage outcome is a sentinel with no durable pause event",
       "root_cause": "spec_gap",
       "fix": "derivation pinned in RPOL §3 (vector-matching rule first); durable pause wiring for router-triggered triage deferred to the Phase 4 pipeline that owns step state",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-066"
     },
@@ -949,7 +949,7 @@
       "summary": "readInitialLadder ordered by ISO timestamp — the F-060 within-millisecond tie hazard reintroduced",
       "root_cause": "design_bug",
       "fix": "ORDER BY rowid",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-067"
     },
@@ -963,7 +963,7 @@
       "summary": "routing-default pack had no pack.yaml (PACK-1 loader would refuse it) and the policy loads by raw path without verifyPackContent against the lock hash",
       "root_cause": "unrecorded_deferral",
       "fix": "pack.yaml added (loader verified), lock hash refreshed to real content hash; verifyPackContent wiring on the routing load path deferred to Phase 5 supply chain",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-068"
     },
@@ -978,7 +978,7 @@
       "summary": "tier fallback to T0 (exploration-permissive) was undeclared in the RPOL-2 feature table — fail-open under the RTR-3 guard",
       "root_cause": "spec_gap",
       "fix": "table row pinned: touching no clause-governed logic yields T0 (no criticality floor exists to inherit)",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-069"
     },
@@ -992,7 +992,7 @@
       "summary": "blocked existed only as in-process monitor state — another process could not distinguish blocked from running",
       "root_cause": "design_bug",
       "fix": "stepTriageState derives running|paused|blocked from the event stream; obligation case added",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-070"
     },
@@ -1006,7 +1006,7 @@
       "summary": "--model with --routing-pack silently clobbered the session-model override while the manifest still recorded it",
       "root_cause": "design_bug",
       "fix": "runEval refuses the combination pre-flight with a diagnostic",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-071"
     },
@@ -1021,7 +1021,7 @@
       "summary": "recordBundleMiss counted a synthetic frame never delivered to context",
       "root_cause": "design_bug",
       "fix": "miss tokens count exactly the delivered content",
-      "fix_commit": null,
+      "fix_commit": "e7dccc6",
       "status": "fixed",
       "id": "F-072"
     }
