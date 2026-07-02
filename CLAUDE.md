@@ -30,6 +30,10 @@ Open-source harness covering feedback → ideation → planning → spec → bui
 - Comments: only constraints the code can't express. No narration, no doc-comments on internals.
 - **Task lists are JSON, always.** Multi-step work is tracked in `.kelson/tasks.json` (committed): `{id, title, state: open|in_progress|completed, clauses[], completed_at}` — mirror of the TEL-7 lifecycle, simplified until Phase 0 builds the real store. Mark tasks `in_progress` when started and `completed` (with timestamp) the moment they finish — never leave state stale, never use markdown checklists for tracking.
 
+**Registry-before-versions rule:** never write a dependency version or tool config from memory — get versions from the registry (`npm view <pkg> version` / `bun pm view`) and scaffold configs with the tool's own init command, then edit. (Postmortem lesson: guessed versions and stale config syntax both failed this way.)
+
+**Gates:** `bun run gates` runs every gate (doctor → spec-lint → kelspec-lint → typecheck → biome → test). CI runs exactly this script — if it's green locally, CI is green. While session hooks are inactive, run it manually before every commit. `scripts/doctor.mjs` fails on bun/CI-pin skew and writes the environment manifest to `.kelson/env.json` (proto EVP §4).
+
 ## Workflow
 
 1. New feature or behavior change? Run the **feature-pipeline** skill (Kelson's SDLC stages, emulated: ideation → EARS clauses → divergence-test risky clauses → build → verify).

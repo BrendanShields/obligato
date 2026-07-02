@@ -13,16 +13,5 @@ jobs:
         with:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck
-      - name: bun test (auto-skips until first obligation test lands, P0-2)
-        run: |
-          if find packages -name '*.test.ts' | grep -q .; then bun test; else echo "no test files yet"; fi
-      - run: bunx biome ci .
-      - name: spec-lint (every clause has an obligation, IDs unique)
-        run: echo '{"tool_input":{"file_path":"docs/specs/ci.md"}}' | node .claude/hooks/spec-lint.mjs
-      - name: kelspec-lint (all kelspec blocks structurally valid)
-        run: |
-          set -e
-          for f in $(find . -name '*.spec.md' -not -path './node_modules/*'); do
-            echo "{\"tool_input\":{\"file_path\":\"$f\"}}" | node .claude/hooks/kelspec-lint.mjs
-          done
+      - name: gates (doctor, spec-lint, kelspec-lint, typecheck, biome, test)
+        run: bun run gates

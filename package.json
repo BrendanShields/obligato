@@ -8,7 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "lint": "biome check ."
+    "lint": "biome check .",
+    "gates": "node scripts/gates.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
