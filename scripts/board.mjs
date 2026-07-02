@@ -76,6 +76,16 @@ if (mode === "task") {
   d.findings.push(row);
   save(FINDINGS, d);
   console.log(row.id);
+} else if (mode === "stamp") {
+  const [sha, ...ids] = rest;
+  if (!sha || ids.length === 0) die("usage: board.mjs stamp <sha> <F-ID...>");
+  const d = load(FINDINGS);
+  const missing = ids.filter((id) => !d.findings.some((f) => f.id === id));
+  if (missing.length) die(`unknown finding ids: ${missing.join(", ")}`);
+  for (const f of d.findings)
+    if (ids.includes(f.id) && f.fix_commit === null) f.fix_commit = sha;
+  save(FINDINGS, d);
+  console.log(`stamped ${ids.join(", ")} -> ${sha}`);
 } else {
-  die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs finding '<json>'");
+  die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs finding '<json>' | board.mjs stamp <sha> <F-ID...>");
 }

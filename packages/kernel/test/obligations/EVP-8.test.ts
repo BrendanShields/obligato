@@ -81,8 +81,8 @@ describe("EVP-8: a session model override is recorded in the manifest, applied t
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
       CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN,
     };
-    process.env.ANTHROPIC_API_KEY = "sk-real-operator-key";
-    process.env.CLAUDE_CODE_OAUTH_TOKEN = "real-oauth-token";
+    process.env.ANTHROPIC_API_KEY = "fake-operator-api-key-fixture";
+    process.env.CLAUDE_CODE_OAUTH_TOKEN = "fake-oauth-token-fixture";
     try {
       const overridden = buildClaudeEnv({
         ANTHROPIC_BASE_URL: "http://localhost:11434",
@@ -93,8 +93,8 @@ describe("EVP-8: a session model override is recorded in the manifest, applied t
       expect("CLAUDE_CODE_OAUTH_TOKEN" in overridden).toBe(false);
       // Without an override endpoint the operator credentials pass through.
       const normal = buildClaudeEnv({});
-      expect(normal.ANTHROPIC_API_KEY).toBe("sk-real-operator-key");
-      expect(normal.CLAUDE_CODE_OAUTH_TOKEN).toBe("real-oauth-token");
+      expect(normal.ANTHROPIC_API_KEY).toBe("fake-operator-api-key-fixture");
+      expect(normal.CLAUDE_CODE_OAUTH_TOKEN).toBe("fake-oauth-token-fixture");
     } finally {
       for (const [k, v] of Object.entries(saved))
         if (v === undefined) delete process.env[k];
