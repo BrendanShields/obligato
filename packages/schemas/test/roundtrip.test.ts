@@ -179,7 +179,14 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
         "eval_suite",
         "agent_registry",
       ),
-      kernel_compat: nonEmpty,
+      kernel_compat: fc.constantFrom(
+        "*",
+        ">=0.1 <2",
+        "^1.2.0",
+        "~0.3",
+        "1.x",
+        ">=1.0.0 || <0.2",
+      ),
       capabilities: fc.uniqueArray(
         fc.constantFrom(
           "stage:feedback",
@@ -251,6 +258,17 @@ describe("P0-2 verification: schemas reject malformed scalars", () => {
         kind: "efficiency",
         kernel_compat: "*",
         capabilities: ["rules", "rules"],
+        description: "d",
+      }).success,
+    ).toBe(false);
+    expect(
+      PackManifest.safeParse({
+        schema_version: 1,
+        name: "x",
+        version: "1.0.0",
+        kind: "efficiency",
+        kernel_compat: "not a range",
+        capabilities: ["rules"],
         description: "d",
       }).success,
     ).toBe(false);

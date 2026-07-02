@@ -51,14 +51,14 @@
     {
       "id": "P0-6",
       "title": "Pack format + lockfile loader",
-      "state": "open",
+      "state": "completed",
       "clauses": [
         "SEC-4",
         "PACK-1",
         "PACK-4"
       ],
-      "completed_at": null,
-      "notes": "audit P0-2: kernel_compat is min(1) string in schemas \u2014 loader must validate as semver range (pack-format \u00a71)"
+      "completed_at": "2026-07-02T06:58:40Z",
+      "notes": "PACK-2 signature verification + --unsigned telemetry flag deferred to Phase 5 (it.todo in PACK-2.test.ts); F-007 discharged"
     },
     {
       "id": "P0-7",

@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { KebabName, SchemaVersion, Semver, Sha256 } from "./scalars.ts";
+import {
+  KebabName,
+  SchemaVersion,
+  Semver,
+  SemverRange,
+  Sha256,
+} from "./scalars.ts";
 
 export const PackKind = z.enum([
   "stage",
@@ -30,7 +36,7 @@ export const PackManifest = z.object({
   name: KebabName,
   version: Semver,
   kind: PackKind,
-  kernel_compat: z.string().min(1),
+  kernel_compat: SemverRange,
   capabilities: z
     .array(Capability)
     .min(1)
@@ -51,6 +57,7 @@ export const Lockfile = z.object({
   entries: z.array(LockfileEntry),
 });
 
+export type Capability = z.infer<typeof Capability>;
 export type PackManifest = z.infer<typeof PackManifest>;
 export type Lockfile = z.infer<typeof Lockfile>;
 export type LockfileEntry = z.infer<typeof LockfileEntry>;

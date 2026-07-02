@@ -12,29 +12,413 @@
     "process_gap": "missing workflow mechanism (tracking, single entry point)"
   },
   "findings": [
-    { "id": "F-001", "task": "P0-1", "source": "install-failure", "severity": "lesson", "clauses": [], "summary": "typescript ^5.9.5 guessed from memory; version does not exist", "root_cause": "memory_authored_config", "fix": "registry-before-versions rule in CLAUDE.md", "fix_commit": "postmortem gates commit", "status": "fixed" },
-    { "id": "F-002", "task": "P0-1", "source": "ci-failure", "severity": "lesson", "clauses": ["EVP-4-adjacent"], "summary": "local bun 1.3.9 vs CI 'latest' 1.3.14 broke CI on first push", "root_cause": "env_skew", "fix": "doctor.mjs pin check + CI pin + engines field", "fix_commit": "postmortem gates commit", "status": "fixed" },
-    { "id": "F-003", "task": "P0-1", "source": "ci-failure", "severity": "lesson", "clauses": [], "summary": "bun test empty-suite exit code differs macOS vs Linux", "root_cause": "env_skew", "fix": "conditional test gate, self-removing at P0-2", "fix_commit": "CI guard commit", "status": "fixed" },
-    { "id": "F-004", "task": "P0-1", "source": "postmortem", "severity": "lesson", "clauses": [], "summary": "five gates existed with no single runner; manual emulation error-prone", "root_cause": "process_gap", "fix": "scripts/gates.mjs, CI runs identical script", "fix_commit": "postmortem gates commit", "status": "fixed" },
-    { "id": "F-005", "task": "P0-2", "source": "clause-auditor", "severity": "warning", "clauses": [], "summary": "stray nested .gitignore from persisted cd; pattern matched nothing", "root_cause": "process_gap", "fix": "deleted; root .gitignore carries the pattern", "fix_commit": "P0-2", "status": "fixed" },
-    { "id": "F-006", "task": "P0-2", "source": "clause-auditor", "severity": "warning", "clauses": ["SEC-4"], "summary": "PackManifest capability generator exercised 7 of 11 enum values", "root_cause": "test_blindspot", "fix": "generator extended to full enum", "fix_commit": "P0-2", "status": "fixed" },
-    { "id": "F-007", "task": "P0-2", "source": "clause-auditor", "severity": "warning", "clauses": ["PACK-1"], "summary": "kernel_compat validated as bare string, not semver range", "root_cause": "unrecorded_deferral", "fix": "recorded on P0-6 task notes; loader must validate", "fix_commit": "P0-2", "status": "deferred:P0-6" },
-    { "id": "F-008", "task": "P0-3", "source": "implementation", "severity": "violation", "clauses": ["OSS-6"], "summary": "ERD §2 declared drift_event append-only while §3 requires resolution to mutate", "root_cause": "spec_contradiction", "fix": "ERD §2 amended: drift_event is insert-then-resolve", "fix_commit": "P0-3", "status": "fixed" },
-    { "id": "F-009", "task": "P0-3", "source": "clause-auditor", "severity": "violation", "clauses": [], "summary": "ERD §3 DRIFT_EVENT PK comment still said append-only after §2 amendment (ripple miss)", "root_cause": "spec_gap", "fix": "comment updated in same commit", "fix_commit": "P0-3", "status": "fixed" },
-    { "id": "F-010", "task": "P0-3", "source": "clause-auditor", "severity": "violation", "clauses": ["ART-1"], "summary": "artifact composite PK (repo, logical_id) in DDL diverged from ERD's logical_id-only PK", "root_cause": "silent_divergence", "fix": "ERD §3 amended to composite key (code was right, spec followed)", "fix_commit": "P0-3", "status": "fixed" },
-    { "id": "F-011", "task": "P0-3", "source": "clause-auditor", "severity": "violation", "clauses": ["OSS-6"], "summary": "schema_version missing on intervention_event/drift_event; spec-internal contradiction resolved silently toward ERD §5", "root_cause": "spec_contradiction", "fix": "column added across ERD, schemas, DDL, tests", "fix_commit": "P0-3", "status": "fixed" },
-    { "id": "F-012", "task": "P0-3", "source": "clause-auditor", "severity": "warning", "clauses": ["OSS-6"], "summary": "OSS-6 part 2 (cross-version eval comparison) silently undischargeable in Phase 0", "root_cause": "unrecorded_deferral", "fix": "explicit it.todo pointing at Phase 2", "fix_commit": "P0-3", "status": "deferred:phase-2" },
-    { "id": "F-013", "task": "P0-4", "source": "clause-auditor", "severity": "violation", "clauses": ["ART-1", "ART-2"], "summary": "trace_link/drift_event not repo-scoped: colliding logical_ids across repos corrupt links and staleness; both single-repo PBTs blind to it", "root_cause": "spec_gap", "fix": "ERD §3 repo columns, schemas, DDL, repo-scoped queries, cross-repo collision test", "fix_commit": "P0-4", "status": "fixed" },
-    { "id": "F-014", "task": "P0-4", "source": "clause-auditor", "severity": "warning", "clauses": ["ART-1"], "summary": "link-replacement semantics existed only as a code comment, not in the ERD", "root_cause": "spec_gap", "fix": "ERD §3 sentence: trace_link is replace-on-register", "fix_commit": "P0-4", "status": "fixed" },
-    { "id": "F-015", "task": "P0-4", "source": "clause-auditor", "severity": "warning", "clauses": [], "summary": "plan promised rebuildIndex-from-files; only rehashFromDisk shipped (needs Phase 1 manifest for upstreams)", "root_cause": "unrecorded_deferral", "fix": "scope note in plan doc + task notes; discharged with DSL-6", "fix_commit": "P0-4", "status": "deferred:phase-1" },
-    { "id": "F-016", "task": "P0-4", "source": "clause-auditor", "severity": "warning", "clauses": [], "summary": "artifacts.ts re-declared enums inline instead of importing @kelson/schemas types", "root_cause": "silent_divergence", "fix": "types imported from schemas package", "fix_commit": "P0-4", "status": "fixed" },
-    { "id": "F-017", "task": "P0-4", "source": "clause-auditor", "severity": "warning", "clauses": ["ART-2"], "summary": "PBT edit used constant content; spurious failure possible if generator produced it", "root_cause": "test_blindspot", "fix": "suffix edit as in ART-1", "fix_commit": "P0-4", "status": "fixed" },
-    { "id": "F-018", "task": "P0-5", "source": "clause-auditor", "severity": "violation", "clauses": ["TEL-5", "KERN-1"], "summary": "survivable ingest failure left no sticky marker; later clean endSession would promote partial records into gate eligibility", "root_cause": "design_bug", "fix": "safeIngest marks session degraded on failure + fail-then-clean-end test", "fix_commit": "P0-5", "status": "fixed" },
-    { "id": "F-019", "task": "P0-5", "source": "clause-auditor", "severity": "violation", "clauses": ["TEL-1"], "summary": "test silently reworded obligation (ingestion vs emit-on-session-end) without recording the deferral", "root_cause": "unrecorded_deferral", "fix": "it.todo for transcript parse + emit trigger (P0-7)", "fix_commit": "P0-5", "status": "deferred:P0-7" },
-    { "id": "F-020", "task": "P0-5", "source": "clause-auditor", "severity": "warning", "clauses": ["TEL-7"], "summary": "merge_clean accepted live with zero correction-window machinery", "root_cause": "design_bug", "fix": "merge_clean structurally refused in Phase 0 with test", "fix_commit": "P0-5", "status": "fixed" },
-    { "id": "F-021", "task": "P0-5", "source": "clause-auditor", "severity": "warning", "clauses": ["TEL-7"], "summary": "code granted abandon edges (open/in_progress → abandoned) the PRD chain never defined", "root_cause": "silent_divergence", "fix": "PRD §3 amended: abandoned reachable from any non-terminal state", "fix_commit": "P0-5", "status": "fixed" },
-    { "id": "F-022", "task": "P0-5", "source": "clause-auditor", "severity": "warning", "clauses": ["TEL-4"], "summary": "correction_count semantics undefined in spec; increment wired to wrong edge", "root_cause": "spec_gap", "fix": "PRD §3 + ERD define it as ingestion-maintained from correction interventions; code wired accordingly", "fix_commit": "P0-5", "status": "fixed" },
-    { "id": "F-023", "task": "P0-5", "source": "clause-auditor", "severity": "warning", "clauses": ["TEL-7"], "summary": "acceptance_signal writable on any transition via COALESCE", "root_cause": "design_bug", "fix": "signal rejected unless transition is accepted", "fix_commit": "P0-5", "status": "fixed" },
-    { "id": "F-024", "task": "P0-5", "source": "clause-auditor", "severity": "warning", "clauses": ["TEL-2"], "summary": "static network-pattern scan missed http2, bare specifiers, undici/axios, XMLHttpRequest/sendBeacon", "root_cause": "test_blindspot", "fix": "patterns tightened; runtime recorder remains P0-7", "fix_commit": "P0-5", "status": "fixed" }
+    {
+      "id": "F-001",
+      "task": "P0-1",
+      "source": "install-failure",
+      "severity": "lesson",
+      "clauses": [],
+      "summary": "typescript ^5.9.5 guessed from memory; version does not exist",
+      "root_cause": "memory_authored_config",
+      "fix": "registry-before-versions rule in CLAUDE.md",
+      "fix_commit": "postmortem gates commit",
+      "status": "fixed"
+    },
+    {
+      "id": "F-002",
+      "task": "P0-1",
+      "source": "ci-failure",
+      "severity": "lesson",
+      "clauses": [
+        "EVP-4-adjacent"
+      ],
+      "summary": "local bun 1.3.9 vs CI 'latest' 1.3.14 broke CI on first push",
+      "root_cause": "env_skew",
+      "fix": "doctor.mjs pin check + CI pin + engines field",
+      "fix_commit": "postmortem gates commit",
+      "status": "fixed"
+    },
+    {
+      "id": "F-003",
+      "task": "P0-1",
+      "source": "ci-failure",
+      "severity": "lesson",
+      "clauses": [],
+      "summary": "bun test empty-suite exit code differs macOS vs Linux",
+      "root_cause": "env_skew",
+      "fix": "conditional test gate, self-removing at P0-2",
+      "fix_commit": "CI guard commit",
+      "status": "fixed"
+    },
+    {
+      "id": "F-004",
+      "task": "P0-1",
+      "source": "postmortem",
+      "severity": "lesson",
+      "clauses": [],
+      "summary": "five gates existed with no single runner; manual emulation error-prone",
+      "root_cause": "process_gap",
+      "fix": "scripts/gates.mjs, CI runs identical script",
+      "fix_commit": "postmortem gates commit",
+      "status": "fixed"
+    },
+    {
+      "id": "F-005",
+      "task": "P0-2",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "stray nested .gitignore from persisted cd; pattern matched nothing",
+      "root_cause": "process_gap",
+      "fix": "deleted; root .gitignore carries the pattern",
+      "fix_commit": "P0-2",
+      "status": "fixed"
+    },
+    {
+      "id": "F-006",
+      "task": "P0-2",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "SEC-4"
+      ],
+      "summary": "PackManifest capability generator exercised 7 of 11 enum values",
+      "root_cause": "test_blindspot",
+      "fix": "generator extended to full enum",
+      "fix_commit": "P0-2",
+      "status": "fixed"
+    },
+    {
+      "id": "F-007",
+      "task": "P0-2",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PACK-1"
+      ],
+      "summary": "kernel_compat validated as bare string, not semver range",
+      "root_cause": "unrecorded_deferral",
+      "fix": "SemverRange scalar in @kelson/schemas; PackManifest.kernel_compat uses it; refusal fixtures in PACK-1.test.ts",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    },
+    {
+      "id": "F-008",
+      "task": "P0-3",
+      "source": "implementation",
+      "severity": "violation",
+      "clauses": [
+        "OSS-6"
+      ],
+      "summary": "ERD \u00a72 declared drift_event append-only while \u00a73 requires resolution to mutate",
+      "root_cause": "spec_contradiction",
+      "fix": "ERD \u00a72 amended: drift_event is insert-then-resolve",
+      "fix_commit": "P0-3",
+      "status": "fixed"
+    },
+    {
+      "id": "F-009",
+      "task": "P0-3",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [],
+      "summary": "ERD \u00a73 DRIFT_EVENT PK comment still said append-only after \u00a72 amendment (ripple miss)",
+      "root_cause": "spec_gap",
+      "fix": "comment updated in same commit",
+      "fix_commit": "P0-3",
+      "status": "fixed"
+    },
+    {
+      "id": "F-010",
+      "task": "P0-3",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "ART-1"
+      ],
+      "summary": "artifact composite PK (repo, logical_id) in DDL diverged from ERD's logical_id-only PK",
+      "root_cause": "silent_divergence",
+      "fix": "ERD \u00a73 amended to composite key (code was right, spec followed)",
+      "fix_commit": "P0-3",
+      "status": "fixed"
+    },
+    {
+      "id": "F-011",
+      "task": "P0-3",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "OSS-6"
+      ],
+      "summary": "schema_version missing on intervention_event/drift_event; spec-internal contradiction resolved silently toward ERD \u00a75",
+      "root_cause": "spec_contradiction",
+      "fix": "column added across ERD, schemas, DDL, tests",
+      "fix_commit": "P0-3",
+      "status": "fixed"
+    },
+    {
+      "id": "F-012",
+      "task": "P0-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "OSS-6"
+      ],
+      "summary": "OSS-6 part 2 (cross-version eval comparison) silently undischargeable in Phase 0",
+      "root_cause": "unrecorded_deferral",
+      "fix": "explicit it.todo pointing at Phase 2",
+      "fix_commit": "P0-3",
+      "status": "deferred:phase-2"
+    },
+    {
+      "id": "F-013",
+      "task": "P0-4",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "ART-1",
+        "ART-2"
+      ],
+      "summary": "trace_link/drift_event not repo-scoped: colliding logical_ids across repos corrupt links and staleness; both single-repo PBTs blind to it",
+      "root_cause": "spec_gap",
+      "fix": "ERD \u00a73 repo columns, schemas, DDL, repo-scoped queries, cross-repo collision test",
+      "fix_commit": "P0-4",
+      "status": "fixed"
+    },
+    {
+      "id": "F-014",
+      "task": "P0-4",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "ART-1"
+      ],
+      "summary": "link-replacement semantics existed only as a code comment, not in the ERD",
+      "root_cause": "spec_gap",
+      "fix": "ERD \u00a73 sentence: trace_link is replace-on-register",
+      "fix_commit": "P0-4",
+      "status": "fixed"
+    },
+    {
+      "id": "F-015",
+      "task": "P0-4",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "plan promised rebuildIndex-from-files; only rehashFromDisk shipped (needs Phase 1 manifest for upstreams)",
+      "root_cause": "unrecorded_deferral",
+      "fix": "scope note in plan doc + task notes; discharged with DSL-6",
+      "fix_commit": "P0-4",
+      "status": "deferred:phase-1"
+    },
+    {
+      "id": "F-016",
+      "task": "P0-4",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "artifacts.ts re-declared enums inline instead of importing @kelson/schemas types",
+      "root_cause": "silent_divergence",
+      "fix": "types imported from schemas package",
+      "fix_commit": "P0-4",
+      "status": "fixed"
+    },
+    {
+      "id": "F-017",
+      "task": "P0-4",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "ART-2"
+      ],
+      "summary": "PBT edit used constant content; spurious failure possible if generator produced it",
+      "root_cause": "test_blindspot",
+      "fix": "suffix edit as in ART-1",
+      "fix_commit": "P0-4",
+      "status": "fixed"
+    },
+    {
+      "id": "F-018",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "TEL-5",
+        "KERN-1"
+      ],
+      "summary": "survivable ingest failure left no sticky marker; later clean endSession would promote partial records into gate eligibility",
+      "root_cause": "design_bug",
+      "fix": "safeIngest marks session degraded on failure + fail-then-clean-end test",
+      "fix_commit": "P0-5",
+      "status": "fixed"
+    },
+    {
+      "id": "F-019",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "TEL-1"
+      ],
+      "summary": "test silently reworded obligation (ingestion vs emit-on-session-end) without recording the deferral",
+      "root_cause": "unrecorded_deferral",
+      "fix": "it.todo for transcript parse + emit trigger (P0-7)",
+      "fix_commit": "P0-5",
+      "status": "deferred:P0-7"
+    },
+    {
+      "id": "F-020",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-7"
+      ],
+      "summary": "merge_clean accepted live with zero correction-window machinery",
+      "root_cause": "design_bug",
+      "fix": "merge_clean structurally refused in Phase 0 with test",
+      "fix_commit": "P0-5",
+      "status": "fixed"
+    },
+    {
+      "id": "F-021",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-7"
+      ],
+      "summary": "code granted abandon edges (open/in_progress \u2192 abandoned) the PRD chain never defined",
+      "root_cause": "silent_divergence",
+      "fix": "PRD \u00a73 amended: abandoned reachable from any non-terminal state",
+      "fix_commit": "P0-5",
+      "status": "fixed"
+    },
+    {
+      "id": "F-022",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-4"
+      ],
+      "summary": "correction_count semantics undefined in spec; increment wired to wrong edge",
+      "root_cause": "spec_gap",
+      "fix": "PRD \u00a73 + ERD define it as ingestion-maintained from correction interventions; code wired accordingly",
+      "fix_commit": "P0-5",
+      "status": "fixed"
+    },
+    {
+      "id": "F-023",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-7"
+      ],
+      "summary": "acceptance_signal writable on any transition via COALESCE",
+      "root_cause": "design_bug",
+      "fix": "signal rejected unless transition is accepted",
+      "fix_commit": "P0-5",
+      "status": "fixed"
+    },
+    {
+      "id": "F-024",
+      "task": "P0-5",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-2"
+      ],
+      "summary": "static network-pattern scan missed http2, bare specifiers, undici/axios, XMLHttpRequest/sendBeacon",
+      "root_cause": "test_blindspot",
+      "fix": "patterns tightened; runtime recorder remains P0-7",
+      "fix_commit": "P0-5",
+      "status": "fixed"
+    },
+    {
+      "id": "F-025",
+      "task": "P0-6",
+      "source": "implementation",
+      "severity": "warning",
+      "clauses": [
+        "PACK-1",
+        "SEC-4"
+      ],
+      "summary": "PACK-1 left unmapped-path behavior undefined (README, stray dirs)",
+      "root_cause": "spec_gap",
+      "fix": "spec amended: unmapped paths other than pack.yaml/pack.sig refused fail-closed, naming the file",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    },
+    {
+      "id": "F-026",
+      "task": "P0-6",
+      "source": "implementation",
+      "severity": "warning",
+      "clauses": [
+        "PACK-2"
+      ],
+      "summary": "content-hash spec did not exclude pack.sig \u2014 signature would cover itself",
+      "root_cause": "spec_gap",
+      "fix": "spec \u00a72 amended: pack.sig excluded; exclusion test in PACK-2.test.ts",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    },
+    {
+      "id": "F-027",
+      "task": "P0-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PACK-1",
+        "PACK-2"
+      ],
+      "summary": "listFiles emitted platform-sep paths: win32 hashes diverge and every nested path refused as unmapped",
+      "root_cause": "design_bug",
+      "fix": "paths normalized to POSIX / before mapping/hashing; spec \u00a71 pins POSIX paths",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    },
+    {
+      "id": "F-028",
+      "task": "P0-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PACK-1"
+      ],
+      "summary": "spec never defined which semver-range grammar counts as valid (hyphen ranges, x.x undefined)",
+      "root_cause": "spec_gap",
+      "fix": "grammar pinned in \u00a71: comparator sets joined by ||; hyphen ranges/build metadata out in v1",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    },
+    {
+      "id": "F-029",
+      "task": "P0-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "F-007 discharged by diff but findings row still deferred and not staged with the fix",
+      "root_cause": "process_gap",
+      "fix": "row flipped to fixed in the same commit",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    },
+    {
+      "id": "F-030",
+      "task": "P0-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PACK-4"
+      ],
+      "summary": "PACK-4 obligation said 'every field mutation' while \u00a74 prose and impl exclude parent_hash",
+      "root_cause": "spec_contradiction",
+      "fix": "obligation amended: 'every content field mutation (parent_hash excluded)'",
+      "fix_commit": "P0-6",
+      "status": "fixed"
+    }
   ]
 }
