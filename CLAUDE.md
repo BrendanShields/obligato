@@ -41,7 +41,7 @@ Open-source harness covering feedback → ideation → planning → spec → bui
 3. Writing tests for a clause? Use the **obligation-test** skill.
 4. Mechanical work (renames, formatting, reference updates, changelog lines) → delegate to the **mechanical** agent (Haiku) — the routing emulation; don't do it at frontier cost.
 5. Ambiguity suspected in a clause? Run the **divergence** skill (two blind agents, compare readings — SPEC-4 emulated).
-6. Before committing a diff that touches behavior, run the **clause-auditor** agent on it.
+6. Before committing a diff that touches behavior, run the **clause-auditor** agent on it. Every violation/warning it raises — and every spec bug implementation surfaces — gets a row in `.kelson/findings.json` (id, task, source, severity, clauses, summary, root_cause from the file's taxonomy, fix, status) appended in the same commit as the fix. This log is proto-LOOP-1 evidence: the postmortem skill and future benchmark tasks (LOOP-6) mine it.
 7. Commit spec and code changes together, referencing clause IDs (`feat(kernel): implement TEL-1 step event emission`).
 8. End of a substantial session → **postmortem** skill (LOOP-1 emulated, propose-only; human is the gate).
 
