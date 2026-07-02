@@ -10,12 +10,18 @@
 ```yaml
 schema_version: 1
 rules:                        # first match wins, top to bottom
-  - match: { step: build, tier: T0, size: S }
-    target: haiku             # agent-registry id
+  - match: { step: build, tier: T0, task_type: mechanical }
+    target: small             # agent-registry id (cost_class 1)
     effort: low
     loadout: [efficiency-core]        # pack names to load for this step
     budget_tokens: 8000
-    escalation: [sonnet, frontier]    # ordered ladder for RTR-2
+    escalation: [mid-tier, frontier]  # ordered ladder for RTR-2
+  - match: { step: build, tier: T0 }
+    target: mid-tier
+    effort: medium
+    loadout: [efficiency-core]
+    budget_tokens: 20000
+    escalation: [frontier]
   - match: { step: spec }             # unmatched fields = wildcard
     target: frontier
     effort: high
@@ -23,7 +29,7 @@ rules:                        # first match wins, top to bottom
     budget_tokens: 40000
     escalation: []
 default:                      # required — total function over feature space
-  target: sonnet
+  target: mid-tier
   effort: medium
   loadout: []
   budget_tokens: 20000
@@ -41,10 +47,11 @@ default:                      # required — total function over feature space
 | `tier` | T0/T1/T2 | max criticality tier among spec clauses the task touches (PRD §7.4) |
 | `size` | S/M/L | files the task's plan expects to touch: S ≤ 2, M ≤ 10, L > 10; unknown → M |
 | `lang` | primary language id | dominant language of touched files by count; ties → repo primary |
-| `novelty` | 0..1, bucketed low (<0.3) / mid / high (>0.7) | 1 − max Jaccard similarity between the task's touched-file set and each of the last 200 tasks' sets in this repo; no history → 1 |
+| `novelty` | 0..1, bucketed low (<0.3) / mid / high (>0.7) | 1 − max Jaccard similarity between the task's **planned** touched-file set (same set `size` uses, fixed at routing time) and each of the last 200 tasks' **actual** touched sets recorded at task close in this repo; no history → 1 |
+| `task_type` | `standard` \| `mechanical` | `mechanical` = the step's plan touches no clause-governed logic: renames, formatting, lockfile/changelog writes, comment/doc-only edits; anything else → `standard` |
 | `repo` | repo id | identity, for policy partitioning |
 
-- **RPOL-2.** The feature extractor shall compute every feature per this table, record the vector on the RoutingDecision (RTR-1), and use the declared fallbacks (`unknown → M`, `no history → 1`) rather than failing.
+- **RPOL-2.** The feature extractor shall compute every feature per this table, record the vector on the RoutingDecision (RTR-1), and use the declared fallbacks (`unknown → M`, `no history → 1`, `task_type` unknown → `standard`) rather than failing.
   *Obligation:* unit matrix per feature including fallback cases; Jaccard novelty verified against hand-computed fixtures.
 
 ## 3. Escalation (normative for RTR-2, CTX-4)
@@ -56,8 +63,8 @@ One verification failure at the routed target → retry once at the next ladder 
 
 ## 4. Online Learning (normative for RTR-5; bounded by RTR-3)
 
-- **Algorithm: ε-greedy, ε = 0.05**, applied only where **all** hold: tier is T0, the step has ≥ 2 ladder-adjacent candidates, and the exploration arm is **cheaper** (lower cost_class) than the exploit arm. Exploration randomness derives from the step-event ULID (reproducible from telemetry; no wall-clock RNG).
-- **Weight update:** per (rule, arm), exponential moving average of verify-pass with **α = 0.1**: `w ← (1−α)·w + α·outcome`. Weights live in SQLite (`ROUTING_WEIGHT`, the bandit's only write surface); an arm whose weight exceeds the incumbent's by > 0.1 for 50 consecutive tasks becomes a loop *proposal* to change the rule's target — the structural change still passes the gate (RTR-5).
+- **Algorithm: ε-greedy, ε = 0.05**, applied only where **all** hold: tier is T0, an exploration candidate exists, and the candidate is **cheaper** than the exploit arm. An **exploration candidate** is a registry entry eligible for the rule's step whose cost_class is exactly one below the exploit target's — the escalation ladder is *not* the exploration set (ladders order upward; exploration only probes downward). Exploration randomness derives from the step-event ULID (reproducible from telemetry; no wall-clock RNG).
+- **Weight update:** per (rule, arm), exponential moving average of verify-pass with **α = 0.1**: `w ← (1−α)·w + α·outcome`; weights initialize to **w₀ = 0.5** for every arm, and the promotion trigger below requires ≥ 50 recorded outcomes on *both* arms (cold-start weights never trigger proposals). Weights live in SQLite (`ROUTING_WEIGHT`, the bandit's only write surface); an arm whose weight exceeds the incumbent's by > 0.1 for 50 consecutive tasks (both arms having ≥ 50 outcomes) becomes a loop *proposal* to change the rule's target — the structural change still passes the gate (RTR-5).
 - ε-greedy over Thompson sampling: two tunables and an if-statement, auditable in telemetry, and the safety constraints (downward-only, T0-only) do the real risk work — posterior sophistication buys little here.
 
 - **RPOL-4.** The online updater shall explore only under the three conditions above, derive exploration decisions from the step-event ULID, and write nothing but `ROUTING_WEIGHT.weight`.
@@ -70,7 +77,7 @@ schema_version: 1
 id: payments-migrator
 kind: custom_agent            # base_model|subagent|custom_agent
 capabilities:
-  - { domain: payments, lang: typescript, task_type: migration }
+  - { domain: payments, lang: typescript }
 cost_class: 3                 # ordinal, 1 = cheapest; ladders sort by this
 constraints: { max_context_tokens: 200000 }
 endpoint: { type: claude_subagent, ref: agents/payments-migrator.md }
@@ -89,6 +96,6 @@ Capability matching (RTR-4): a task matches an agent when every declared capabil
 | build | T1+ | frontier (high) | 40,000 |
 | build | T0 | mid-tier (medium) | 20,000 |
 | verify | any | mid-tier (medium), escalate frontier | 20,000 |
-| mechanical (rename/format/changelog sub-steps) | T0 | small (low) | 8,000 |
+| any step with `task_type: mechanical` | T0 | small (low) | 8,000 |
 
 Concrete model IDs live in the default routing pack (data, not spec) so model generations rotate without spec edits. These budgets are the CTX-4 defaults; the loop tunes them through the gate.

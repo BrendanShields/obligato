@@ -14,6 +14,7 @@ my-pack/
 ├── rules/               # behavior rules (e.g. comment suppression)
 ├── routing/             # routing table fragments (structure only — weights live in SQLite)
 ├── agents/              # agent registry entries
+├── context/             # context-compiler heuristics (PRD §12.1 / CTX-2)
 └── suites/              # eval suites (community packs: staging-only, LOOP-6)
 ```
 
@@ -30,10 +31,10 @@ capabilities:             # closed enum — the SEC-4 surfaces this pack may inf
 description: One line.
 ```
 
-**Capability enum (closed):** `stage:feedback`, `stage:ideation`, `stage:planning`, `stage:spec`, `stage:build`, `stage:verify`, `rules`, `routing-table`, `agent-registry`, `eval-suite`. A pack whose content directory implies a surface absent from `capabilities` is refused at load (SEC-4); adding a capability in an update is always a **major** version (§3).
+**Capability enum (closed):** `stage:feedback`, `stage:ideation`, `stage:planning`, `stage:spec`, `stage:build`, `stage:verify`, `rules`, `routing-table`, `agent-registry`, `eval-suite`, `context-assembly`. A pack whose content directory implies a surface absent from `capabilities` is refused at load (SEC-4); adding a capability in an update is always a **major** version (§3).
 
-- **PACK-1.** The pack loader shall map each content directory to its required capability (`skills/`+`rules/`→`rules` or a `stage:*`, `routing/`→`routing-table`, `agents/`→`agent-registry`, `suites/`→`eval-suite`) and shall refuse any pack whose content implies an undeclared capability, naming the file and the missing capability.
-  *Obligation:* fixture matrix per directory type (extends SEC-4's obligation with the concrete mapping).
+- **PACK-1.** The pack loader shall map each content path to its required capability by this deterministic rule: `rules/**` → `rules`; `skills/<stage>/**` → that `stage:*` (a skill file directly under `skills/` is a layout error, refused); `routing/**` → `routing-table`; `agents/**` → `agent-registry`; `context/**` → `context-assembly`; `suites/**` → `eval-suite`. Neither `rules` nor a `stage:*` declaration substitutes for the other. The loader shall refuse any pack whose content implies an undeclared capability, naming the file and the missing capability.
+  *Obligation:* fixture matrix per path rule including the top-level-skill layout error and a rules-only pack declaring only a stage capability (refused) — extends SEC-4's obligation with the concrete mapping.
 
 ## 2. Hashing & Signing
 
@@ -66,7 +67,7 @@ description: One line.
 }
 ```
 
-Lockfile hash = SHA-256 of its RFC 8785 canonical form, excluding `parent_hash` (so the hash identifies configuration content, and `parent_hash` chains history). Sessions pin this hash at start (LOOP-7); eval results record it (EVAL-4); proposals apply as parent→child transitions (LOOP-2 one-command revert = restore parent).
+Lockfile hash = SHA-256 of its RFC 8785 canonical form, excluding `parent_hash` (so the hash identifies configuration content, and `parent_hash` chains history). Sessions pin this hash at start (LOOP-7); eval results record it (EVAL-4); proposals apply as parent→child transitions; revert per LOOP-2 creates a new child that removes exactly the reverted diff (it equals the old parent hash only when no later diff intervened).
 
 - **PACK-4.** Lockfile hashing shall be canonical: semantically identical lockfiles (key order, whitespace) produce identical hashes, and any entry change produces a different hash.
   *Obligation:* PBT — hash invariant under key/array-formatting permutations that preserve content; sensitive to every field mutation.

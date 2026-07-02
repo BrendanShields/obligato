@@ -63,7 +63,9 @@ Two north stars; every mechanism in this PRD must justify itself against one of 
 | **FPAR** — First-Pass Acceptance Rate | % of tasks whose output is accepted with zero human corrective edits and zero re-prompts that change the requirement | ↑ |
 | **TPAC** — Tokens per Accepted Change | **Cost-normalized** tokens (each step's tokens weighted by the per-model unit prices recorded on the step event — raw tokens are not comparable across a routed multi-model system) across all models and steps, including eval overhead attributable to the task, divided by accepted changes | ↓ |
 
-**Task and acceptance, defined** (FPAR is meaningless without these): a **task** is the unit of routed work with lifecycle `open → in_progress → delivered → accepted | corrected | abandoned`. A delivered task is **accepted** on an explicit human approval, or on merge followed by zero corrective edits within the correction window (default 24h); any corrective edit or requirement-changing re-prompt within the window moves it to `corrected`.
+**Task and acceptance, defined** (FPAR is meaningless without these): a **task** is the unit of routed work with lifecycle `open → in_progress → delivered → accepted | corrected | abandoned`. A delivered task is **accepted** by exactly one of two paths: (a) explicit human approval (`/kelson:accept`) — immediate and terminal; later edits feed the correction-rate metric but do not reopen the task; or (b) merge, which holds the task in `delivered` until the correction window (default 24h) closes — any corrective edit or requirement-changing re-prompt inside the window moves it to `corrected` instead.
+
+**TPAC attribution rule:** eval/obligation runs triggered by the task's own stages (PIPE-7 continuous checks, its verify stage) count toward that task's TPAC; loop proposals, suite runs, and replays are never attributed to individual tasks — they are visible only in the harness overhead ratio (EVAL-7).
 
 Secondary metrics (diagnostic, feed the improvement loop):
 
@@ -204,12 +206,12 @@ The gate. Two layers — **benchmark suites** (causal, curated) and **live telem
   *Obligation:* self-test suite — a fixture pack with a known injected effect produces the expected sign of delta on every run.
 - **EVAL-2.** The eval harness shall approve a candidate diff only if the configured statistical test (default: paired bootstrap on FPAR and TPAC; full procedure, margins, and defaults in the [Eval procedure spec](./2026-07-02-eval-procedure.md) §5) shows non-inferiority on **both** north-star metrics **and** improvement in at least one, at no less than the suite's configured minimum sample size.
   *Obligation:* statistical unit tests — synthetic result distributions with known effect sizes are accepted/rejected at the configured error rates (±2%); underpowered runs (n below minimum) are always rejected regardless of observed delta.
-- **EVAL-3.** If a benchmark task is non-deterministic across identical configurations beyond a configured variance threshold, then the eval harness shall quarantine the task and exclude it from gating until re-approved by a human.
-  *Obligation:* flakiness detector test — a deliberately random fixture task is quarantined within K runs (K configured, default 5).
+- **EVAL-3.** If a benchmark task is non-deterministic across identical configurations per the flakiness rule in the [Eval procedure spec](./2026-07-02-eval-procedure.md) §6 (which owns the window size, band, and config keys), then the eval harness shall quarantine the task and exclude it from gating until re-approved by a human.
+  *Obligation:* flakiness detector test per EVP-5.
 - **EVAL-4.** The eval harness shall record, for every eval run: lockfile hash, suite version, base model versions, seed, and per-task raw results, sufficient to reproduce the comparison.
   *Obligation:* round-trip test — re-running from a recorded manifest reproduces identical pass/fail verdicts for deterministic tasks.
-- **EVAL-5.** When a candidate diff passes benchmarks, the eval harness shall additionally require counterfactual replay on a sample of recent real sessions (default: 10) with non-inferior outcomes before the diff is eligible for auto-apply.
-  *Obligation:* integration test — a diff that improves benchmarks but degrades replayed real tasks is rejected.
+- **EVAL-5.** When a candidate diff passes benchmarks, the eval harness shall additionally require counterfactual replay of the most recent 10 `complete` sessions that pass replay validity (session IDs recorded in the run manifest), judged by the replay decision rule in the [Eval procedure spec](./2026-07-02-eval-procedure.md) §5.1, before the diff is eligible for auto-apply.
+  *Obligation:* integration test — a diff that improves benchmarks but degrades replayed real tasks is rejected; the manifest lists the exact session IDs replayed.
 - **EVAL-6.** Eval suites that gate self-improvement shall be modifiable only through human-approved changes; the self-improvement loop shall have no write path to them (see LOOP-4).
   *Obligation:* permission test — a loop-originated diff targeting an eval-suite pack is rejected at the kernel boundary with an audit log entry.
 - **EVAL-7.** The harness shall cap cost-normalized spend on evals, replay, and the improvement loop at a configured fraction of productive spend (default 15%, trailing 30 days); when the cap is reached, further loop/eval work queues rather than runs, and the harness overhead ratio is reported as a first-class metric.
@@ -229,8 +231,8 @@ Maps `(SDLC step, task features)` → `(model, effort, context loadout, agent)`.
   *Obligation:* PBT — for any feature vector, the router returns a target present in the registry, and the decision record round-trips through telemetry.
 - **RTR-2.** If a routed step fails its verification checks, then the router shall escalate the retry to the next-stronger configuration on the policy's escalation ladder and shall record the escalation as a routing-regret event.
   *Obligation:* integration test — an injected failure at a cheap tier produces exactly one escalation and one regret event.
-- **RTR-3.** While a task touches a spec at criticality tier T2 or above (§7.4), the router shall not select exploratory (bandit) configurations, only the policy's exploit configuration.
-  *Obligation:* PBT — no generated sequence of bandit decisions ever assigns an exploration arm to a T2+ feature vector.
+- **RTR-3.** While a task touches a spec at criticality tier T1 or above (§7.4), the router shall not select exploratory (bandit) configurations, only the policy's exploit configuration — exploration is a T0-only behavior (normative conditions in the [Routing policy spec](./2026-07-02-routing-policy.md) §4).
+  *Obligation:* PBT — no generated sequence of bandit decisions ever assigns an exploration arm to a T1+ feature vector.
 - **RTR-4.** The router shall support routing to registered custom agents, matched on declared capabilities, and shall fall back to the default agent when no capability matches.
   *Obligation:* unit tests — capability match, no-match fallback, and ambiguous-match (most specific wins) all covered.
 - **RTR-5.** Online policy updates shall adjust only selection weights within the human-approved policy structure; structural changes to the policy (new arms, new features) go through the eval gate as pack diffs.
@@ -248,8 +250,8 @@ Specs, PRDs, ERDs, ADRs live **in the target repo** (not in Kelson's own state),
   *Obligation:* PBT — for any edit to any node in a generated DAG, exactly its transitive downstream set is flagged.
 - **ART-3.** The artifact store shall detect spec-code drift in both directions: code changed under an unchanged spec clause, and spec clause changed over unchanged code.
   *Obligation:* integration test — both directions raise distinct drift events.
-- **ART-4.** If a build step is requested for a task whose spec is flagged stale or non-authoritative (§7.5) beyond its tier's allowance, then the harness shall block the build step and route to spec repair instead.
-  *Obligation:* integration test — a stale-spec task cannot reach the build stage without a recorded human override.
+- **ART-4.** If a build step is requested for a task that touches a stale **confirmed** clause, then: at tier T1 or above the harness shall block the build step and route to spec repair; at T0 it shall warn and proceed. `authority: inferred` clauses never block regardless of tier (SPEC-7 — they alert only). A recorded human override may unblock any case.
+  *Obligation:* integration matrix — stale-confirmed T1 blocks, stale-confirmed T0 warns and proceeds, stale-inferred any-tier proceeds with alert, override path recorded.
 
 ## 7. Spec System
 
@@ -321,8 +323,8 @@ The pipeline: **feedback → ideation → planning → spec → build → verify
 
 An inbox of signals: human feedback, issues, telemetry insights (e.g., "spec drift cluster in module X"), and — via the §8.7 contract — external production signals.
 
-- **PIPE-1.** When a signal arrives, the harness shall normalize it into a signal record (source, evidence links, affected artifacts if known) and triage it into the idea backlog with an agent-drafted, human-editable priority rationale.
-  *Obligation:* schema validation + golden triage set (≥ 80% agreement with hand triage on priority bucket).
+- **PIPE-1.** When a signal arrives, the harness shall normalize it into a signal record (source, evidence links, affected artifacts if known) and triage it into the idea backlog with a priority bucket (closed enum: `now | next | later | dismissed`) and an agent-drafted, human-editable priority rationale.
+  *Obligation:* schema validation + golden triage set (≥ 80% agreement with hand triage on the four-bucket enum).
 
 ### 8.2 Ideation
 
@@ -347,7 +349,7 @@ Covered by §7. Pipeline integration:
 
 - **PIPE-6.** When a build step begins, the harness shall assemble the agent's context exclusively through the context compiler (§12.1): the compiled task bundle, the relevant spec clauses, and the step's loadout — not raw whole-file dumps by default.
   *Obligation:* context audit test — for benchmark tasks, the assembled context contains no file content beyond the bundle manifest (override requires a recorded justification event).
-- **PIPE-7.** The build stage shall run obligations relevant to touched spec clauses after every agent tool-use batch that modified at least one file governed by a spec clause, not only at stage end.
+- **PIPE-7.** The build stage shall run obligations relevant to touched spec clauses after every tool-use batch (all tool calls within one assistant message) that modified at least one file governed by a spec clause, not only at stage end.
   *Obligation:* integration test — an edit violating an invariant is flagged before the stage completes.
 
 ### 8.6 Verify
@@ -379,10 +381,10 @@ After each session (or batch), the **postmortem compiler** runs:
 
 - **LOOP-1.** When the postmortem compiler proposes a diff, the proposal shall include machine-checkable links to the telemetry evidence that motivated it.
   *Obligation:* schema validation — proposals without resolvable evidence links are rejected pre-gate.
-- **LOOP-2.** The harness shall apply a loop-originated diff only after it passes the eval gate per EVAL-2 and EVAL-5, and shall record a changelog entry sufficient to revert it in one command.
-  *Obligation:* end-to-end test — apply then revert restores the exact prior lockfile hash.
-- **LOOP-3.** While a recently applied diff is within its monitoring window (default 14 days or 30 sessions, whichever is later), if live FPAR or TPAC regresses beyond the configured threshold (default: FPAR down ≥ 5 percentage points, or TPAC up ≥ 10%, at p < 0.05 paired against the pre-apply baseline) attributable to sessions using that diff, then the harness shall auto-revert the diff and mark it quarantined.
-  *Obligation:* simulation test — injected post-apply regression triggers revert within the window; quarantined diffs cannot be re-proposed without human release.
+- **LOOP-2.** The harness shall apply a loop-originated diff only after it passes the eval gate per EVAL-2 and EVAL-5, and shall record a changelog entry sufficient to revert it in one command. Revert produces a **new child lockfile** removing exactly the reverted proposal's diff while preserving diffs applied after it; the result equals the pre-apply lockfile hash only when no later diff intervened.
+  *Obligation:* end-to-end tests — single-diff apply/revert restores the exact prior lockfile hash; interleaved test (apply A, apply B, revert A) leaves B active and produces a new hash, not B's parent.
+- **LOOP-3.** While a recently applied diff is within its monitoring window (default 14 days or 30 sessions, whichever is later), if live FPAR or TPAC regresses beyond the configured threshold (default: FPAR down ≥ 5 percentage points, or TPAC up ≥ 10%, at p < 0.05, unpaired bootstrap on session-level metrics comparing sessions whose pinned lockfile contains the diff against the pre-apply baseline window), then the harness shall auto-revert and quarantine. When multiple monitored diffs are statistically indistinguishable as the cause, revert in reverse apply order, one at a time, re-measuring over a fresh session window between reverts — never all at once.
+  *Obligation:* simulation tests — injected post-apply regression triggers revert within the window; with two monitored diffs and one injected culprit, only the culprit ends quarantined; quarantined diffs cannot be re-proposed without human release.
 - **LOOP-7.** Sessions shall pin their lockfile hash at session start; applied diffs shall take effect only for sessions started after the apply, so that concurrent sessions remain attributable to exactly one configuration.
   *Obligation:* concurrency test — two overlapping sessions spanning an apply record different pinned hashes, and every telemetry event joins to exactly one lockfile.
 
@@ -489,8 +491,8 @@ Two attack surfaces the rest of the PRD creates and must therefore close: **exec
 
 ### 14.1 Execution Isolation
 
-- **SEC-1.** The eval runner shall execute benchmark tasks, divergence-test implementations, and counterfactual replays only inside isolated workspaces (git worktrees at minimum; container isolation for suites not authored by the operator), with no access to the operator's live repositories, credentials, or session state.
-  *Obligation:* escape test — a fixture task that attempts to read outside its workspace, read credential paths, or write to a live repo fails with an audited violation event.
+- **SEC-1.** The eval runner shall execute benchmark tasks, divergence-test implementations, and counterfactual replays only inside isolated workspaces. The full no-access guarantee (live repositories, credentials, session state) is enforced by the `container` profile, which is mandatory for anything not authored by the operator; the `worktree` profile (operator-authored work only) guarantees temp-HOME and workspace-cwd isolation, uses detached clones (not shared-object worktrees, which share refs/objects with the live repo), and is a convenience tier, not a security boundary.
+  *Obligation:* escape test under the `container` profile — a fixture task that attempts to read outside its workspace, read credential paths, or write to a live repo fails with an audited violation event; a `worktree`-profile test verifies temp-HOME isolation and that ref writes cannot reach the source repo.
 - **SEC-2.** While executing community-authored suites or packs under evaluation, the sandbox shall deny network access except an allowlist required by the task definition.
   *Obligation:* network test — a fixture task's non-allowlisted egress attempt is blocked and audited.
 - **SEC-3.** Every eval run shall record its sandbox profile (isolation level, network policy) in the run manifest (extends EVAL-4).
@@ -547,4 +549,4 @@ Walking skeleton first — the full loop, thin — then deepen. Each phase is re
 
 ## 17. Traceability of This Document
 
-This PRD's behavioral sections follow the format they mandate: EARS clauses with obligations (§6–§13). When the spec compiler exists (Phase 1), this document becomes its first excavation target: clauses TEL-* through OSS-* compile into the harness's own conformance suite, and this PRD enters the artifact store as the root of Kelson's own traceability DAG.
+This PRD's behavioral sections follow the format they mandate: EARS clauses with obligations (§6–§14). When the spec compiler exists (Phase 1), this document becomes its first excavation target: clauses TEL-* through SEC-* compile into the harness's own conformance suite, and this PRD enters the artifact store as the root of Kelson's own traceability DAG.

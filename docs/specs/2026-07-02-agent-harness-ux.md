@@ -54,15 +54,15 @@ Format: trigger → numbered touchpoints (**what the user does / sees**) → suc
 2. Confirmation → installs, runs a 60-second self-check (telemetry round-trip, sandbox availability), prints a "first steps" panel: greenfield → *run `/kelson:feature`*; brownfield → *run excavation (J2)*.
 3. First session shows the statusline segment — the only visible change to normal Claude Code use.
 
-**Success:** first `/kelson:feature` or excavation started within 30 minutes. **Edge:** no container runtime → sandbox degrades to worktree isolation with a warning badge and a link to the isolation doc (SEC-1's minimum still holds).
+**Success:** first `/kelson:feature` or excavation started within 30 minutes. **Edge:** no container runtime → operator-authored suites/replays still run under the `worktree` profile with a warning badge; anything requiring the `container` profile (community suites/packs) **refuses** with a diagnostic per EVP-2 — the security boundary never degrades.
 
 ### J1 — Greenfield feature (P1, UC1)
 
 1. `/kelson:feature "rate-limit the public API"` → ideation interview: one question at a time (PIPE-2), each with evidence of why it's unresolved.
 2. PRD section drafted → user reviews as a diff in-session; EARS clauses lint live (PIPE-3 compile rate shown as `18/19 clauses compile`, the failing one highlighted with its diagnostic).
 3. Spec compiles to obligations (SPEC-1); tier auto-assigned with the reason shown (`T1: two state variables, two event sources`). If tier ≥ T1, divergence testing runs — progress shown as a background job, not a spinner the user must watch.
-4. Build: statusline shows routed model/effort per step; substantive edit batches run obligations continuously (PIPE-7) — failures appear as compact inline panels naming the violated clause.
-5. Verify: structured report (PIPE-8) → `/kelson:accept` (or merge; acceptance then rides the correction window, TEL-7).
+4. Build: statusline shows routed model/effort per step; edit batches run obligations continuously (PIPE-7) — failures appear as compact inline panels naming the violated clause.
+5. Verify: structured report (PIPE-8) → `/kelson:accept` (immediate, terminal) or merge (rides the correction window) — TEL-7 and PRD §3.
 
 **Success:** accepted first pass; the session never asked the user to manage routing, budgets, or telemetry. **Edges:** divergence found → the two probe behaviors rendered side-by-side, spec goes back with mandatory clauses attached (SPEC-5); budget pause → §5.1.
 

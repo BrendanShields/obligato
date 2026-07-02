@@ -52,7 +52,7 @@ erDiagram
         string clause_id PK "spec logical_id + clause key (e.g. TEL-3)"
         string spec_id FK
         string ears_type "ubiquitous|event|state|unwanted|optional"
-        string kind "requirement|invariant|precondition|postcondition|domain_def"
+        string kind "requirement|invariant|domain_def (pre/postconditions are fields on requirement clauses, Kelspec DSL 2.3)"
         string compile_status "compiled|failed|unverifiable_signed"
         string tier
         string authority
@@ -82,7 +82,7 @@ erDiagram
     }
 ```
 
-Notes: clauses are addressable sub-artifacts because traceability is clause-level (ART-1/2). `TRACE_LINK` freezes the upstream hash at link time; drift detection (ART-2/3) is the comparison `upstream_hash_at_link ≠ current content_hash`, run per session and on activation. Files hold the authored content; these tables are the rebuildable index (§1).
+Notes: clauses are addressable sub-artifacts because traceability is clause-level (ART-1/2). `TRACE_LINK` freezes the upstream hash at link time; drift detection (ART-2/3) starts from every link where `upstream_hash_at_link ≠ current content_hash` and flags that link's **entire transitive downstream set** (recursive CTE, ADR-0002), run per session and on activation. Files hold the authored content; these tables are the rebuildable index (§1).
 
 ## 4. Domain: Packs & Change Control
 
@@ -328,15 +328,21 @@ erDiagram
         string id PK
         string source
         int contract_schema_version "PIPE-10"
+        string kind "deploy_outcome|incident|slo_breach|error_cluster|user_feedback|custom (SIG-1)"
         string severity
+        string summary "triage line, max 500 chars"
         json evidence_links
         json affected_artifact_ids
+        string dedupe_key "nullable; 24h collapse window"
+        int occurrence_count "increments on dedupe collapse"
+        json payload "full original document, unknown fields preserved (SIG-1)"
         string triage "backlog|dismissed|linked"
         string received_at
     }
     IDEA {
         string id PK
         string title
+        string priority "now|next|later|dismissed (PIPE-1)"
         string priority_rationale "agent-drafted, human-editable (PIPE-1)"
         json signal_ids
         string state "backlog|active|done|dropped"
@@ -369,5 +375,5 @@ Exporter is OTLP, disabled unless an endpoint is configured; all attributes pass
 
 ## 10. Open Questions
 
-1. Repo snapshot mechanism for `snapshot_ref` (git bundle vs. content-addressed object store) — decided in the implementation plan alongside PRD open question 3 (replay fidelity).
+1. ~~Repo snapshot mechanism for `snapshot_ref`~~ — resolved: git bundles stored content-addressed under `~/.kelson/snapshots/` ([Eval procedure spec](./2026-07-02-eval-procedure.md) §4).
 2. Whether `ROUTING_WEIGHT` needs per-repo partitioning (same policy, different repos) — defer until telemetry shows repo-level divergence.

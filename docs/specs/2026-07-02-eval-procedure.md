@@ -81,15 +81,19 @@ Given paired per-task results (A = with candidate, B = without):
 
 "Improved" = 95% CI for the difference excludes zero in the good direction.
 
-- **EVP-4.** The gate implementation shall reproduce this decision table exactly; verdicts shall include both deltas with their CIs, n, α, and B.
+### 5.1 Replay Decision Rule (normative for EVAL-5 — distinct from the benchmark gate)
+
+Replays pair each replayed task against **its own original recorded outcome** (not an A/B side): same checks, same budget ceiling. Apply the §5 non-inferiority margins to the paired differences with a replay-specific minimum **n ≥ 10 valid replays** (matching EVAL-5's default sample; benchmark n ≥ 20 does not apply here). Verdict `underpowered` (fewer than 10 valid, post-§4-validity) or `hurts` → the diff is not eligible for auto-apply; replay is a veto stage, so `no_effect` **passes** (the benchmark stage already established improvement — replay only has to prove no real-work regression).
+
+- **EVP-4.** The gate implementation shall reproduce this decision table exactly, and the §5.1 replay rule with its distinct minimum and veto semantics; verdicts shall include both deltas with their CIs, n, α, and B.
   *Obligation:* statistical unit tests with synthetic distributions per table row (extends EVAL-2's ±2% error-rate obligation); property test — verdict is a pure function of the paired-results multiset (order-invariant).
 
 ## 6. Flakiness Quarantine (normative for EVAL-3)
 
-A task is **flaky** when, across K = 5 runs under one identical config, pass results are mixed with minority count ≥ 2 (i.e., pass rate in [0.4, 0.6] band) — outcome variance that can't be attributed to the config. Quarantine is automatic, logged, and sticky until `kelson eval suite promote` (human) re-admits it.
+A task's flakiness window is its most recent **K = 5 results per (task, config lockfile hash)**, pooled across suite runs — sides are evaluated independently (never mixed), and a single run contributes `repeats` results (default 3) to the window. A task is **flaky** when a full window holds mixed results with minority count ≥ 2. Config keys: `eval.flaky.k` (5), `eval.flaky.min_minority` (2). Quarantine is automatic, logged, and sticky until `kelson eval suite promote` (human) re-admits it.
 
-- **EVP-5.** The flakiness detector shall evaluate the K-run rule on every suite run and shall move matching tasks to quarantine before gate math executes.
-  *Obligation:* deterministic-flaky fixture (seeded 50% pass) quarantined within one suite run; stable fixtures never quarantined across 100 runs.
+- **EVP-5.** The flakiness detector shall evaluate the window rule on every suite run, pooling per (task, config) across runs, and shall move matching tasks to quarantine before gate math executes.
+  *Obligation:* deterministic-flaky fixture (seeded 50% pass) quarantined as soon as its window fills (the second suite run at default repeats); stable fixtures never quarantined across 100 runs; sides never pool together.
 
 ## 7. Ledger Entry Format (`ledger/<pack>/<version>.json` in the registry)
 

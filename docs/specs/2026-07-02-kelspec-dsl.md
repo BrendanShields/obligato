@@ -28,6 +28,8 @@ authority: authored         # authored|inferred|confirmed (SPEC-7)
 state:                      # persistent state variables (drives SPEC-6 tier escalation)
   - name: window_counts
     mutated_by: [request_received, window_rolled]
+events: [request_received, window_rolled]   # declared events; the union of this list
+                                            # and all mutated_by entries is the event set
 domains_of_concern: []      # e.g. [money, security, data_loss] — any entry forces T2
 ```
 
@@ -53,7 +55,7 @@ max: 100000
 kind: clause
 id: RL-1                    # <FAMILY>-<n>; family unique per component; IDs immutable
 ears: event                 # ubiquitous|event|state|unwanted|optional
-trigger: request_received   # required for event/unwanted; must name a declared event
+trigger: request_received   # required for event/unwanted; must be in the component's event set
 text: >
   When a request arrives and the caller's window count equals the limit,
   the rate limiter shall reject the request with retry_after set to the
@@ -64,6 +66,10 @@ check: |                              # TypeScript predicate — the executable 
   (ctx) => ctx.when(ctx.count === ctx.rate)
              .expect(ctx.response.status === 429
                   && ctx.response.retry_after === ctx.windowRemainder)
+pre: null                   # optional TypeScript predicate over inputs/state — compiled as a
+                            # generator filter + runtime guard (PRD §7.1 preconditions)
+post: null                  # optional predicate over (inputs, state, state'); compiled as an
+                            # assertion after the triggering event (PRD §7.1 postconditions)
 nondeterministic: []        # observable fields excluded from divergence comparison
 unverifiable: null          # or { signed_by: <human>, reason: <text> } per SPEC-3
 ```
