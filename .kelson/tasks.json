@@ -11,9 +11,9 @@
     {
       "id": "P0-2",
       "title": "packages/schemas \u2014 Zod schemas for Phase 0 entities + JSON Schema export",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-02T03:05:05Z"
     },
     {
       "id": "P0-3",
@@ -55,7 +55,8 @@
         "PACK-1",
         "PACK-4"
       ],
-      "completed_at": null
+      "completed_at": null,
+      "notes": "audit P0-2: kernel_compat is min(1) string in schemas \u2014 loader must validate as semver range (pack-format \u00a71)"
     },
     {
       "id": "P0-7",

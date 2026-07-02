@@ -2,3 +2,4 @@
 .kelson/signals/processed/
 node_modules/
 .kelson/env.json
+packages/schemas/json-schema/
