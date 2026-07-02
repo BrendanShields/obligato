@@ -639,9 +639,9 @@
     {
       "id": "UI-6",
       "title": "Verify: obligation tests green, clause-auditor PASS, commit",
-      "state": "in_progress",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-02T15:05:31Z"
     }
   ]
 }
