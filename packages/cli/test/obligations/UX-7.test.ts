@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
+import { createTestRenderer } from "@opentui/core/testing";
+import { buildLauncher } from "../../src/launcher.ts";
+import { WIZARDS } from "../../src/wizards.ts";
 
 const CLI = join(import.meta.dir, "..", "..", "src", "index.ts");
 
@@ -27,4 +30,18 @@ describe("UX-7: bare kelson on a TTY opens the launcher; non-TTY prints plain he
     // no interactive prompting: no cursor-control or alt-screen sequences
     expect(out).not.toMatch(/\x1b\[\?1049|\x1b\[\?25l|\x1b\[2J/);
   }, 15_000);
+
+  it("launcher menu lays out one row per command, not a collapsed bar", async () => {
+    const { renderer, renderOnce } = await createTestRenderer({
+      width: 80,
+      height: 24,
+    });
+    const { menu } = buildLauncher(renderer, () => {});
+    await renderOnce();
+    expect(menu.options.length).toBe(WIZARDS.length);
+    // revert-check: drop `flexGrow: 1` on the menu in launcher.ts → the select
+    // lays out to height 1 in the flex column (measured: 1 vs 23), clipping
+    // every row, and this assertion fails.
+    expect(menu.height).toBeGreaterThanOrEqual(menu.options.length);
+  });
 });

@@ -1542,6 +1542,20 @@
       "fix_commit": "b680fae",
       "status": "fixed",
       "id": "F-109"
+    },
+    {
+      "task": "UI-6",
+      "source": "user",
+      "severity": "violation",
+      "clauses": [
+        "UX-7"
+      ],
+      "summary": "launcher SelectRenderable shipped with no flexGrow/height — laid out to height 1 in the flex column, clipping every command row (user saw a blank menu bar). The interactive TTY render was never exercised; only the pure model and non-TTY path were tested.",
+      "root_cause": "test_blindspot",
+      "fix": "flexGrow:1 on the menu; buildLauncher extracted and driven by a headless test-renderer asserting menu.height >= option count (measured 1 buggy vs 23 fixed)",
+      "id": "F-110",
+      "status": "fixed",
+      "fix_commit": "58552f3"
     }
   ]
 }

@@ -147,8 +147,8 @@ A single statusline badge (`degraded: telemetry`) and one line at session start.
   *Obligation:* registry test — every actionable state enum member maps to a command string; status renderers fail closed if unmapped.
 - **UX-6.** The onboarding flow (J0) shall complete on a clean machine, through first self-check, in under 10 minutes unattended, and shall change nothing before explicit confirmation.
   *Obligation:* the OSS-1 clean-machine CI test, extended with a timer assertion and a pre-confirmation filesystem-diff assertion (empty).
-- **UX-7.** When `kelson` is invoked with no arguments on an interactive terminal, it shall open the launcher menu; when stdin or stdout is not a TTY, it shall print plain help and exit 0 without prompting.
-  *Obligation:* integration test — `kelson` spawned with piped stdio prints help, exits 0, emits no prompt escape sequences, and terminates with no input (timeout-guarded).
+- **UX-7.** When `kelson` is invoked with no arguments on an interactive terminal, it shall open the launcher menu with one selectable row per registered command (a collapsed or blank menu is a failure to open); when stdin or stdout is not a TTY, it shall print plain help and exit 0 without prompting.
+  *Obligation:* integration test — `kelson` spawned with piped stdio prints help, exits 0, emits no prompt escape sequences, and terminates with no input (timeout-guarded); plus a headless render (test renderer) asserting the menu's laid-out height is at least its option count, so a height-collapsed menu (F-110: the select shipped with no `flexGrow`, laid out to height 1, clipping every row) fails.
 - **UX-8.** Every launcher wizard shall dispatch its terminal action through the same entry function as the typed CLI command, and a cancelled wizard shall execute nothing.
   *Obligation:* unit test — wizard completion is asserted (by identity) to call the shared dispatch table entry the typed command uses; a cancel fixture asserts zero dispatch calls and clean exit.
 - **UX-9.** All rendered CLI output shall route through the §7 component layer.
