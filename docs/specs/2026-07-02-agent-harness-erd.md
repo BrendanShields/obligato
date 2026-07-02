@@ -71,6 +71,7 @@ erDiagram
         string upstream_id FK
         string downstream_id FK
         string upstream_hash_at_link "staleness = this != current upstream hash"
+        string downstream_hash_at_link "code-side drift baseline (ART-5); frozen at link time like its upstream twin"
         string created_at
     }
     DRIFT_EVENT {
@@ -81,11 +82,13 @@ erDiagram
         string detected_at
         string resolution "open|repaired|overridden|promoted"
         string resolved_at
+        string resolved_by "null until resolved; ART-4 override attribution"
+        string resolution_reason "null until resolved; ART-4 override attribution"
         int schema_version
     }
 ```
 
-Notes: clauses are addressable sub-artifacts because traceability is clause-level (ART-1/2). `TRACE_LINK` freezes the upstream hash at link time; re-registering a downstream artifact **replaces** its trace links (hashes re-freeze at the new declaration) — trace_link is replace-on-register, not append-only; drift detection (ART-2/3) starts from every link where `upstream_hash_at_link ≠ current content_hash` and flags that link's **entire transitive downstream set** (recursive CTE, ADR-0002), run per session and on activation. Files hold the authored content; these tables are the rebuildable index (§1).
+Notes: clauses are addressable sub-artifacts because traceability is clause-level (ART-1/2). `TRACE_LINK` freezes the upstream hash at link time; re-registering a downstream artifact **replaces** its trace links (hashes re-freeze at the new declaration) — trace_link is replace-on-register, not append-only; drift detection (ART-2/3) starts from every link where `upstream_hash_at_link ≠ current content_hash` and flags that link's **entire transitive downstream set** (recursive CTE, ADR-0002), run per session and on activation; code-side drift (ART-3/5) compares the downstream artifact's on-disk hash against `downstream_hash_at_link`, never against the rebuildable index's current hash. Drift events anchor on the link's **downstream** artifact in both directions; both-changed inserts two rows; an open `(repo, artifact_id, direction)` suppresses re-insert (ART-5). Files hold the authored content; these tables are the rebuildable index (§1).
 
 ## 4. Domain: Packs & Change Control
 

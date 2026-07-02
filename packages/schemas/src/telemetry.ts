@@ -87,6 +87,42 @@ export const InterventionEvent = z.object({
   schema_version: SchemaVersion,
 });
 
+export const CheckStatus = z.enum(["passed", "failed", "skipped"]);
+export const FailureClass = z.enum([
+  "code_defect",
+  "spec_defect",
+  "obligation_defect",
+]);
+
+// PIPE-8: one result object per check class; budget conformance is emitted as
+// "skipped" until routing budgets exist (Phase 3).
+export const VerificationReport = z.object({
+  id: Ulid,
+  task_id: z.string().min(1),
+  results: z.object({
+    obligations: z.array(
+      z.object({
+        clause_id: z.string().min(1),
+        status: CheckStatus,
+        detail: z.string().nullable(),
+      }),
+    ),
+    tests: z.object({ status: CheckStatus, detail: z.string().nullable() }),
+    drift: z.object({
+      status: CheckStatus,
+      open_events: z.number().int().nonnegative(),
+    }),
+    budget: z.object({ status: CheckStatus, detail: z.string().nullable() }),
+  }),
+  failure_class: FailureClass.nullable(),
+  at: IsoUtc,
+  schema_version: SchemaVersion,
+});
+
+export type CheckStatus = z.infer<typeof CheckStatus>;
+export type FailureClass = z.infer<typeof FailureClass>;
+export type VerificationReport = z.infer<typeof VerificationReport>;
+
 export type Session = z.infer<typeof Session>;
 export type Task = z.infer<typeof Task>;
 export type StepEvent = z.infer<typeof StepEvent>;

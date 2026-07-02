@@ -10,14 +10,14 @@
     },
     {
       "id": "P0-2",
-      "title": "packages/schemas \u2014 Zod schemas for Phase 0 entities + JSON Schema export",
+      "title": "packages/schemas — Zod schemas for Phase 0 entities + JSON Schema export",
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-02T03:05:05Z"
     },
     {
       "id": "P0-3",
-      "title": "Kernel storage \u2014 bun:sqlite bootstrap, forward-only migrations",
+      "title": "Kernel storage — bun:sqlite bootstrap, forward-only migrations",
       "state": "completed",
       "clauses": [
         "OSS-6"
@@ -26,18 +26,18 @@
     },
     {
       "id": "P0-4",
-      "title": "Artifact store \u2014 hashing, trace links, staleness, index rebuild",
+      "title": "Artifact store — hashing, trace links, staleness, index rebuild",
       "state": "completed",
       "clauses": [
         "ART-1",
         "ART-2"
       ],
       "completed_at": "2026-07-02T04:59:09Z",
-      "notes": "full rebuild-from-files deferred to Phase 1 (needs DSL-6 manifest); rehashFromDisk ships now \u2014 recorded in plan doc"
+      "notes": "full rebuild-from-files deferred to Phase 1 (needs DSL-6 manifest); rehashFromDisk ships now — recorded in plan doc"
     },
     {
       "id": "P0-5",
-      "title": "Telemetry capture \u2014 ingestion, local-only, fault tolerance, task lifecycle",
+      "title": "Telemetry capture — ingestion, local-only, fault tolerance, task lifecycle",
       "state": "completed",
       "clauses": [
         "TEL-1",
@@ -62,7 +62,7 @@
     },
     {
       "id": "P0-7",
-      "title": "cc-plugin shell \u2014 hooks, /kelson:status, statusline stub",
+      "title": "cc-plugin shell — hooks, /kelson:status, statusline stub",
       "state": "completed",
       "clauses": [
         "TEL-1",
@@ -73,6 +73,99 @@
       ],
       "completed_at": "2026-07-02T07:16:12Z",
       "notes": "Phase 0 exit criterion verified against this session's real transcript (327 steps, 4 token classes exact vs independent dedup-by-id truth). Stubs deferred to Phase 3 recorded in F-034; KERN-1 fault matrix in F-033."
+    },
+    {
+      "id": "P1-1",
+      "title": "schemas — kelspec block grammar (component/domain/clause/invariant), manifest, verification report",
+      "state": "completed",
+      "clauses": [
+        "DSL-1",
+        "PIPE-8"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z"
+    },
+    {
+      "id": "P1-2",
+      "title": "kernel — kelspec parser: markdown fences -> validated blocks, per-block hashing",
+      "state": "completed",
+      "clauses": [
+        "DSL-1"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z"
+    },
+    {
+      "id": "P1-3",
+      "title": "kernel — domain -> fast-check generator derivation",
+      "state": "completed",
+      "clauses": [
+        "DSL-2",
+        "SPEC-2"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z"
+    },
+    {
+      "id": "P1-4",
+      "title": "kernel — clause compiler: scope check, property wrapping, vague rejection, unverifiable ratio",
+      "state": "completed",
+      "clauses": [
+        "DSL-3",
+        "DSL-4",
+        "SPEC-1",
+        "SPEC-3"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z",
+      "notes": "invariant checks are not scope-analyzed in v1 (DSL-3 governs clause checks only); pre/post compile as guard/assertion with harness-supplied state/state_prime"
+    },
+    {
+      "id": "P1-5",
+      "title": "kernel — invariants: model-file requirement (structural), probe registry",
+      "state": "completed",
+      "clauses": [
+        "DSL-5"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z",
+      "notes": "structural half only: model file must exist + probe registry; TLC-in-CI deferred to Phase 4 (it.todo in DSL-5.test.ts)"
+    },
+    {
+      "id": "P1-6",
+      "title": "kernel — manifest emission + clause-level artifact ingestion",
+      "state": "completed",
+      "clauses": [
+        "DSL-6"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z"
+    },
+    {
+      "id": "P1-7",
+      "title": "kernel — drift both directions + build gate; migration 0002",
+      "state": "completed",
+      "clauses": [
+        "ART-3",
+        "ART-4"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z",
+      "notes": "ART-5 added via divergence (F-040): baselines frozen per-link (downstream_hash_at_link, migration 0002); pre-0002 links cannot report code_under_spec until re-registered"
+    },
+    {
+      "id": "P1-8",
+      "title": "kernel — verify runner: obligations + repo tests + drift + report (budget check deferred to Phase 3)",
+      "state": "completed",
+      "clauses": [
+        "PIPE-8"
+      ],
+      "completed_at": "2026-07-02T08:38:52Z",
+      "notes": "budget check class emits skipped until Phase 3 routing; runTests injectable; PIPE-9 failure_class stays null; obligation selection is caller-supplied — manifest-driven discovery of touched clauses deferred until pipeline stages exist (F-044)"
+    },
+    {
+      "id": "P1-9",
+      "title": "rate-limiter normative fixture + Phase 1 exit criterion verification",
+      "state": "completed",
+      "clauses": [
+        "DSL-1",
+        "SPEC-1"
+      ],
+      "completed_at": "2026-07-02T08:31:33Z",
+      "notes": "exit criterion verified independently: vague-clause counts by regex over fixtures matched compiler diagnostics 3/3; invariant violation hand-computed (12>10 fails, 9<=10 passes)"
     }
   ]
 }

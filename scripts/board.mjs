@@ -37,8 +37,14 @@ if (mode === "task") {
   if (!TASK_STATES.includes(state))
     die(`state must be one of ${TASK_STATES.join("|")}`);
   const d = load(TASKS);
-  const task = d.tasks.find((t) => t.id === id);
-  if (!task) die(`unknown task ${id} (have: ${d.tasks.map((t) => t.id).join(", ")})`);
+  let task = d.tasks.find((t) => t.id === id);
+  if (!task) {
+    const titleIdx = rest.indexOf("--title");
+    if (titleIdx === -1)
+      die(`unknown task ${id} (have: ${d.tasks.map((t) => t.id).join(", ")}); pass --title to create`);
+    task = { id, title: rest[titleIdx + 1], state, clauses: [], completed_at: null };
+    d.tasks.push(task);
+  }
   task.state = state;
   task.completed_at =
     state === "completed"

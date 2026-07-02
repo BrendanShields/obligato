@@ -42,6 +42,9 @@ export const TraceLink = z.object({
   upstream_id: z.string().min(1),
   downstream_id: z.string().min(1),
   upstream_hash_at_link: Sha256,
+  // ART-5: code-side drift baseline, frozen at link time; null only on rows
+  // created before migration 0002.
+  downstream_hash_at_link: Sha256.nullable(),
   created_at: IsoUtc,
 });
 
@@ -53,6 +56,9 @@ export const DriftEvent = z.object({
   detected_at: IsoUtc,
   resolution: DriftResolution,
   resolved_at: IsoUtc.nullable(),
+  // ART-4: override attribution; null until resolved.
+  resolved_by: z.string().min(1).nullable(),
+  resolution_reason: z.string().min(1).nullable(),
   schema_version: SchemaVersion,
 });
 

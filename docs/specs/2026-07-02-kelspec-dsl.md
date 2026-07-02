@@ -60,12 +60,12 @@ text: >
   When a request arrives and the caller's window count equals the limit,
   the rate limiter shall reject the request with retry_after set to the
   window remainder.
-inputs:  { rate: RequestRate }        # named domain refs usable in `check`
-observe: [response.status, response.retry_after, window_counts]  # observable surface
+inputs:  { rate: RequestRate, count: WindowCount }   # named domain refs usable in `check`
+observe: [response.status, response.retry_after, window_remainder]  # observable surface
 check: |                              # TypeScript predicate — the executable obligation
   (ctx) => ctx.when(ctx.count === ctx.rate)
              .expect(ctx.response.status === 429
-                  && ctx.response.retry_after === ctx.windowRemainder)
+                  && ctx.response.retry_after === ctx.window_remainder)
 pre: null                   # optional TypeScript predicate over inputs/state — compiled as a
                             # generator filter + runtime guard (PRD §7.1 preconditions)
 post: null                  # optional predicate over (inputs, state, state'); compiled as an
@@ -88,8 +88,9 @@ kind: invariant
 id: RL-INV-1
 text: The sum of window counts never exceeds limit × active_callers.
 over: [window_counts]       # state variables quantified over
-check: |
-  (s) => sum(s.window_counts.values()) <= s.limit * s.window_counts.size
+check: |                    # self-contained JS — no ambient helpers exist at probe runtime
+  (s) => [...s.window_counts.values()].reduce((a, b) => a + b, 0)
+           <= s.limit * s.window_counts.size
 model: tla/RateLimiter.tla  # required at T1+ — the formal model file (SPEC-6 rigor ladder)
 ```
 
@@ -105,7 +106,7 @@ Clause IDs are the join key everywhere: obligation test files (`test/obligations
 
 ## 4. Complete Example
 
-`docs/kelspec/rate-limiter.spec.md` in a target repo would contain the §2 blocks above plus narrative. The compiler output: 1 component, 1 domain, 1 clause → 1 fast-check property, 1 invariant → 1 runtime probe + 1 TLA+ CI obligation, and a manifest with 4 hashed entries. This example is normative test fixture #1 for the Phase 1 compiler (`packages/kernel/test/fixtures/DSL/rate-limiter.spec.md`).
+`docs/kelspec/rate-limiter.spec.md` in a target repo would contain the §2 blocks above plus narrative. The compiler output: 1 component, 2 domains, 1 clause → 1 fast-check property, 1 invariant → 1 runtime probe + 1 TLA+ CI obligation, and a manifest with 2 hashed entries (one per clause/invariant ID, per DSL-6). This example is normative test fixture #1 for the Phase 1 compiler (`packages/kernel/test/fixtures/DSL/rate-limiter.spec.md`).
 
 ## 5. What Kelspec Does Not Do (v1)
 

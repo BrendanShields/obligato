@@ -8,6 +8,9 @@ import { readFileSync } from 'node:fs'
 const input = JSON.parse(readFileSync(0, 'utf8'))
 const p = input.tool_input?.file_path ?? ''
 if (!/\.spec\.md$/.test(p)) process.exit(0)
+// Rejection-path corpora (SPEC-1 golden set) are deliberately vague — the
+// compiler's own obligation tests assert they fail; the lint must not.
+if (/test\/fixtures\//.test(p)) process.exit(0)
 
 const KINDS = ['component', 'domain', 'clause', 'invariant']
 const EARS = ['ubiquitous', 'event', 'state', 'unwanted', 'optional']
