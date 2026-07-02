@@ -28,6 +28,7 @@ Open-source harness covering feedback → ideation → planning → spec → bui
 - ULIDs for events; SHA-256 content hashes for artifacts; money as integer micro-USD; UTC ISO-8601 strings; append-only event tables (no UPDATE).
 - Tests: `bun test` + fast-check. TUI: OpenTUI. Lint/format: Biome. Obligation tests live at `packages/<pkg>/test/obligations/<CLAUSE-ID>.test.ts` — see the obligation-test skill.
 - Comments: only constraints the code can't express. No narration, no doc-comments on internals.
+- **Task lists are JSON, always.** Multi-step work is tracked in `.kelson/tasks.json` (committed): `{id, title, state: open|in_progress|completed, clauses[], completed_at}` — mirror of the TEL-7 lifecycle, simplified until Phase 0 builds the real store. Mark tasks `in_progress` when started and `completed` (with timestamp) the moment they finish — never leave state stale, never use markdown checklists for tracking.
 
 ## Workflow
 

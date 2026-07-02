@@ -17,3 +17,7 @@ Kelson's pipeline is ideation → planning → spec → build → verify, with t
 6. **Close** — commit spec+code+tests together referencing clause IDs; if the session had friction, offer the **postmortem** skill.
 
 State transitions out loud, one line each: `stage: planning → spec (2 clauses added: RTR-6, RTR-7)`. If the user redirects mid-pipeline, say which stage you're re-entering — never silently skip back.
+
+## Task tracking
+
+At pipeline start, add the feature's stages/tasks to `.kelson/tasks.json` (the CLAUDE.md JSON-task convention); set each `in_progress` on entry and `completed` with a timestamp on exit. The JSON file is the tracker of record — no markdown checklists.
