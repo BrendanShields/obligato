@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 // TEL-2's strongest form: the kernel and schemas packages contain no network
 // path at all — nothing to opt out of. The full-session network-recorder
-// integration test arrives with the cc-plugin (P0-7).
+// integration test lives in packages/cc-plugin/test/obligations/TEL-2.test.ts.
 const NETWORK_PATTERNS = [
   /from\s+["'](node:)?(https?|http2|net|tls|dgram|dns)["']/,
   /require\(["'](node:)?(https?|http2|net|tls|dgram|dns)["']\)/,
@@ -12,7 +12,9 @@ const NETWORK_PATTERNS = [
   /\bfetch\s*\(/,
   /new\s+WebSocket\b/,
   /XMLHttpRequest|sendBeacon/,
-  /Bun\.(connect|listen|serve|udpSocket)\b/,
+  /Bun\.(connect|listen|serve|udpSocket|spawn)\b/,
+  /from\s+["'](node:)?child_process["']/,
+  /["']bun:ffi["']/,
 ];
 
 const sourceFiles = (dir: string): string[] =>
@@ -34,6 +36,4 @@ describe("TEL-2: telemetry has no off-machine path unless explicitly opted in", 
       for (const pattern of NETWORK_PATTERNS) expect(src).not.toMatch(pattern);
     }
   });
-
-  it.todo("full-session network recorder observes zero outbound telemetry calls with opt-in unset (P0-7, cc-plugin)", () => {});
 });

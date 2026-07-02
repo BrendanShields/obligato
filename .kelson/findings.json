@@ -419,6 +419,118 @@
       "fix": "obligation amended: 'every content field mutation (parent_hash excluded)'",
       "fix_commit": "P0-6",
       "status": "fixed"
+    },
+    {
+      "id": "F-031",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "TEL-1"
+      ],
+      "summary": "step boundary counted JSONL lines, not unique message ids \u2014 real transcripts emitted ~1.9 records/step and over-counted input tokens ~3x; manual exit check compared the parser to itself",
+      "root_cause": "design_bug",
+      "fix": "TEL-1 amended to pin the boundary (unique message.id, last usage wins); parser dedupes; exit criterion re-run against independent dedup-by-id truth (327 steps, all four classes exact)",
+      "fix_commit": "P0-7",
+      "status": "fixed"
+    },
+    {
+      "id": "F-032",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "TEL-1"
+      ],
+      "summary": "replacement obligation test was weaker than the removed kernel it.todo: arb had no message ids or duplicate lines, structurally unable to catch the over-count",
+      "root_cause": "test_blindspot",
+      "fix": "arb generates duplicate-id line groups with decoy usage (last wins); real-shape regression fixture added",
+      "fix_commit": "P0-7",
+      "status": "fixed"
+    },
+    {
+      "id": "F-033",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "KERN-1"
+      ],
+      "summary": "hook module-level imports sat outside try/catch \u2014 fresh clone before bun install would fail loud; no KERN-1 fault-injection test exists in any package",
+      "root_cause": "design_bug",
+      "fix": "dynamic imports moved inside try in all three hooks; KERN-1 fault-injection matrix deferred to Phase 0.5 (this row records it)",
+      "fix_commit": "P0-7",
+      "status": "fixed"
+    },
+    {
+      "id": "F-034",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-1",
+        "TEL-7"
+      ],
+      "summary": "Phase 0 stubs existed only as code comments: sdlc_step=build, effort=medium, cost=0 (indistinguishable from measured zero), one never-transitioned open task per session inflating counts",
+      "root_cause": "unrecorded_deferral",
+      "fix": "recorded here: stage/effort attribution and unit prices land Phase 3; real task linkage lands with the CLI task store",
+      "fix_commit": "P0-7",
+      "status": "deferred:Phase-3"
+    },
+    {
+      "id": "F-035",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "KERN-1",
+        "TEL-5"
+      ],
+      "summary": "session-end with a marker pointing at an unknown session id silently lost the transcript and leaked the marker file",
+      "root_cause": "design_bug",
+      "fix": "falls back to beginSession when the marker id is unknown; marker removed unconditionally",
+      "fix_commit": "P0-7",
+      "status": "fixed"
+    },
+    {
+      "id": "F-036",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-1"
+      ],
+      "summary": "parse PBT summed only in/out; combined four-class total was invariant under a cache_read/cache_write swap in the parser",
+      "root_cause": "test_blindspot",
+      "fix": "per-class sum assertions in both the parse PBT and the ingestion test",
+      "fix_commit": "P0-7",
+      "status": "fixed"
+    },
+    {
+      "id": "F-037",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "TEL-2"
+      ],
+      "summary": "neither the runtime recorder nor the static scan covered child processes or bun:ffi as network escape hatches",
+      "root_cause": "test_blindspot",
+      "fix": "Bun.spawn, child_process, bun:ffi patterns added to both static scans",
+      "fix_commit": "P0-7",
+      "status": "fixed"
+    },
+    {
+      "id": "F-038",
+      "task": "P0-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "task board listed only TEL-1/TEL-2 for P0-7 though the diff also implements against ART-2, KERN-1, TEL-5",
+      "root_cause": "process_gap",
+      "fix": "clauses added to the task row and commit message",
+      "fix_commit": "P0-7",
+      "status": "fixed"
     }
   ]
 }

@@ -177,8 +177,8 @@ Turns raw session transcripts and tool logs into a structured event stream.
 
 **Event schema (minimum):** session id, task id, SDLC step, timestamp, model + effort used, packs active (lockfile hash), tokens in/out per step, retries, tool errors, human interventions (classified: correction / clarification / approval), diff churn (lines added then removed within the session), test outcomes, spec-drift events.
 
-- **TEL-1.** When a session ends, the telemetry component shall emit a structured event record for every SDLC step executed in that session.
-  *Obligation:* PBT — for any generated synthetic transcript containing N step boundaries, parsing yields exactly N step records with token counts that sum to the transcript total.
+- **TEL-1.** When a session ends, the telemetry component shall emit a structured event record for every SDLC step executed in that session. In a Claude Code transcript, a step boundary is a **unique assistant message id** — a transcript writes one JSONL line per content block, so lines sharing a `message.id` are one step, and the last-seen usage for that id is authoritative.
+  *Obligation:* PBT — for any generated synthetic transcript containing N step boundaries (unique message ids, each possibly spanning several duplicate-id lines), parsing yields exactly N step records whose per-class token counts sum to the transcript total under the dedup rule.
 - **TEL-2.** The telemetry component shall store all events locally by default, and shall transmit no event off-machine unless the operator has explicitly opted in.
   *Obligation:* integration test — with opt-in unset, a network-recording harness observes zero outbound telemetry calls across a full session.
 - **TEL-3.** Where the operator has opted into sharing, the telemetry component shall strip source code content, file paths, and prompt text from shared events, sharing only numeric/categorical fields.

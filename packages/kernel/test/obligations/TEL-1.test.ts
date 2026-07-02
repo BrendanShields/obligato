@@ -28,9 +28,9 @@ const transcriptArb = fc.array(
   { minLength: 1, maxLength: 25 },
 );
 
-// TEL-1's trigger ("when a session ends... shall emit") and real transcript
-// parsing are cc-plugin behavior (P0-7); this file discharges the ingestion
-// half of the obligation and records the rest below.
+// This file discharges the ingestion half of the obligation; the trigger
+// ("when a session ends... shall emit") and real transcript parsing are
+// discharged in packages/cc-plugin/test/obligations/TEL-1.test.ts.
 describe("TEL-1: ingestion yields exactly N step records with token counts summing to the transcript total", () => {
   it("holds for any synthetic transcript", () => {
     fc.assert(
@@ -88,6 +88,4 @@ describe("TEL-1: ingestion yields exactly N step records with token counts summi
     ).toThrow();
     db.close();
   });
-
-  it.todo("real Claude Code transcript parses and emits on session end (P0-7, cc-plugin)", () => {});
 });

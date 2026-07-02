@@ -63,9 +63,16 @@
     {
       "id": "P0-7",
       "title": "cc-plugin shell \u2014 hooks, /kelson:status, statusline stub",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "TEL-1",
+        "TEL-2",
+        "TEL-5",
+        "ART-2",
+        "KERN-1"
+      ],
+      "completed_at": "2026-07-02T07:16:12Z",
+      "notes": "Phase 0 exit criterion verified against this session's real transcript (327 steps, 4 token classes exact vs independent dedup-by-id truth). Stubs deferred to Phase 3 recorded in F-034; KERN-1 fault matrix in F-033."
     }
   ]
 }
