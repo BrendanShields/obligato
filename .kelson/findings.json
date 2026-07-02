@@ -9,6 +9,7 @@
     "design_bug": "reachable incorrect behavior within a single component",
     "env_skew": "local/CI/platform environment mismatch",
     "memory_authored_config": "version or config written from memory instead of registry/tool",
+    "unverified_claim": "a claim about a repo file, command, or config asserted without reading the source of truth",
     "process_gap": "missing workflow mechanism (tracking, single entry point)"
   },
   "findings": [

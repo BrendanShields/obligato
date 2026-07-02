@@ -59,7 +59,8 @@ if (mode === "task") {
 } else if (mode === "finding") {
   const d = load(FINDINGS);
   const row = JSON.parse(rest[0] ?? die("finding requires a JSON argument"));
-  const taxonomy = d.root_cause_taxonomy ?? [];
+  // taxonomy is an object (slug -> description); Object.keys, not .length/.includes
+  const taxonomy = Object.keys(d.root_cause_taxonomy ?? {});
   if (taxonomy.length && !taxonomy.includes(row.root_cause))
     die(`root_cause must be one of: ${taxonomy.join(", ")}`);
   if (!["violation", "warning"].includes(row.severity))
@@ -69,6 +70,7 @@ if (mode === "task") {
   row.id ??= `F-${String(next).padStart(3, "0")}`;
   row.status ??= "fixed";
   row.clauses ??= [];
+  row.fix_commit ??= null; // not-yet-committed findings are stamped later
   const unknown = Object.keys(row).filter((k) => !FINDING_KEYS.includes(k));
   const missing = FINDING_KEYS.filter((k) => !(k in row));
   if (unknown.length) die(`unknown keys: ${unknown.join(", ")}`);
