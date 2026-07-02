@@ -51,4 +51,4 @@ Not yet accepting code (pre-Phase-0), but spec review is contribution: file an i
 
 ## License
 
-[MIT](LICENSE)
+[Apache-2.0](LICENSE)
