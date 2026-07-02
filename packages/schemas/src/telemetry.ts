@@ -78,6 +78,7 @@ export const InterventionEvent = z.object({
   class: InterventionClass,
   artifact_hash: Sha256.nullable(),
   at: IsoUtc,
+  schema_version: SchemaVersion,
 });
 
 export type Session = z.infer<typeof Session>;

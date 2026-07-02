@@ -18,11 +18,11 @@
     {
       "id": "P0-3",
       "title": "Kernel storage \u2014 bun:sqlite bootstrap, forward-only migrations",
-      "state": "open",
+      "state": "completed",
       "clauses": [
         "OSS-6"
       ],
-      "completed_at": null
+      "completed_at": "2026-07-02T03:24:11Z"
     },
     {
       "id": "P0-4",

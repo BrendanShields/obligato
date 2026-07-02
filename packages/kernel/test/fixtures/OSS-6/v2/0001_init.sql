@@ -1,0 +1,1 @@
+CREATE TABLE widget (id TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, payload TEXT NOT NULL);

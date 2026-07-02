@@ -1,0 +1,2 @@
+ALTER TABLE widget ADD COLUMN label TEXT;
+CREATE TABLE gadget (id TEXT PRIMARY KEY, schema_version INTEGER NOT NULL);

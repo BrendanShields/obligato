@@ -22,7 +22,7 @@ The **artifact index** (hashes, trace links, staleness) is derived from files an
 - **IDs:** ULIDs for event-like rows (sortable, no coordination). Artifacts use a stable logical ID (`repo-relative path + anchor`) plus a current `content_hash` (SHA-256); identity is the logical ID, versions are hashes.
 - **Schema versioning (PRD OSS-6):** one `schema_migrations` table, forward-only migrations shipped with the CLI; every event row carries `schema_version`.
 - **Types:** Zod schemas in `packages/schemas` are the single source of truth. TS types are inferred (`z.infer`), SQLite rows validated at the boundary, and JSON Schema is generated from Zod for the external signal contract (PRD §8.7) and the OTel attribute conventions.
-- **Append-only tables** (`changelog` is a file, but `step_event`, `intervention_event`, `drift_event`, `eval_task_result` are append-only in SQLite): no UPDATE path in the data layer; corrections are new rows.
+- **Append-only tables** (`changelog` is a file, but `step_event`, `intervention_event`, `eval_task_result` are append-only in SQLite, enforced by BEFORE UPDATE/DELETE triggers): no UPDATE path in the data layer; corrections are new rows. `drift_event` is the exception — implementation surfaced that its `resolution`/`resolved_at` fields mutate in place as drift is resolved (ERD §3), so it is insert-then-resolve, not append-only.
 - **Time:** UTC ISO-8601 strings (SQLite TEXT); durations in ms.
 - **Money:** integer micro-USD (no floats in cost math).
 
@@ -39,8 +39,8 @@ erDiagram
     ARTIFACT ||--o{ DRIFT_EVENT : flags
 
     ARTIFACT {
-        string logical_id PK "repo-relative path + anchor"
-        string repo
+        string logical_id PK "repo-relative path + anchor; composite key with repo"
+        string repo PK "composite key with logical_id"
         string type "signal|idea|prd|erd|adr|spec|code_region|test"
         string content_hash "SHA-256, current"
         string authority "authored|inferred|confirmed"
@@ -73,12 +73,13 @@ erDiagram
         string created_at
     }
     DRIFT_EVENT {
-        string id PK "ULID, append-only"
+        string id PK "ULID, insert-then-resolve (see §2)"
         string artifact_id FK
         string direction "code_under_spec|spec_over_code|upstream_stale"
         string detected_at
         string resolution "open|repaired|overridden|promoted"
         string resolved_at
+        int schema_version
     }
 ```
 
@@ -198,6 +199,7 @@ erDiagram
         string class "correction|clarification|approval (TEL-4)"
         string artifact_hash "what it concerns"
         string at
+        int schema_version
     }
     ROUTING_DECISION {
         string id PK

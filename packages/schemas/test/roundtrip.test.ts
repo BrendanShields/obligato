@@ -112,6 +112,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       class: fc.constantFrom("correction", "clarification", "approval"),
       artifact_hash: fc.option(sha256, { nil: null }),
       at: isoUtc,
+      schema_version: fc.integer({ min: 1, max: 99 }),
     }),
   ],
   Artifact: [
@@ -159,6 +160,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       detected_at: isoUtc,
       resolution: fc.constantFrom("open", "repaired", "overridden", "promoted"),
       resolved_at: fc.option(isoUtc, { nil: null }),
+      schema_version: fc.integer({ min: 1, max: 99 }),
     }),
   ],
   PackManifest: [

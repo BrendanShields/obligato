@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IsoUtc, Sha256, Ulid } from "./scalars.ts";
+import { IsoUtc, SchemaVersion, Sha256, Ulid } from "./scalars.ts";
 
 export const ArtifactType = z.enum([
   "signal",
@@ -51,6 +51,7 @@ export const DriftEvent = z.object({
   detected_at: IsoUtc,
   resolution: DriftResolution,
   resolved_at: IsoUtc.nullable(),
+  schema_version: SchemaVersion,
 });
 
 export type Artifact = z.infer<typeof Artifact>;
