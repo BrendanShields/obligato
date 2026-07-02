@@ -14,7 +14,9 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
-      - run: bun test
+      - name: bun test (auto-skips until first obligation test lands, P0-2)
+        run: |
+          if find packages -name '*.test.ts' | grep -q .; then bun test; else echo "no test files yet"; fi
       - run: bunx biome ci .
       - name: spec-lint (every clause has an obligation, IDs unique)
         run: echo '{"tool_input":{"file_path":"docs/specs/ci.md"}}' | node .claude/hooks/spec-lint.mjs
