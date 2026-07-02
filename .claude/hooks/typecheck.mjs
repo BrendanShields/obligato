@@ -12,9 +12,15 @@ const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 if (!existsSync(join(root, 'package.json'))) process.exit(0)
 
 try {
-  execSync('bun run typecheck', { cwd: root, stdio: ['ignore', 'ignore', 'pipe'], timeout: 120_000 })
+  // tsc writes diagnostics to STDOUT; stderr only carries bun's script echo
+  // (postmortem: stderr-only capture produced empty block messages).
+  execSync('bun run typecheck', { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000 })
 } catch (e) {
-  console.error(`typecheck failed after editing ${edited}:\n${e.stderr?.toString().slice(0, 4000) ?? e.message}`)
+  const detail = [e.stdout?.toString(), e.stderr?.toString()]
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, 4000)
+  console.error(`typecheck failed after editing ${edited}:\n${detail || e.message}`)
   process.exit(2)
 }
 process.exit(0)
