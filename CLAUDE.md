@@ -1,4 +1,4 @@
-# Keel — Self-Improving Engineering Harness
+# Kelson — Self-Improving Engineering Harness
 
 Open-source harness covering feedback → ideation → planning → spec → build → verify. Pre-code phase: the spec suite is the codebase right now.
 
@@ -17,11 +17,11 @@ Open-source harness covering feedback → ideation → planning → spec → bui
 
 ## Conventions (from ADR-0001 / ERD §2, §9)
 
-- TypeScript strict, ESM, Node ≥ 22; pnpm workspaces: `packages/schemas` (Zod, no internal deps) ← `kernel` ← `cli`, `cc-plugin`.
+- TypeScript strict, ESM, Bun ≥ 1.3 (ADR-0003); Bun workspaces: `packages/schemas` (Zod, no internal deps) ← `kernel` ← `cli`, `cc-plugin`.
 - Zod schemas in `packages/schemas` are the single source of truth for types; validate at every storage/IO boundary.
-- SQLite via better-sqlite3, hand-written SQL, forward-only numbered migrations. No ORM.
+- SQLite via `bun:sqlite`, hand-written SQL, forward-only numbered migrations. No ORM.
 - ULIDs for events; SHA-256 content hashes for artifacts; money as integer micro-USD; UTC ISO-8601 strings; append-only event tables (no UPDATE).
-- Tests: vitest + fast-check. Obligation tests live at `packages/<pkg>/test/obligations/<CLAUSE-ID>.test.ts` — see the obligation-test skill.
+- Tests: `bun test` + fast-check. TUI: OpenTUI. Lint/format: Biome. Obligation tests live at `packages/<pkg>/test/obligations/<CLAUSE-ID>.test.ts` — see the obligation-test skill.
 - Comments: only constraints the code can't express. No narration, no doc-comments on internals.
 
 ## Workflow

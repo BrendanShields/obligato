@@ -1,8 +1,8 @@
-# PRD: Keel — a Self-Improving, Token-Efficient Engineering Harness
+# PRD: Kelson — a Self-Improving, Token-Efficient Engineering Harness
 
 - **Status:** Draft for review
 - **Date:** 2026-07-02
-- **Working name:** Keel (the small stable spine everything else hangs off; final name is an open question, §16)
+- **Name:** Kelson — the keelson is the member that binds a ship's frames to its keel: the piece that fastens everything to the spine. npm package `kelson` and binary name verified available 2026-07-02; no known tool collision (unlike "keel", taken on npm and colliding with keel.sh).
 - **Deliverable scope:** This PRD covers the product from feedback ingestion through build and verification. Deployment and production monitoring are adjacent concerns (§2.2, §8.7).
 
 ---
@@ -15,7 +15,7 @@ Engineers using coding agents today lose value in three compounding ways:
 2. **Token waste.** Sessions load whole files when a signature would do, models narrate when they should act, generated code carries comments nobody asked for, and frontier models are used for mechanical work a small model does equally well.
 3. **No feedback loop.** Every session starts from zero. The lessons of yesterday's session — which skill helped, which instruction was ignored, which model wasted effort — evaporate. Configuration (skills, rules, MCP servers, agents) accumulates by intuition, never by evidence. Nobody can answer "does skill X actually make outcomes better?"
 
-Keel is an open-source harness that attacks all three:
+Kelson is an open-source harness that attacks all three:
 
 - **Ambiguity** is eliminated structurally: work flows through specs written in a constrained format where every behavioral claim must compile to an executable obligation (a property-based test or a formal-model check). A claim that cannot be compiled is, by definition, vague — and is rejected before build starts.
 - **Token waste** is attacked by a learned router (right model, effort, context, and agent per step) and a context compiler (minimal task bundles instead of raw file loads), plus efficiency rules (verbosity control, comment suppression, compression).
@@ -37,17 +37,17 @@ The unifying design idea: **everything the system can change about itself is a v
 
 ### 2.2 Non-Goals
 
-- NG1. **Deployment pipelines and production monitoring.** Keel does not deploy code or observe production. It defines a *signal ingestion contract* (§8.7) so external deployment/monitoring systems can feed the feedback stage, and sketches what a future integration looks like — but building those pipelines is out of scope.
+- NG1. **Deployment pipelines and production monitoring.** Kelson does not deploy code or observe production. It defines a *signal ingestion contract* (§8.7) so external deployment/monitoring systems can feed the feedback stage, and sketches what a future integration looks like — but building those pipelines is out of scope.
 - NG2. **Replacing the underlying agent runtime.** V1 layers on Claude Code (§5.4); it does not reimplement session management, permissions, or tool execution.
-- NG3. **General project management.** Keel maintains an idea backlog derived from signals; it is not a Jira replacement.
+- NG3. **General project management.** Kelson maintains an idea backlog derived from signals; it is not a Jira replacement.
 - NG4. **Proving arbitrary user code correct.** Full formal verification is an escalation tier applied to qualifying components (§7.4), not a promise for all code.
 
 ### 2.3 End State (v-final)
 
-The v1 phases (§16) climb toward a defined asymptote. Keel is *done* — in the sense that further work is refinement, not construction — when:
+The v1 phases (§16) climb toward a defined asymptote. Kelson is *done* — in the sense that further work is refinement, not construction — when:
 
 - **E1 — Human role converges to two jobs.** Authoring/approving specs, and governing the gates (eval suites, safety thresholds, tier escalations). Everything between a confirmed spec and a verified change is agent work.
-- **E2 — The outer loop closes.** A production signal (via the §8.7 contract, carried by a future Keel Deploy companion) becomes a proposed spec diff → verified fix → gated release candidate with no human drafting — the human reviews and approves.
+- **E2 — The outer loop closes.** A production signal (via the §8.7 contract, carried by a future Kelson Deploy companion) becomes a proposed spec diff → verified fix → gated release candidate with no human drafting — the human reviews and approves.
 - **E3 — Configuration is fully learned.** No hand-tuned routing entries remain: every routing-policy entry and every default pack carries reproducible eval evidence, and operator config effort trends to zero while FPAR holds.
 - **E4 — Numbers.** FPAR ≥ 90% sustained on live work (not just benchmarks); harness overhead ratio (§3) ≤ 15%; the kernel's own T2 obligations fully discharged (model-checked loop, verified gate core).
 - **E5 — Evidence network.** Federated pack ledgers: packs travel with reproducible cross-org evidence, so the ecosystem is a marketplace where value is proven, not claimed.
@@ -84,10 +84,10 @@ Success criteria for v1 (measured on the maintainers' own usage plus opt-in comm
 
 ## 4. Personas & Primary Use Cases
 
-- **P1 — Solo OSS engineer, greenfield.** Starts a new project with Keel from day one. Wants: ideas → PRD → spec → code with minimal back-and-forth, and confidence the config is actually tuned rather than cargo-culted.
-- **P2 — Team engineer, brownfield.** Adopts Keel on an existing codebase. Wants: spec excavation to bootstrap invariants from existing code/tests, drift detection from then on, and evidence before the team standardizes on a skill/MCP loadout.
+- **P1 — Solo OSS engineer, greenfield.** Starts a new project with Kelson from day one. Wants: ideas → PRD → spec → code with minimal back-and-forth, and confidence the config is actually tuned rather than cargo-culted.
+- **P2 — Team engineer, brownfield.** Adopts Kelson on an existing codebase. Wants: spec excavation to bootstrap invariants from existing code/tests, drift detection from then on, and evidence before the team standardizes on a skill/MCP loadout.
 - **P3 — Pack contributor.** Builds a skill/rule/routing pack and submits it. Wants: a clear contract, and an objective bar — the eval gate — rather than maintainer taste, for whether the pack merges.
-- **P4 — Harness operator.** Runs Keel long-term. Wants: a changelog of every self-applied change, one-command revert, and hard guarantees the system cannot modify its own safety mechanisms.
+- **P4 — Harness operator.** Runs Kelson long-term. Wants: a changelog of every self-applied change, one-command revert, and hard guarantees the system cannot modify its own safety mechanisms.
 
 Primary use cases:
 
@@ -101,7 +101,7 @@ Primary use cases:
 
 ### 5.1 Overview
 
-Keel is a **small human-governed kernel** plus **versioned packs** for everything else.
+Kelson is a **small human-governed kernel** plus **versioned packs** for everything else.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -238,7 +238,7 @@ Maps `(SDLC step, task features)` → `(model, effort, context loadout, agent)`.
 
 ### 6.4 Artifact Store
 
-Specs, PRDs, ERDs, ADRs live **in the target repo** (not in Keel's own state), under a conventional directory, so they travel with the code and survive Keel's removal.
+Specs, PRDs, ERDs, ADRs live **in the target repo** (not in Kelson's own state), under a conventional directory, so they travel with the code and survive Kelson's removal.
 
 **Traceability.** Every artifact carries content hashes of its upstream artifacts: `feedback signal → idea → PRD section → spec clause → code region → test/property`. Code regions link back via spec-clause IDs referenced in committed metadata (not code comments — see §12.3). Drift is mechanical: if an upstream hash no longer matches, everything downstream is flagged stale.
 
@@ -293,16 +293,16 @@ Divergence testing is expensive (two implementations); the router treats it as a
 |---|---|---|
 | **T0 — floor** | All code | Compiled obligations (PBT/metamorphic) from the spec |
 | **T1 — stateful** | Components with nontrivial state machines, concurrency, or distributed interaction | T0 + a TLA+/Alloy (or equivalent) model of the state machine, model-checked; obligations include conformance checks between code and model where feasible |
-| **T2 — critical** | Money paths, security boundaries, data-loss paths, and Keel's own self-improvement loop | T1 + full formal treatment of the core logic: refinement types or a proof-assistant development (Lean) for the critical kernel of the component, with the verified core wrapped by conventionally-tested adapters |
+| **T2 — critical** | Money paths, security boundaries, data-loss paths, and Kelson's own self-improvement loop | T1 + full formal treatment of the core logic: refinement types or a proof-assistant development (Lean) for the critical kernel of the component, with the verified core wrapped by conventionally-tested adapters |
 
-**Escalation criteria** (mechanical, checked at spec time): a component is T1 if its spec declares more than one persistent state variable mutated by more than one event source, or any concurrent access; T2 if its spec touches declared money/security/data-loss domains or modifies Keel's own packs. Humans may raise a tier, never lower one below the mechanical result.
+**Escalation criteria** (mechanical, checked at spec time): a component is T1 if its spec declares more than one persistent state variable mutated by more than one event source, or any concurrent access; T2 if its spec touches declared money/security/data-loss domains or modifies Kelson's own packs. Humans may raise a tier, never lower one below the mechanical result.
 
 - **SPEC-6.** When a spec's declared domains or state structure meet an escalation criterion, the spec compiler shall assign the corresponding tier automatically and shall reject human annotations that lower it.
   *Obligation:* unit tests over a criteria fixture matrix; lowering attempts rejected.
 
 ### 7.5 Spec Excavation (Brownfield)
 
-For existing codebases: Keel infers candidate specs from code, tests, types, and observed behavior (agent-driven analysis), and marks every inferred clause **non-authoritative**.
+For existing codebases: Kelson infers candidate specs from code, tests, types, and observed behavior (agent-driven analysis), and marks every inferred clause **non-authoritative**.
 
 - **SPEC-7.** The excavation tool shall emit inferred spec clauses with `authority: inferred`, each linked to the code evidence it was inferred from, and the harness shall treat inferred clauses as drift *detectors* (alert on violation) but not build *blockers* until a human promotes them to `authority: confirmed`.
   *Obligation:* integration test — violating an inferred clause raises an alert but allows build; violating a confirmed clause blocks per ART-4.
@@ -357,7 +357,7 @@ Covered by §7. Pipeline integration:
 
 ### 8.7 Adjacent Concern: Deployment & Production Signals (out of scope, contract only)
 
-Keel defines a **signal ingestion contract**: a versioned schema (JSON) for external systems to post signals — deploy outcomes, incident summaries, SLO breaches, user-facing error clusters — each with severity, evidence links, and optional artifact references. Anything conforming lands in the §8.1 inbox. A future "Keel Deploy" companion (release gating on spec conformance, canary interpretation feeding signals back) is sketched in an appendix-level ADR when work begins; nothing in v1 depends on it.
+Kelson defines a **signal ingestion contract**: a versioned schema (JSON) for external systems to post signals — deploy outcomes, incident summaries, SLO breaches, user-facing error clusters — each with severity, evidence links, and optional artifact references. Anything conforming lands in the §8.1 inbox. A future "Kelson Deploy" companion (release gating on spec conformance, canary interpretation feeding signals back) is sketched in an appendix-level ADR when work begins; nothing in v1 depends on it.
 
 - **PIPE-10.** The harness shall accept and triage any signal conforming to the published contract schema without knowledge of its producer.
   *Obligation:* contract tests with synthetic producers.
@@ -414,11 +414,11 @@ The loop *may* propose **new benchmark tasks** (capturing observed failures) —
 The kernel's eval harness (§6.2) exposed as a first-class CLI — the answer to "is X worth it?":
 
 ```
-keel eval ablate <pack>[@version] --suite <suite> [--paired] [--n <min>]
-keel eval compare <lockfileA> <lockfileB> --suite <suite>
-keel eval replay --sessions <selector> --config <lockfile>
-keel eval report [--since <date>]     # live-telemetry trends by pack/config
-keel eval suite add|quarantine|promote ...
+kelson eval ablate <pack>[@version] --suite <suite> [--paired] [--n <min>]
+kelson eval compare <lockfileA> <lockfileB> --suite <suite>
+kelson eval replay --sessions <selector> --config <lockfile>
+kelson eval report [--since <date>]     # live-telemetry trends by pack/config
+kelson eval suite add|quarantine|promote ...
 ```
 
 - **EVT-1.** `ablate` shall produce a verdict (helps / hurts / underpowered / no-effect) with effect sizes and confidence intervals for FPAR and TPAC, never a bare pass/fail.
@@ -435,9 +435,9 @@ Benchmark suite content for v1: (a) a seed suite of ~30 curated tasks spanning t
 §6.3 gave kernel requirements; this section fixes product behavior:
 
 - **Default policy shipped with v1** (a pack, human-tuned initially): frontier model + high effort for ideation/planning/spec and any T1+ build step; mid-tier for T0 build; small model for mechanical steps (renames, formatting, lockfile edits, changelog writing); verify runs at mid-tier with escalation on failure per RTR-2.
-- **Custom agent onboarding:** `keel agents register <manifest>` — manifest declares capabilities (domains, languages, task types), cost class, and constraints. Registered agents immediately become routing candidates for matching feature vectors (RTR-4) and appear in ablation (EVT-2), so their value is measurable from day one.
+- **Custom agent onboarding:** `kelson agents register <manifest>` — manifest declares capabilities (domains, languages, task types), cost class, and constraints. Registered agents immediately become routing candidates for matching feature vectors (RTR-4) and appear in ablation (EVT-2), so their value is measurable from day one.
 - **Learning cadence:** online bandit adjusts weights continuously within RTR-3/RTR-5 bounds; structural policy changes ship as loop proposals through the gate.
-- **Transparency:** every routing decision is visible (`keel route explain <task>`), showing the feature vector, chosen target, and the counterfactual cost of the next candidates — this is also the operator's lever for spotting misroutes to report as signals.
+- **Transparency:** every routing decision is visible (`kelson route explain <task>`), showing the feature vector, chosen target, and the counterfactual cost of the next candidates — this is also the operator's lever for spotting misroutes to report as signals.
 
 ## 12. Token-Efficiency Mechanisms
 
@@ -468,7 +468,7 @@ Ponytail-class rules — terse output, act-don't-narrate, no speculative abstrac
 
 ## 13. Open-Source Product Requirements
 
-- **OSS-1 Packaging.** One-command install (`npx keel init` or equivalent) that: installs the CC plugin, the eval runner CLI, and the local telemetry store; detects existing Claude Code config and layers non-destructively.
+- **OSS-1 Packaging.** One-command install (`npx kelson init` or equivalent) that: installs the CC plugin, the eval runner CLI, and the local telemetry store; detects existing Claude Code config and layers non-destructively.
   *Obligation:* clean-machine CI install test on macOS + Linux.
 - **OSS-2 Privacy.** Telemetry local-first (TEL-2/3); the privacy policy is a repo document; shared-telemetry schema is published and versioned; no shared field may contain free text.
   *Obligation:* schema-level enforcement test (superset of TEL-3).
@@ -526,19 +526,23 @@ Walking skeleton first — the full loop, thin — then deepen. Each phase is re
 
 - **Phase 0 — Rails.** Kernel scaffolding: telemetry capture (TEL-1/2/5), artifact store with hashing (ART-1/2), lockfile + pack format, CC plugin shell. *Exit: a session produces telemetry and traceable artifacts.*
 - **Phase 1 — Specs that bite.** Spec DSL + compiler (SPEC-1/2/3), obligation execution in verify (PIPE-8), drift detection (ART-3/4). *Exit: a vague spec is rejected; a violated invariant blocks verify.*
-- **Phase 2 — Eval tool.** Eval runner CLI with sandboxed execution (SEC-1..3), seed benchmark suite, ablation + statistical gating (EVAL-1..4, EVT-1..3). *Exit: `keel eval ablate ponytail` returns a defensible verdict from an isolated run.*
+- **Phase 2 — Eval tool.** Eval runner CLI with sandboxed execution (SEC-1..3), seed benchmark suite, ablation + statistical gating (EVAL-1..4, EVT-1..3). *Exit: `kelson eval ablate ponytail` returns a defensible verdict from an isolated run.*
 - **Phase 3 — Routing.** Registry, default policy, escalation, budgets (RTR-1..4, CTX-4), context compiler v1 (CTX-1). *Exit: measured TPAC drop on the suite vs. Phase 2.*
 - **Phase 4 — The loop.** Postmortem compiler, TLA+ model + conformance (LOOP-1..6), counterfactual replay (EVAL-5), monitoring/revert. *Exit: S4 — one self-proposed change passes the gate and sticks.*
 - **Phase 5 — Open source.** Packaging, docs, privacy, contribution gate (OSS-1..6), pack supply-chain security (SEC-4..6), OTel exporter (TEL-6), divergence testing GA (SPEC-4/5), spec excavation (SPEC-7/8), bandit routing (RTR-5) — ordered within the phase by eval evidence.
 
-**Open questions**
+**Resolved questions** (decisions recorded, 2026-07-02)
 
-1. **Product name.** "Keel" is a working name; needs a trademark/npm/GitHub availability check.
-2. **Spec DSL concrete syntax** — YAML-embedded-in-Markdown vs. a dedicated file format; decided in the implementation plan with samples.
-3. **Replay fidelity** — how much session environment (repo state snapshotting strategy, tool versions) must be captured for EVAL-5 replay to be trustworthy; prototype in Phase 2, harden in Phase 4.
-4. **Divergence-testing default scope** — T1+ only vs. all specs; ship conservative (T1+), let the eval loop earn a broader default.
-5. **Shared-telemetry aggregation** — whether an opt-in community dashboard (cross-user pack ledgers) is worth the privacy surface; revisit at Phase 5.
+1. **Product name → Kelson.** npm `kelson` and GitHub availability verified; no tool collision. (Header of this document.)
+2. **Spec DSL concrete syntax → resolved** by the [Kelspec DSL spec](./2026-07-02-kelspec-dsl.md): Markdown files with fenced `kelspec` YAML blocks — human-reviewable in PRs, machine-parseable, one grammar.
+3. **Replay fidelity → resolved** by the [Eval procedure spec](./2026-07-02-eval-procedure.md) §4: git-bundle snapshots + environment manifest, with explicit validity rules for when a replay may gate.
+4. **Divergence-testing default scope → resolved:** T1+ (as SPEC-4 already defaults); broadening is a routing-policy parameter only the eval loop can earn, through the normal gate.
+5. **Tooling → resolved** by [ADR-0003](../adr/0003-runtime-and-tooling.md): Bun runtime, OpenTUI, Biome, `bun test` + fast-check.
+
+**Remaining deferred item** (not ambiguity — a decision with a defined trigger)
+
+- **Shared-telemetry aggregation** — an opt-in community dashboard (cross-user pack ledgers). Revisit at Phase 5; trigger: ≥ 3 external pack contributors asking for cross-org evidence.
 
 ## 17. Traceability of This Document
 
-This PRD's behavioral sections follow the format they mandate: EARS clauses with obligations (§6–§13). When the spec compiler exists (Phase 1), this document becomes its first excavation target: clauses TEL-* through OSS-* compile into the harness's own conformance suite, and this PRD enters the artifact store as the root of Keel's own traceability DAG.
+This PRD's behavioral sections follow the format they mandate: EARS clauses with obligations (§6–§13). When the spec compiler exists (Phase 1), this document becomes its first excavation target: clauses TEL-* through OSS-* compile into the harness's own conformance suite, and this PRD enters the artifact store as the root of Kelson's own traceability DAG.

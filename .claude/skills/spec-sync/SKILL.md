@@ -1,11 +1,11 @@
 ---
 name: spec-sync
-description: Keep Keel's spec suite (PRD/ERD/UX EARS clauses) and code in sync. Use whenever changing any behavior of the harness, adding or editing a requirement in docs/specs/, implementing a clause (TEL-*, EVAL-*, RTR-*, ART-*, SPEC-*, PIPE-*, LOOP-*, EVT-*, CTX-*, SEC-*, OSS-*, KERN-*, UX-*), renaming or renumbering anything in the spec docs, or when a code change doesn't obviously map to an existing clause. If you're about to edit kernel/pipeline behavior and haven't opened the spec, that's the trigger — use this skill first.
+description: Keep Kelson's spec suite (PRD/ERD/UX EARS clauses) and code in sync. Use whenever changing any behavior of the harness, adding or editing a requirement in docs/specs/, implementing a clause (TEL-*, EVAL-*, RTR-*, ART-*, SPEC-*, PIPE-*, LOOP-*, EVT-*, CTX-*, SEC-*, OSS-*, KERN-*, UX-*), renaming or renumbering anything in the spec docs, or when a code change doesn't obviously map to an existing clause. If you're about to edit kernel/pipeline behavior and haven't opened the spec, that's the trigger — use this skill first.
 ---
 
 # Spec Sync
 
-Keel's own PRD rule applies to Keel's development: a behavioral claim without an executable obligation is vague by definition. This skill is the discipline that keeps the spec suite authoritative while code grows underneath it.
+Kelson's own PRD rule applies to Kelson's development: a behavioral claim without an executable obligation is vague by definition. This skill is the discipline that keeps the spec suite authoritative while code grows underneath it.
 
 ## Why this matters
 

@@ -12,7 +12,7 @@ const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 if (!existsSync(join(root, 'package.json'))) process.exit(0)
 
 try {
-  execSync('pnpm -s typecheck', { cwd: root, stdio: ['ignore', 'ignore', 'pipe'], timeout: 120_000 })
+  execSync('bun run typecheck', { cwd: root, stdio: ['ignore', 'ignore', 'pipe'], timeout: 120_000 })
 } catch (e) {
   console.error(`typecheck failed after editing ${edited}:\n${e.stderr?.toString().slice(0, 4000) ?? e.message}`)
   process.exit(2)

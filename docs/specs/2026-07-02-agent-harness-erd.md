@@ -1,4 +1,4 @@
-# ERD: Keel Data Model
+# ERD: Kelson Data Model
 
 - **Status:** Draft for review
 - **Date:** 2026-07-02
@@ -11,11 +11,11 @@ Three tiers, one rule each:
 
 | Tier | Holds | Rule |
 |---|---|---|
-| **Git-tracked files** (in the target repo and in pack repos) | Specs/PRDs/ERDs/ADRs, spec clauses, packs (manifests, rules, routing policy structure, agent registry), lockfile, changelog, eval ledger | Anything a human reviews, a PR carries, or that must survive Keel's removal is a file |
-| **Local SQLite** (per operator, `~/.keel/keel.db`, WAL mode) | Sessions, tasks, step events, interventions, routing decisions, bundle manifests, verification reports, eval runs/results/verdicts, replay records, drift events, routing weights, the artifact index | Anything measured, high-volume, or queried statistically lives in SQLite |
+| **Git-tracked files** (in the target repo and in pack repos) | Specs/PRDs/ERDs/ADRs, spec clauses, packs (manifests, rules, routing policy structure, agent registry), lockfile, changelog, eval ledger | Anything a human reviews, a PR carries, or that must survive Kelson's removal is a file |
+| **Local SQLite** (per operator, `~/.kelson/kelson.db`, WAL mode) | Sessions, tasks, step events, interventions, routing decisions, bundle manifests, verification reports, eval runs/results/verdicts, replay records, drift events, routing weights, the artifact index | Anything measured, high-volume, or queried statistically lives in SQLite |
 | **OTel projection** (optional, off by default; PRD TEL-6) | Traces/spans/metrics derived from SQLite-bound events at emit time | A projection, never a source of truth; content-stripped per TEL-3 |
 
-The **artifact index** (hashes, trace links, staleness) is derived from files and rebuildable at any time (`keel index rebuild`) — SQLite is disposable without losing anything a human authored.
+The **artifact index** (hashes, trace links, staleness) is derived from files and rebuildable at any time (`kelson index rebuild`) — SQLite is disposable without losing anything a human authored.
 
 ## 2. Conventions
 
@@ -347,25 +347,25 @@ The RTR-5 write-surface rule is structural here: the bandit's entire write acces
 
 ## 8. OTel Projection (TEL-6)
 
-| Keel entity | OTel mapping |
+| Kelson entity | OTel mapping |
 |---|---|
 | `SESSION` | Trace (`trace_id` stored on the row) |
-| `STEP_EVENT` | Span — attributes: `keel.sdlc_step`, `keel.model`, `keel.effort`, `keel.agent`, token counts, `keel.cost_micro_usd`, `keel.budget.overrun` |
+| `STEP_EVENT` | Span — attributes: `kelson.sdlc_step`, `kelson.model`, `kelson.effort`, `kelson.agent`, token counts, `kelson.cost_micro_usd`, `kelson.budget.overrun` |
 | `INTERVENTION_EVENT`, `DRIFT_EVENT`, routing escalations | Span events on the enclosing step span |
-| Metrics | `keel.fpar`, `keel.tpac`, `keel.overhead_ratio`, `keel.routing.regret`, counters: `keel.drift.count`, `keel.interventions.count`, `keel.eval.gate.{pass,reject}` |
+| Metrics | `kelson.fpar`, `kelson.tpac`, `kelson.overhead_ratio`, `kelson.routing.regret`, counters: `kelson.drift.count`, `kelson.interventions.count`, `kelson.eval.gate.{pass,reject}` |
 
 Exporter is OTLP, disabled unless an endpoint is configured; all attributes pass the TEL-3 content-stripping rules (numeric/categorical only — no prompts, paths, or code).
 
 ## 9. TypeScript Stack & Package Layout
 
-- **Runtime:** Node ≥ 22, ESM, TypeScript strict.
-- **Monorepo (pnpm workspaces):**
+- **Runtime:** Bun ≥ 1.3, ESM, TypeScript strict (typecheck via `tsc --noEmit`; ADR-0003). Kernel/schemas code stays runtime-agnostic — `Bun.*` APIs only behind a thin sqlite adapter.
+- **Monorepo (Bun workspaces):**
   - `packages/schemas` — Zod schemas for every entity above + generated JSON Schema (signal contract, OTel conventions). No dependencies on other packages; everything depends on it.
-  - `packages/kernel` — telemetry, eval harness, router, artifact store as internal modules behind one public API; owns SQLite (better-sqlite3) and migrations.
-  - `packages/cli` — `keel` command: eval runner, replay engine, index rebuild, agents/loop/route subcommands. Sandboxing lives here (worktree + container drivers).
+  - `packages/kernel` — telemetry, eval harness, router, artifact store as internal modules behind one public API; owns SQLite (`bun:sqlite`) and migrations.
+  - `packages/cli` — `kelson` command: eval runner, replay engine, index rebuild, agents/loop/route subcommands. Sandboxing lives here (worktree + container drivers).
   - `packages/cc-plugin` — the Claude Code plugin (skills, hooks, subagents) — the only Claude Code-coupled package (PRD §5.4 migration criteria depend on this boundary).
-- **Testing:** vitest; fast-check for Keel's own PBT obligations (the PRD's *Obligation* lines compile into this suite); TLA+ models under `specs/tla/` checked in CI (TLC via container).
-- **No ORM:** better-sqlite3 with hand-written SQL and Zod validation at the boundary; migrations are numbered SQL files applied forward-only (OSS-6).
+- **Testing:** `bun test`; fast-check for Kelson's own PBT obligations (the PRD's *Obligation* lines compile into this suite); TLA+ models under `specs/tla/` checked in CI (TLC via container).
+- **No ORM:** `bun:sqlite` with hand-written SQL and Zod validation at the boundary; migrations are numbered SQL files applied forward-only (OSS-6).
 
 ## 10. Open Questions
 
