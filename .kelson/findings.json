@@ -1487,6 +1487,60 @@
       "fix_commit": "86f9f84",
       "status": "fixed",
       "id": "F-105"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "UX-13"
+      ],
+      "summary": "repo-first store resolution shipped as §8 prose with no clause ID or obligation — behavior governed by nothing, dodged spec-lint",
+      "root_cause": "spec_gap",
+      "fix": "UX-13 minted as EARS bullet with obligation; §8 references it",
+      "fix_commit": "b680fae",
+      "status": "fixed",
+      "id": "F-106"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "UX-13"
+      ],
+      "summary": "resolution test was free-floating (test/ui-db-resolution.test.ts), untraceable to an obligation",
+      "root_cause": "process_gap",
+      "fix": "moved to test/obligations/UX-13.test.ts",
+      "fix_commit": "b680fae",
+      "status": "fixed",
+      "id": "F-107"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-13"
+      ],
+      "summary": "resolver test did not discriminate the createUiServer wiring — reverting the default to the user store left tests green",
+      "root_cause": "test_blindspot",
+      "fix": "wiring fixture: seeded temp repo store served through /api/loop with no dbPath",
+      "fix_commit": "b680fae",
+      "status": "fixed",
+      "id": "F-108"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "unexplained 100644->100755 mode flip on cli/src/index.ts bundled into the diff (bun link side effect)",
+      "root_cause": "process_gap",
+      "fix": "intent stated in commit message; bin entry executable is correct",
+      "fix_commit": "b680fae",
+      "status": "fixed",
+      "id": "F-109"
     }
   ]
 }

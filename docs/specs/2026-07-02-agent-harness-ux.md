@@ -159,6 +159,8 @@ A single statusline badge (`degraded: telemetry`) and one line at session start.
   *Obligation:* CI matrix over all registered API routes — each response parses with its paired schema; a corrupted-store fault-injection fixture returns 500 with no partial body.
 - **UX-12.** If the backing store is missing or empty, each `kelson ui` API route shall return a schema-valid empty result that names the CLI verb producing its data (UX-P5), and the corresponding view shall render a designed empty state, never an error.
   *Obligation:* empty-store fixture — every route returns 200 with a schema-valid payload carrying `empty_verb`; SPA empty-state render test asserts the verb is displayed.
+- **UX-13.** When `kelson ui` starts without `--db`, it shall use `./.kelson/kelson.db` when that file exists in the working directory, and the user store (`~/.kelson/kelson.db`) otherwise; `--db` shall override both.
+  *Obligation:* resolver unit test covering both branches, plus a wiring test — a server created with no `dbPath` in a temp working directory containing a seeded repo store serves that store's rows (fails if the default reverts to the user store).
 
 ## 7. TUI Legibility Spec
 
@@ -171,4 +173,4 @@ A single statusline badge (`degraded: telemetry`) and one line at session start.
 
 *(Promoted from post-v1 by the 2026-07-03 interface design — see `2026-07-03-interface-design.md` for architecture.)*
 
-`kelson ui` serves a local, **read-only** web app from prebuilt static assets (`packages/ui`) plus a `GET /api/*` layer whose responses reuse the `--json` Zod schemas (UX-1). Localhost only, GET only, no auth surface; all actions stay in the CLI/TUI, shown as copyable commands (UX-P5). Four views: telemetry dashboard, eval explorer, improvement-loop board, traceability graph. Visual language: terminal-heritage dark, §7 color semantics and number rules apply. Governed by UX-10/11/12.
+`kelson ui` serves a local, **read-only** web app from prebuilt static assets (`packages/ui`) plus a `GET /api/*` layer whose responses reuse the `--json` Zod schemas (UX-1). It resolves its store repo-first (UX-13). Localhost only, GET only, no auth surface; all actions stay in the CLI/TUI, shown as copyable commands (UX-P5). Four views: telemetry dashboard, eval explorer, improvement-loop board, traceability graph. Visual language: terminal-heritage dark, §7 color semantics and number rules apply. Governed by UX-10/11/12/13.

@@ -60,8 +60,15 @@ interface RouteCtx {
 
 export const API_PATHS = Object.keys(routes);
 
+// UX-13: repo-first store resolution — ./.kelson/kelson.db when present,
+// else the user store; --db overrides both.
+export const resolveUiDbPath = (cwd = process.cwd()): string => {
+  const repoDb = join(cwd, ".kelson", "kelson.db");
+  return existsSync(repoDb) ? repoDb : DEFAULT_DB_PATH;
+};
+
 export const createUiServer = (opts: UiServerOptions = {}) => {
-  const dbPath = opts.dbPath ?? DEFAULT_DB_PATH;
+  const dbPath = opts.dbPath ?? resolveUiDbPath();
   const changelogPath =
     opts.changelogPath ?? join(process.cwd(), ".kelson", "changelog.jsonl");
   const staticDir =
