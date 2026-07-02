@@ -13,12 +13,13 @@ The operator prefers OpenTUI for the terminal UI. OpenTUI's native renderer (Zig
 | Concern | Choice | Why |
 |---|---|---|
 | Runtime | **Bun ≥ 1.3** (all packages) | OpenTUI requirement; also: native TS execution (no build step in dev), built-in SQLite, workspaces, test runner — fewer moving parts than Node + 4 tools |
-| TUI | **OpenTUI `@opentui/core`** | Operator preference; UX §7's component set (panel, table, sparkline, diff, select-list) is small enough that the core imperative API suffices — no react/solid binding layer in v1 |
+| TUI | **OpenTUI `@opentui/core`** | Operator preference; UX §7's component set (panel, table, sparkline, diff, select-list) is small enough that the core imperative API suffices — no react/solid binding layer in v1. *Amended 2026-07-03 (with the §7 amendment): OpenTUI powers the interactive surfaces (launcher, wizards, select-list) only; static print-and-exit output is pure string renderers through the component layer's sink — OpenTUI is a screen renderer, wrong-shaped for that path* |
 | SQLite | **`bun:sqlite`** (built-in) | Replaces better-sqlite3: same synchronous API shape, zero native-module install pain, one fewer dependency |
 | Package manager / workspaces | **Bun workspaces** | Replaces pnpm; one tool for install/run/test |
 | Test runner | **`bun test` + fast-check** | Jest-compatible API; fast-check is runner-agnostic. Obligation-test conventions unchanged except the runner |
 | Lint/format | **Biome** | One fast tool replaces eslint + prettier; low config surface |
-| CLI arg parsing | **commander** | Boring, ubiquitous, subcommand-native. OpenTUI renders; commander routes |
+| CLI arg parsing | ~~commander~~ **hand-rolled `parseArgs` + `COMMANDS` dispatch table** | *Amended 2026-07-03:* the shipped CLI never adopted commander; the shared dispatch table is now load-bearing (UX-8 wizard/typed identity), so commander would add a layer without adding routing. Revisit if subcommand help generation is wanted |
+| Typecheck breadth | **`tsc --noEmit` strict, `skipLibCheck: true` (repo-wide)** | *Added 2026-07-03:* OpenTUI's published `.d.ts` fails under our strict flags; skipLibCheck skips third-party declaration checking only — our sources stay fully strict |
 | Schema → JSON Schema | **Zod v4 `z.toJSONSchema`** | Native in Zod 4; no extra dependency for the signal contract export |
 | Pack signing | **Ed25519 via `node:crypto`** (Bun-compatible), detached signatures | No signing-service dependency; keys distributed through the pack registry repo. Sigstore-style keyless is a Phase 5+ upgrade if the registry grows |
 | Sandbox drivers | **Shell out to `git worktree` and `docker`/`podman` binaries** | No SDK dependencies; SEC-1 profiles name the driver used |

@@ -1421,6 +1421,72 @@
       "fix_commit": "44d99c3",
       "status": "fixed",
       "id": "F-100"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "UX-4"
+      ],
+      "summary": "UX-4 NO_COLOR/plain-degrade assertions were unfailable: only never-coloring renderers were asserted, NO_COLOR never set, sink strip untested (F-100 class)",
+      "root_cause": "test_blindspot",
+      "fix": "discriminating fixtures: paint() across the TTY/NO_COLOR boundary via isTTY stub, sink strip asserted on captured stdout",
+      "fix_commit": null,
+      "status": "fixed",
+      "id": "F-101"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "ADR-0003 rows stale after §7 amendment: OpenTUI described as the whole component layer, commander listed as adopted but never shipped",
+      "root_cause": "silent_divergence",
+      "fix": "ADR-0003 amended: OpenTUI interactive-only; commander struck, hand-rolled parseArgs + COMMANDS table recorded (UX-8 identity)",
+      "fix_commit": null,
+      "status": "fixed",
+      "id": "F-102"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "skipLibCheck added repo-wide without a recorded decision",
+      "root_cause": "silent_divergence",
+      "fix": "recorded in ADR-0003: third-party d.ts skipped, own sources fully strict",
+      "fix_commit": null,
+      "status": "fixed",
+      "id": "F-103"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-12"
+      ],
+      "summary": "traceView empty_verb named kelson index rebuild, which is in UX §3 but not dispatchable — copied verb would error",
+      "root_cause": "design_bug",
+      "fix": "verb points at kelson init until index rebuild ships",
+      "fix_commit": null,
+      "status": "fixed",
+      "id": "F-104"
+    },
+    {
+      "task": "UI-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-10"
+      ],
+      "summary": "static-asset traversal guard checked .. on the already-joined path — dead code; protection rested on URL normalization alone",
+      "root_cause": "design_bug",
+      "fix": "guard asserts resolved path startsWith(staticDir)",
+      "fix_commit": null,
+      "status": "fixed",
+      "id": "F-105"
     }
   ]
 }

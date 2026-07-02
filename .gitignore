@@ -6,3 +6,4 @@ packages/schemas/json-schema/
 .kelson/kelson.db*
 .kelson/runtime/
 .kelson/tools/
+packages/ui/dist/

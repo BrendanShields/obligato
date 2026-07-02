@@ -3,7 +3,7 @@
 - **Status:** Draft for review
 - **Date:** 2026-07-02
 - **Upstream:** [PRD](./2026-07-02-agent-harness-prd.md) (personas §4, requirements referenced by ID), [ERD](./2026-07-02-agent-harness-erd.md)
-- **Decisions bound here:** terminal + git as the v1 review surface with a legible TUI (local web UI is a post-v1 surface, §8); explicit pipeline stages with ambient enforcement.
+- **Decisions bound here:** terminal + git as the v1 review surface with a legible TUI, plus a read-only local web UI (§8, promoted 2026-07-03); explicit pipeline stages with ambient enforcement.
 
 ## 1. UX Principles
 
@@ -22,7 +22,7 @@
 | **`kelson` CLI/TUI** | Where the harness is operated: evals, loop review, routing, drift, signals | OpenTUI component rendering per §7 (ADR-0003); every command scriptable via `--json` |
 | **Repo files** | Review of record: specs, changelog, ledger, packs | PRs review them like any code |
 | **OTel → external dashboards** | Metrics over time | Per ADR-0001, Kelson builds no dashboards in v1 |
-| **Local web UI** | Post-v1 (§8) | Richer proposal/ledger browsing when TUI hits its ceiling |
+| **Local web UI** | Read-only visual surface: telemetry, evals, loop board, traceability (§8) | `kelson ui`; localhost, GET-only (UX-10/11/12) |
 
 ## 3. Command Surface
 
@@ -44,6 +44,7 @@
 - `kelson drift list|promote` — drift review and batched clause promotion (SPEC-8).
 - `kelson signals inbox|triage` — feedback-stage inbox (PIPE-1).
 - `kelson index rebuild` — regenerate the SQLite index from files (ERD §1).
+- `kelson ui` — serve the local read-only web UI (§8); `kelson` with no arguments — interactive launcher (UX-7).
 
 ## 4. User Journeys
 
@@ -146,14 +147,28 @@ A single statusline badge (`degraded: telemetry`) and one line at session start.
   *Obligation:* registry test — every actionable state enum member maps to a command string; status renderers fail closed if unmapped.
 - **UX-6.** The onboarding flow (J0) shall complete on a clean machine, through first self-check, in under 10 minutes unattended, and shall change nothing before explicit confirmation.
   *Obligation:* the OSS-1 clean-machine CI test, extended with a timer assertion and a pre-confirmation filesystem-diff assertion (empty).
+- **UX-7.** When `kelson` is invoked with no arguments on an interactive terminal, it shall open the launcher menu; when stdin or stdout is not a TTY, it shall print plain help and exit 0 without prompting.
+  *Obligation:* integration test — `kelson` spawned with piped stdio prints help, exits 0, emits no prompt escape sequences, and terminates with no input (timeout-guarded).
+- **UX-8.** Every launcher wizard shall dispatch its terminal action through the same entry function as the typed CLI command, and a cancelled wizard shall execute nothing.
+  *Obligation:* unit test — wizard completion is asserted (by identity) to call the shared dispatch table entry the typed command uses; a cancel fixture asserts zero dispatch calls and clean exit.
+- **UX-9.** All rendered CLI output shall route through the §7 component layer.
+  *Obligation:* source-tree gate test scanning `packages/*/src/**/*.ts` — all workspace packages, kernel included, `test/` excluded — for `console.log(`/`process.stdout.write(` call sites outside the component layer's single sink and an explicit file-path-keyed allowlist (`--json` emitter, non-TTY plain fallback, cc-plugin hook/statusline protocol emitters whose stdout is consumed by Claude Code); the test fails on any new unlisted write site. stderr writes are out of scope (divergence-tested 2026-07-03: both readers passed stderr; scan set diverged and is now pinned).
+- **UX-10.** The `kelson ui` server shall bind only to the loopback interface and shall respond 405 to every non-GET request.
+  *Obligation:* integration test — server started on an ephemeral port reports a loopback bind address; POST/PUT/PATCH/DELETE against every registered route return 405.
+- **UX-11.** Every `kelson ui` API response shall validate against the same Zod schema as the corresponding `--json` output (UX-1); where a route serves a view no CLI command emits (aggregation, pagination envelope, composite), it shall validate against a dedicated view schema defined in `packages/schemas` that composes the CLI output schemas by reference wherever rows or branches overlap; if validation fails, the server shall return 500 rather than an invalid body.
+  *Obligation:* CI matrix over all registered API routes — each response parses with its paired schema; a corrupted-store fault-injection fixture returns 500 with no partial body.
+- **UX-12.** If the backing store is missing or empty, each `kelson ui` API route shall return a schema-valid empty result that names the CLI verb producing its data (UX-P5), and the corresponding view shall render a designed empty state, never an error.
+  *Obligation:* empty-store fixture — every route returns 200 with a schema-valid payload carrying `empty_verb`; SPA empty-state render test asserts the verb is displayed.
 
 ## 7. TUI Legibility Spec
 
-- **Component set:** panel (titled box), key-value grid, table with aligned numerics, inline bar/sparkline for effect sizes and trends, side-by-side diff, select-list. Built once in `packages/cli` (OpenTUI `@opentui/core`, per ADR-0003), used everywhere; no ad-hoc `console.log` formatting outside the component layer.
+- **Component set:** panel (titled box), key-value grid, table with aligned numerics, inline bar/sparkline for effect sizes and trends, side-by-side diff, select-list. Built once in `packages/cli`, used everywhere; no ad-hoc `console.log` formatting outside the component layer. Static (print-and-exit) components are pure string renderers writing through the layer's single sink; interactive surfaces — select-list, launcher, wizards — render via OpenTUI `@opentui/core` (ADR-0003), which is an interactive-screen renderer and is not used for static output.
 - **Color semantics (fixed):** green = passing/helps, red = failing/hurts, yellow = attention/underpowered, cyan = identifiers, dim = metadata. Color is never the only signal (symbols accompany: `✓ ✗ ~ ?`) — UX-4.
 - **Density rule:** a view answers its one question in the first 10 lines; detail is progressive (expand/`--full`), not default.
 - **Numbers:** effect sizes always carry CIs; costs always carry units (`$0.42`, `31k tok`); never bare floats.
 
-## 8. Post-v1 Surface: Local Web UI
+## 8. Local Web UI
 
-Deferred, on record: when proposal volume or ledger exploration outgrows the TUI (signal: operators exporting `--json` to inspect elsewhere), `kelson ui` serves a local, read-mostly web app — changelog browsing, proposal diffs with linked evidence, ledger exploration. Same files/SQLite as source of truth; the TUI's `--json` schemas (UX-1) become its API for free. No auth surface in v1-scope thinking: localhost, read-mostly, actions still via CLI.
+*(Promoted from post-v1 by the 2026-07-03 interface design — see `2026-07-03-interface-design.md` for architecture.)*
+
+`kelson ui` serves a local, **read-only** web app from prebuilt static assets (`packages/ui`) plus a `GET /api/*` layer whose responses reuse the `--json` Zod schemas (UX-1). Localhost only, GET only, no auth surface; all actions stay in the CLI/TUI, shown as copyable commands (UX-P5). Four views: telemetry dashboard, eval explorer, improvement-loop board, traceability graph. Visual language: terminal-heritage dark, §7 color semantics and number rules apply. Governed by UX-10/11/12.

@@ -590,6 +590,58 @@
         "SPEC-8"
       ],
       "completed_at": "2026-07-02T12:53:44Z"
+    },
+    {
+      "id": "UI-1",
+      "title": "Spec: UX clauses for TUI launcher/wizards + web UI (promote UX §8)",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-02T14:25:19Z"
+    },
+    {
+      "id": "UI-2",
+      "title": "Divergence-test riskiest interface clauses",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-02T14:27:50Z",
+      "notes": "UX-9 scan-set divergence found+pinned; UX-11 no divergence on 6 probes, UI-only schema rule folded in"
+    },
+    {
+      "id": "UI-3",
+      "title": "Build: §7 component layer + launcher + wizards (packages/cli)",
+      "state": "completed",
+      "clauses": [
+        "UX-4",
+        "UX-7",
+        "UX-8",
+        "UX-9"
+      ],
+      "completed_at": "2026-07-02T14:39:13Z"
+    },
+    {
+      "id": "UI-4",
+      "title": "Build: kelson ui server + read-only JSON API",
+      "state": "completed",
+      "clauses": [
+        "UX-10",
+        "UX-11",
+        "UX-12"
+      ],
+      "completed_at": "2026-07-02T14:47:05Z"
+    },
+    {
+      "id": "UI-5",
+      "title": "Build: packages/ui SPA — 4 views, terminal-dark theme",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-02T14:54:18Z"
+    },
+    {
+      "id": "UI-6",
+      "title": "Verify: obligation tests green, clause-auditor PASS, commit",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }

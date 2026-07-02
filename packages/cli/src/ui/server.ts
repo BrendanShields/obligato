@@ -1,0 +1,142 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import {
+  DEFAULT_DB_PATH,
+  evalView,
+  loopView,
+  openDb,
+  telemetryView,
+  traceView,
+} from "@kelson/kernel";
+import {
+  UiEvalView,
+  UiLoopView,
+  UiTelemetryView,
+  UiTraceView,
+} from "@kelson/schemas";
+import { write } from "../components/sink.js";
+
+// structural stand-in for z.ZodType — cli doesn't depend on zod directly
+interface Validator {
+  safeParse: (
+    v: unknown,
+  ) =>
+    | { success: true; data: unknown }
+    | { success: false; error: { message: string }; data?: undefined };
+}
+
+export const DEFAULT_UI_PORT = 4553;
+
+interface UiServerOptions {
+  dbPath?: string;
+  changelogPath?: string;
+  staticDir?: string;
+  port?: number;
+}
+
+// UX-11: every route declares its schema here — a route cannot exist
+// without one. Responses are parsed before serialization; failure → 500
+// with a fixed envelope, the invalid body never reaches the socket.
+const routes: Record<
+  string,
+  { schema: Validator; build: (ctx: RouteCtx) => unknown }
+> = {
+  "/api/telemetry": {
+    schema: UiTelemetryView,
+    build: (ctx) => telemetryView(ctx.db),
+  },
+  "/api/evals": { schema: UiEvalView, build: (ctx) => evalView(ctx.db) },
+  "/api/loop": {
+    schema: UiLoopView,
+    build: (ctx) => loopView(ctx.db, ctx.changelogPath),
+  },
+  "/api/trace": { schema: UiTraceView, build: (ctx) => traceView(ctx.db) },
+};
+
+interface RouteCtx {
+  db: ReturnType<typeof openDb>;
+  changelogPath: string;
+}
+
+export const API_PATHS = Object.keys(routes);
+
+export const createUiServer = (opts: UiServerOptions = {}) => {
+  const dbPath = opts.dbPath ?? DEFAULT_DB_PATH;
+  const changelogPath =
+    opts.changelogPath ?? join(process.cwd(), ".kelson", "changelog.jsonl");
+  const staticDir =
+    opts.staticDir ?? join(import.meta.dir, "..", "..", "..", "ui", "dist");
+
+  const server = Bun.serve({
+    hostname: "127.0.0.1", // UX-10: loopback only
+    port: opts.port ?? DEFAULT_UI_PORT,
+    fetch(req) {
+      if (req.method !== "GET")
+        return Response.json({ error: "method_not_allowed" }, { status: 405 });
+      const path = new URL(req.url).pathname;
+
+      const route = routes[path];
+      if (route) {
+        const db = openDb(dbPath);
+        try {
+          const body = route.build({ db, changelogPath });
+          const parsed = route.schema.safeParse(body);
+          if (!parsed.success) {
+            console.error(
+              `kelson ui: response validation failed (UX-11) on ${path}: ${parsed.error.message}`,
+            );
+            return Response.json(
+              { error: "response_validation_failed", route: path },
+              { status: 500 },
+            );
+          }
+          return Response.json(parsed.data);
+        } catch (e) {
+          console.error(`kelson ui: ${path}: ${(e as Error).message}`);
+          return Response.json(
+            { error: "response_build_failed", route: path },
+            { status: 500 },
+          );
+        } finally {
+          db.close();
+        }
+      }
+      if (path.startsWith("/api/"))
+        return Response.json({ error: "not_found" }, { status: 404 });
+
+      // static SPA: exact asset if present, else index.html (client routing)
+      const asset = join(
+        staticDir,
+        path === "/" ? "index.html" : path.slice(1),
+      );
+      // traversal guard on the RESOLVED path — join() collapses ".." first
+      if (asset.startsWith(staticDir) && existsSync(asset))
+        return new Response(Bun.file(asset));
+      const index = join(staticDir, "index.html");
+      if (existsSync(index)) return new Response(Bun.file(index));
+      return new Response(
+        "kelson ui: web assets not built — run `bun run build` in packages/ui",
+        { status: 200, headers: { "content-type": "text/plain" } },
+      );
+    },
+  });
+  return server;
+};
+
+export const uiCommand = (argv: string[]): void => {
+  const portFlag = argv.indexOf("--port");
+  const port =
+    portFlag !== -1 && argv[portFlag + 1]
+      ? Number(argv[portFlag + 1])
+      : DEFAULT_UI_PORT;
+  const dbFlag = argv.indexOf("--db");
+  const server = createUiServer({
+    port,
+    ...(dbFlag !== -1 && argv[dbFlag + 1]
+      ? { dbPath: argv[dbFlag + 1] as string }
+      : {}),
+  });
+  write(
+    `kelson ui serving on http://127.0.0.1:${server.port} (read-only; ctrl-c to stop)`,
+  );
+};

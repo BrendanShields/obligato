@@ -25,6 +25,8 @@ gate('test', () => {
   if (hasTests) run('bun test')
   else console.log('test: no test files yet (skipped until P0-2)')
 })
+// the SPA build is a gate so a publish can never ship stale/broken assets (UX §8)
+gate('ui-build', () => run('bun run --cwd packages/ui build'))
 
 let failed = 0
 for (const [name, fn] of gates) {

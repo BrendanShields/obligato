@@ -26,3 +26,4 @@ export * from "./supply.ts";
 export * from "./telemetry.ts";
 export * from "./ulid.ts";
 export * from "./verify.ts";
+export * from "./views.ts";

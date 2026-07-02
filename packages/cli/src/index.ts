@@ -36,6 +36,11 @@ import {
   SandboxProfile,
   type Verdict,
 } from "@kelson/schemas";
+import { kvGrid, panel, table } from "./components/render.js";
+import { write } from "./components/sink.js";
+import { emitJson } from "./output/json.js";
+import { uiCommand } from "./ui/server.js";
+import type { DispatchTable } from "./wizards.js";
 
 interface Flags {
   positional: string[];
@@ -185,14 +190,14 @@ const evalCommand = (argv: string[]): void => {
             }
           : {}),
       });
-      if (json) console.log(JSON.stringify(result, null, 2));
+      if (json) emitJson(result);
       else {
-        console.log(`run ${result.runId} manifest ${result.manifestHash}`);
+        write(`run ${result.runId} manifest ${result.manifestHash}`);
         for (const q of result.quarantine)
-          console.log(
+          write(
             `quarantined ${q.task_id} (window ${q.window.map((w) => (w ? "P" : "F")).join("")})`,
           );
-        console.log(renderVerdict(result.verdict));
+        write(renderVerdict(result.verdict));
       }
     } finally {
       db.close();
@@ -209,7 +214,7 @@ const evalCommand = (argv: string[]): void => {
     const { suite } = loadSuite(suiteDir);
     const db = openDb(str(n.db, DEFAULT_DB_PATH));
     promoteTask(db, suite.id, suite.version, taskId as string);
-    console.log(`re-admitted ${taskId} to ${suite.id}@${suite.version}`);
+    write(`re-admitted ${taskId} to ${suite.id}@${suite.version}`);
     db.close();
     return;
   }
@@ -228,7 +233,7 @@ const evalCommand = (argv: string[]): void => {
         version: version as string,
         ledgerDir: str(named.ledger, join(process.cwd(), "ledger")),
       });
-      console.log(`ledger entry written: ${path}`);
+      write(`ledger entry written: ${path}`);
     } finally {
       db.close();
     }
@@ -284,15 +289,21 @@ const routeCommand = (argv: string[]): void => {
     escalation: spec.escalation,
     via_capability_match: agent !== null,
   };
-  if (named.json === true) console.log(JSON.stringify(decision, null, 2));
+  if (named.json === true) emitJson(decision);
   else
-    console.log(
-      [
-        `route: ${target} (${entry?.endpoint.ref ?? "?"}) effort=${spec.effort} budget=${spec.budget_tokens}`,
-        `  matched: ${ruleIndex === -1 ? "default rule" : `rule #${ruleIndex}`}${agent ? " overridden by capability match" : ""}`,
-        `  escalation ladder: ${spec.escalation.join(" -> ") || "(none)"}`,
-        `  vector: ${JSON.stringify(decision.vector)}`,
-      ].join("\n"),
+    write(
+      kvGrid([
+        [
+          "route",
+          `${target} (${entry?.endpoint.ref ?? "?"}) effort=${spec.effort} budget=${spec.budget_tokens}`,
+        ],
+        [
+          "matched",
+          `${ruleIndex === -1 ? "default rule" : `rule #${ruleIndex}`}${agent ? " overridden by capability match" : ""}`,
+        ],
+        ["escalation", spec.escalation.join(" -> ") || "(none)"],
+        ["vector", JSON.stringify(decision.vector)],
+      ]),
     );
 };
 
@@ -317,7 +328,7 @@ const loopCommand = (argv: string[]): void => {
         lockfile,
       });
       if (!drafts.length) {
-        console.log("no conclusive evidence — nothing to propose");
+        write("no conclusive evidence — nothing to propose");
         return;
       }
       for (const draft of drafts) {
@@ -330,7 +341,7 @@ const loopCommand = (argv: string[]): void => {
           repoRoot,
           gatingSuiteIds: ["seed"],
         });
-        console.log(`proposed ${proposal.id}: ${draft.rationale}`);
+        write(`proposed ${proposal.id}: ${draft.rationale}`);
       }
       return;
     }
@@ -340,10 +351,25 @@ const loopCommand = (argv: string[]): void => {
           "SELECT id, target_pack, state, created_by, rationale FROM proposal ORDER BY rowid",
         )
         .all() as Record<string, string>[];
-      if (!rows.length) console.log("no proposals");
-      for (const r of rows)
-        console.log(
-          `${r.id} [${r.state}] ${r.target_pack} (${r.created_by}) — ${r.rationale?.slice(0, 100)}`,
+      if (!rows.length) write("no proposals — kelson loop propose");
+      else
+        write(
+          table(
+            [
+              { header: "id" },
+              { header: "state" },
+              { header: "pack" },
+              { header: "by" },
+              { header: "rationale" },
+            ],
+            rows.map((r) => [
+              r.id ?? "",
+              r.state ?? "",
+              r.target_pack ?? "",
+              r.created_by ?? "",
+              r.rationale?.slice(0, 60) ?? "",
+            ]),
+          ),
         );
       return;
     }
@@ -351,7 +377,7 @@ const loopCommand = (argv: string[]): void => {
       const id =
         positional[0] ?? die("usage: kelson loop review <id> [--run <run-id>]");
       const proposal = getProposal(db, id as string);
-      console.log(JSON.stringify(proposal, null, 2));
+      emitJson(proposal);
       if (typeof named.run === "string") {
         // A standard gating ablate runs A = current lockfile, B = toggled —
         // so the proposal's candidate configuration is the toggled side B
@@ -370,14 +396,14 @@ const loopCommand = (argv: string[]): void => {
             ? { minSample: Number(named["min-sample"]) }
             : {}),
         });
-        console.log(`gate basis: ${JSON.stringify(basis, null, 2)}`);
+        write(`gate basis: ${JSON.stringify(basis, null, 2)}`);
       }
       return;
     }
     if (sub === "gate") {
       const id = positional[0] ?? die("usage: kelson loop gate <id>");
       const proposal = enterGate(db, id as string, repoRoot);
-      console.log(`${id} -> ${proposal.state}`);
+      write(`${id} -> ${proposal.state}`);
       return;
     }
     if (sub === "approve" || sub === "reject") {
@@ -398,7 +424,7 @@ const loopCommand = (argv: string[]): void => {
           reason: str(named.reason, `human ${sub}`),
         },
       );
-      console.log(`${id} -> ${proposal.state}`);
+      write(`${id} -> ${proposal.state}`);
       return;
     }
     if (sub === "apply") {
@@ -409,7 +435,7 @@ const loopCommand = (argv: string[]): void => {
         lockfileAfter,
         changelog: readChangelog(ctx.changelogPath),
       });
-      console.log(
+      write(
         `applied ${id}; lockfile now ${lockfileAfter}; monitoring open (baseline n=${monitor.baseline_session_ids.length}${monitor.baseline_insufficient ? ", insufficient — alert-only" : ""})`,
       );
       return;
@@ -420,13 +446,13 @@ const loopCommand = (argv: string[]): void => {
         actor: "human",
         reason: str(named.reason, "human revert"),
       });
-      console.log(`reverted ${id}; lockfile now ${lockfileAfter}`);
+      write(`reverted ${id}; lockfile now ${lockfileAfter}`);
       return;
     }
     if (sub === "release") {
       const id = positional[0] ?? die("usage: kelson loop release <id>");
       releaseQuarantined(db, id as string, "human");
-      console.log(`released ${id} -> proposed (must re-pass the gate)`);
+      write(`released ${id} -> proposed (must re-pass the gate)`);
       return;
     }
     die(
@@ -453,8 +479,8 @@ const initCommand = (argv: string[]): void => {
       lockPath,
       `${JSON.stringify({ schema_version: 1, parent_hash: null, entries: [] }, null, 2)}\n`,
     );
-    console.log("created kelson.lock");
-  } else console.log("kelson.lock exists — left untouched");
+    write("created kelson.lock");
+  } else write("kelson.lock exists — left untouched");
 
   const settingsPath = join(root, ".claude", "settings.json");
   const settings = existsSync(settingsPath)
@@ -472,8 +498,8 @@ const initCommand = (argv: string[]): void => {
     const flat = hooks[event].flatMap((h) => h.hooks.map((x) => x.command));
     if (!flat.some((c) => c.includes(command.split("/").pop() as string))) {
       hooks[event].push({ hooks: [{ type: "command", command }] });
-      console.log(`hooked ${event}`);
-    } else console.log(`${event} hook exists — left untouched`);
+      write(`hooked ${event}`);
+    } else write(`${event} hook exists — left untouched`);
   };
   ensure(
     "SessionStart",
@@ -487,7 +513,7 @@ const initCommand = (argv: string[]): void => {
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
   const db = openDb(join(root, ".kelson", "kelson.db"));
   db.close();
-  console.log(
+  write(
     "kelson initialized: .kelson store ready, hooks layered, lockfile pinned",
   );
 };
@@ -510,18 +536,54 @@ const packCommand = (argv: string[]): void => {
     die(
       `pack lint (PACK-3): required bump "${required}" but ${declared.prev} -> ${declared.next} does not satisfy it`,
     );
-  console.log(
+  write(
     `pack lint: ok — required "${required}", declared ${declared.prev} -> ${declared.next}`,
   );
 };
 
-const [cmd, ...rest] = process.argv.slice(2);
-if (cmd === "eval") evalCommand(rest);
-else if (cmd === "route") routeCommand(rest);
-else if (cmd === "loop") loopCommand(rest);
-else if (cmd === "init") initCommand(rest);
-else if (cmd === "pack") packCommand(rest);
-else
-  die(
-    `unknown command: ${cmd ?? "(none)"} (have: init, eval, route, loop, pack)`,
+// UX-8: the one dispatch table — typed commands and launcher wizards both
+// resolve through it, so a wizard cannot grow a parallel implementation.
+export const COMMANDS: DispatchTable = {
+  init: initCommand,
+  eval: evalCommand,
+  route: routeCommand,
+  loop: loopCommand,
+  pack: packCommand,
+  ui: uiCommand,
+};
+
+const help = (): void => {
+  write(
+    panel(
+      "kelson",
+      kvGrid([
+        ["init", "install kelson into this repo"],
+        ["eval", "ablate | compare | suite promote | publish"],
+        ["route", "explain — show the routing decision"],
+        ["loop", "propose | status | review | gate | approve | apply | revert"],
+        ["pack", "lint — check a pack's version bump"],
+        ["ui", "serve the local read-only web UI"],
+        ["", ""],
+        ["(no command)", "in a terminal: interactive launcher (UX-7)"],
+      ]),
+    ),
   );
+};
+
+const main = async (): Promise<void> => {
+  const [cmd, ...rest] = process.argv.slice(2);
+  if (cmd === undefined) {
+    // UX-7: TTY → launcher; anything else → plain help, exit 0, no prompt.
+    if (process.stdin.isTTY === true && process.stdout.isTTY === true) {
+      const { runLauncher } = await import("./launcher.js");
+      await runLauncher(COMMANDS);
+    } else help();
+    return;
+  }
+  const entry = COMMANDS[cmd];
+  if (!entry)
+    die(`unknown command: ${cmd} (have: ${Object.keys(COMMANDS).join(", ")})`);
+  else await entry(rest);
+};
+
+if (import.meta.main) await main();

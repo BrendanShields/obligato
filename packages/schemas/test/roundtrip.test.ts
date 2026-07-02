@@ -13,6 +13,10 @@ import {
   StepEvent,
   Task,
   TraceLink,
+  UiEvalView,
+  UiLoopView,
+  UiTelemetryView,
+  UiTraceView,
 } from "../src/index.ts";
 
 const from = (alphabet: string, n: number) =>
@@ -33,6 +37,21 @@ const semver = fc
   .tuple(fc.nat(20), fc.nat(20), fc.nat(20))
   .map(([a, b, c]) => `${a}.${b}.${c}`);
 const count = fc.integer({ min: 0, max: 1_000_000 });
+const isoDay = isoUtc.map((s) => s.slice(0, 10));
+const delta = fc
+  .tuple(
+    fc.double({ noNaN: true, noDefaultInfinity: true }),
+    fc.double({ noNaN: true, noDefaultInfinity: true }),
+    fc.double({ noNaN: true, noDefaultInfinity: true }),
+  )
+  .map(([mean, a, b]) => {
+    // JSON has no -0; serialize(-0) round-trips to 0 and would fail toEqual
+    const z0 = (v: number): number => (v === 0 ? 0 : v);
+    return {
+      mean: z0(mean),
+      ci95: [z0(Math.min(a, b)), z0(Math.max(a, b))] as [number, number],
+    };
+  });
 
 const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
   SharedStepEvent: [
@@ -264,6 +283,134 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
           hash: sha256,
           enabled: fc.boolean(),
         }),
+        { maxLength: 5 },
+      ),
+    }),
+  ],
+  UiTelemetryView: [
+    UiTelemetryView,
+    fc.record({
+      empty_verb: nonEmpty,
+      sessions_count: count,
+      tokens_in: count,
+      tokens_out: count,
+      cost_micro_usd: count,
+      models: fc.array(
+        fc.record({
+          model: nonEmpty,
+          steps: fc.integer({ min: 1, max: 100000 }),
+        }),
+        { maxLength: 4 },
+      ),
+      series: fc.array(
+        fc.record({ day: isoDay, tokens: count, cost_micro_usd: count }),
+        { maxLength: 5 },
+      ),
+      sessions: fc.array(
+        fc.record({
+          id: ulid,
+          repo: nonEmpty,
+          status: fc.constantFrom("complete", "incomplete", "degraded"),
+          started_at: isoUtc,
+          ended_at: fc.option(isoUtc, { nil: null }),
+          steps: count,
+          tokens: count,
+          cost_micro_usd: count,
+        }),
+        { maxLength: 5 },
+      ),
+    }),
+  ],
+  UiEvalView: [
+    UiEvalView,
+    fc.record({
+      empty_verb: nonEmpty,
+      runs: fc.array(
+        fc.record({
+          id: ulid,
+          kind: fc.constantFrom("ablate", "compare", "replay"),
+          suite_id: nonEmpty,
+          suite_version: nonEmpty,
+          started_at: isoUtc,
+          finished_at: fc.option(isoUtc, { nil: null }),
+          decision: fc.option(
+            fc.constantFrom("helps", "hurts", "no_effect", "underpowered"),
+            { nil: null },
+          ),
+          fpar_delta: fc.option(delta, { nil: null }),
+          cost_delta_pct: fc.option(delta, { nil: null }),
+          n: fc.option(count, { nil: null }),
+        }),
+        { maxLength: 5 },
+      ),
+    }),
+  ],
+  UiLoopView: [
+    UiLoopView,
+    fc.record({
+      empty_verb: nonEmpty,
+      proposals: fc.array(
+        fc.record({
+          id: ulid,
+          target_pack: nonEmpty,
+          state: fc.constantFrom(
+            "proposed",
+            "gated",
+            "approved",
+            "rejected",
+            "applied",
+            "monitoring",
+            "stable",
+            "reverted",
+            "quarantined",
+          ),
+          created_by: fc.constantFrom("loop", "human"),
+          rationale: fc.string({ maxLength: 100 }),
+          created_at: isoUtc,
+          updated_at: isoUtc,
+        }),
+        { maxLength: 5 },
+      ),
+      changelog: fc.array(
+        fc.record({
+          seq: fc.integer({ min: 1, max: 100000 }),
+          at: isoUtc,
+          action: fc.constantFrom("apply", "revert", "human_change"),
+          proposal_id: fc.option(ulid, { nil: null }),
+          lockfile_before: sha256,
+          lockfile_after: sha256,
+          evidence_summary: nonEmpty,
+        }),
+        { maxLength: 5 },
+      ),
+    }),
+  ],
+  UiTraceView: [
+    UiTraceView,
+    fc.record({
+      empty_verb: nonEmpty,
+      nodes: fc.array(
+        fc.record({
+          logical_id: nonEmpty,
+          type: fc.constantFrom(
+            "signal",
+            "idea",
+            "prd",
+            "erd",
+            "adr",
+            "spec",
+            "code_region",
+            "test",
+          ),
+          authority: fc.constantFrom("authored", "inferred", "confirmed"),
+          tier: fc.constantFrom("T0", "T1", "T2"),
+          content_hash: sha256,
+          drift_open: fc.boolean(),
+        }),
+        { maxLength: 5 },
+      ),
+      edges: fc.array(
+        fc.record({ upstream_id: nonEmpty, downstream_id: nonEmpty }),
         { maxLength: 5 },
       ),
     }),

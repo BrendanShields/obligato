@@ -7,3 +7,4 @@ export * from "./routing.ts";
 export * from "./scalars.ts";
 export * from "./shared.ts";
 export * from "./telemetry.ts";
+export * from "./ui-views.ts";
