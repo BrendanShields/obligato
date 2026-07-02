@@ -642,6 +642,20 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-02T15:05:31Z"
+    },
+    {
+      "id": "P6-0",
+      "title": "Design: standalone harness — native agent runtime (brainstorm output committed)",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-02T23:47:21Z"
+    },
+    {
+      "id": "P6-1",
+      "title": "Spec: agent-runtime.md — AGT/PERM/SES/PROV clauses via feature-pipeline",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }
