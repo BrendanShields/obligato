@@ -660,14 +660,14 @@
     {
       "id": "P6-2",
       "title": "Spec hardening: divergence-test riskiest AGT/SES clauses",
-      "state": "in_progress",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T00:06:58Z"
     },
     {
       "id": "P6-3",
       "title": "Build: packages/schemas session-event/permission/registry schemas + packages/agent (llm, loop, tools, permissions, sessions)",
-      "state": "open",
+      "state": "in_progress",
       "clauses": [],
       "completed_at": null
     },

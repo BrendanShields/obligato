@@ -1556,6 +1556,21 @@
       "id": "F-110",
       "status": "fixed",
       "fix_commit": "58552f3"
+    },
+    {
+      "task": "P6-2",
+      "source": "divergence",
+      "severity": "warning",
+      "clauses": [
+        "AGT-2",
+        "PERM-1"
+      ],
+      "summary": "Divergence testing: AGT-2 split on resume-after-done (no-op vs error) and empty pause reason (store vs reject) -> AGT-5/AGT-6 added; PERM-1 converged on 13 probes but both readers flagged blanket-deny defeated by specific allow -> deny-trump amendment",
+      "root_cause": "spec_gap",
+      "fix": "AGT-5, AGT-6 clarifying clauses; PERM-1 deny-trump + explicit specificity metric",
+      "status": "resolved",
+      "id": "F-111",
+      "fix_commit": null
     }
   ]
 }
