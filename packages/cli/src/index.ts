@@ -565,6 +565,10 @@ export const COMMANDS: DispatchTable = {
       die('chat needs a terminal — use `kelson run -p "<task>"` instead');
     await (await import("./chat/app.js")).chatCommand(argv, COMMANDS);
   },
+  session: async (argv) =>
+    (await import("./agent/session.js")).sessionCommand(argv),
+  promote: async (argv) =>
+    (await import("./agent/session.js")).promoteCommand(argv),
 };
 
 const help = (): void => {
@@ -581,6 +585,8 @@ const help = (): void => {
         ["auth", "login <anthropic|ollama> — configure the native runtime"],
         ["run", 'run -p "<task>" — headless native session (--json)'],
         ["chat", "interactive native-runtime chat (TTY)"],
+        ["session", "fork | compare | compact — tree-session ops"],
+        ["promote", "<session> --suite <dir> — session → benchmark task"],
         ["", ""],
         ["(no command)", "in a terminal: interactive launcher (UX-7)"],
       ]),

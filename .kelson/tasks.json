@@ -793,23 +793,23 @@
     {
       "id": "P10-2",
       "title": "Spec hardening: divergence-test fork/resumeFrom semantics",
-      "state": "in_progress",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T06:07:41Z"
     },
     {
       "id": "P10-3",
       "title": "Build: fork/compare/compact + promote + resumeFrom replay",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T06:07:41Z"
     },
     {
       "id": "P10-4",
       "title": "Verify: fork+compare, promote+replay to verdict, audit",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T06:14:42Z"
     }
   ]
 }

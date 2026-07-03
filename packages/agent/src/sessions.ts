@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { openTask, startSession, ulid } from "@kelson/kernel";
+import { openTask, startSession, storeSnapshot, ulid } from "@kelson/kernel";
 import { SessionEvent, type SessionEventKind } from "@kelson/schemas";
 
 export class SessionNotPausedError extends Error {
@@ -81,10 +81,16 @@ export const currentHead = (events: SessionEvent[]): string | null => {
   return null;
 };
 
-// SES-2: walk the parent chain head -> root, reversed. head_moved events are
-// off-chain by construction (their ids are never a parent_id).
-export const reconstruct = (events: SessionEvent[]): SessionEvent[] => {
-  const headId = currentHead(events);
+// SES-2/6: walk the parent chain from a GIVEN head -> root, reversed. Used for
+// arbitrary branch heads (SES-7 compare) as well as the current head. head_moved
+// events are off-chain by construction (their ids are never a parent_id).
+// SES-8: if the walked chain carries a compaction marker, the covered prefix is
+// replaced by a single synthetic summary user_message (the covered originals
+// stay in the store; only the reconstructed context substitutes).
+export const reconstructFrom = (
+  events: SessionEvent[],
+  headId: string | null,
+): SessionEvent[] => {
   if (headId === null) return [];
   const byId = new Map(events.map((e) => [e.id, e]));
   const chain: SessionEvent[] = [];
@@ -93,8 +99,33 @@ export const reconstruct = (events: SessionEvent[]): SessionEvent[] => {
     chain.push(cursor);
     cursor = cursor.parent_id === null ? undefined : byId.get(cursor.parent_id);
   }
-  return chain.reverse();
+  chain.reverse();
+  const comp = [...chain]
+    .reverse()
+    .find((e) => e.kind === "session_meta" && e.payload.compaction);
+  if (!comp) return chain;
+  const { summary, to_event } = comp.payload.compaction as {
+    summary: string;
+    to_event: string;
+  };
+  const toIdx = chain.findIndex((e) => e.id === to_event);
+  if (toIdx < 0) return chain;
+  const summaryEvent = SessionEvent.parse({
+    // Deterministic (SES-2) synthetic id: flip the first Crockford char of the
+    // compaction event's ULID so it is a valid, stable, distinct id.
+    id: (comp.id[0] === "0" ? "1" : "0") + comp.id.slice(1),
+    session_id: comp.session_id,
+    parent_id: null,
+    kind: "user_message",
+    payload: { text: summary, compacted: true },
+    at: comp.at,
+    schema_version: 1,
+  });
+  return [summaryEvent, ...chain.slice(toIdx + 1)];
 };
+
+export const reconstruct = (events: SessionEvent[]): SessionEvent[] =>
+  reconstructFrom(events, currentHead(events));
 
 export type Lifecycle = "active" | "paused" | "done";
 
@@ -210,6 +241,9 @@ export const createAgentSession = (
     // PROV-6: how the session authenticates; ledger/degradation policy reads
     // this — required so every creator states it.
     auth_kind: "subscription" | "api_key" | "none";
+    // EVP-10: where session-start git-bundle snapshots are stored (a promotable
+    // session needs one). Omit to use the kernel default.
+    snapshot_store_dir?: string;
   },
 ): AgentSession => {
   const sessionId = startSession(db, {
@@ -219,6 +253,14 @@ export const createAgentSession = (
     harness_version: args.harness_version,
   });
   const taskId = openTask(db, { repo: args.repo });
+  // EVP-10: best-effort snapshot — null when the repo is not a git working
+  // tree (a plain chat dir); promotion later requires a non-null one.
+  let snapshot: string | null = null;
+  try {
+    snapshot = storeSnapshot(args.repo, args.snapshot_store_dir);
+  } catch {
+    snapshot = null;
+  }
   const root = appendEvent(db, {
     session_id: sessionId,
     parent_id: null,
@@ -229,9 +271,122 @@ export const createAgentSession = (
       system: args.system,
       runner: "native",
       auth_kind: args.auth_kind,
+      snapshot,
     },
   });
   return { sessionId, taskId, rootEventId: root.id };
+};
+
+// SES-6: fork a session at an event (default: current head). Appends an inert
+// fork marker parented at the target — appendEvent's head_moved makes it the
+// new current head, so both branches' heads coexist (SES-3). Returns the fork
+// head and the pre-fork original head (recoverable, append-only).
+export const forkSession = (
+  db: Database,
+  sessionId: string,
+  eventId?: string,
+): { forkHead: string; originalHead: string } => {
+  const events = listEvents(db, sessionId);
+  const originalHead = currentHead(events);
+  if (originalHead === null)
+    throw new Error(`no session ${sessionId} in the store (SES-6)`);
+  const target = eventId ?? originalHead;
+  if (!events.some((e) => e.id === target))
+    throw new Error(`no event ${target} in session ${sessionId} (SES-6)`);
+  const marker = appendEvent(db, {
+    session_id: sessionId,
+    parent_id: target,
+    kind: "session_meta",
+    payload: { forked_from: target },
+  });
+  return { forkHead: marker.id, originalHead };
+};
+
+export interface BranchSummary {
+  head: string;
+  cost_micro_usd: number;
+  last_text: string;
+  lifecycle: Lifecycle;
+  event_count: number;
+}
+
+export interface BranchComparison {
+  common_ancestor: string | null;
+  shared_prefix: number;
+  a: BranchSummary;
+  b: BranchSummary;
+}
+
+// SES-7: read-only compare of two branch heads — per-branch cost + outcome and
+// the deepest common ancestor. Appends nothing.
+export const compareBranches = (
+  db: Database,
+  sessionId: string,
+  headA: string,
+  headB: string,
+): BranchComparison => {
+  const events = listEvents(db, sessionId);
+  const summarize = (head: string): BranchSummary => {
+    const chain = reconstructFrom(events, head);
+    const assistants = chain.filter((e) => e.kind === "assistant_message");
+    return {
+      head,
+      cost_micro_usd: assistants.reduce(
+        (sum, e) => sum + Number(e.payload.cost_micro_usd ?? 0),
+        0,
+      ),
+      last_text: String(assistants.at(-1)?.payload.text ?? ""),
+      lifecycle: lifecycle(chain),
+      event_count: chain.length,
+    };
+  };
+  const chainA = reconstructFrom(events, headA);
+  const idsB = new Set(reconstructFrom(events, headB).map((e) => e.id));
+  let common: string | null = null;
+  let shared = 0;
+  for (const e of chainA) {
+    if (idsB.has(e.id)) {
+      common = e.id;
+      shared++;
+    } else break;
+  }
+  return {
+    common_ancestor: common,
+    shared_prefix: shared,
+    a: summarize(headA),
+    b: summarize(headB),
+  };
+};
+
+// SES-8: compact the reconstructed chain to head — summarize (caller supplies
+// the summarizer, a cheap routed model in production) and append one compaction
+// marker covering [root, head]. The covered originals are never deleted; only
+// reconstruction substitutes the summary (reconstructFrom).
+export const compactSession = (
+  db: Database,
+  sessionId: string,
+  summarize: (chain: SessionEvent[]) => string,
+): { from_event: string; to_event: string } => {
+  const events = listEvents(db, sessionId);
+  const head = currentHead(events);
+  if (head === null)
+    throw new Error(`no session ${sessionId} in the store (SES-8)`);
+  const chain = reconstructFrom(events, head);
+  // Resolve `from` to the first REAL covered event — on a re-compact chain[0]
+  // is the prior compaction's synthetic (in-memory) summary, not a stored id.
+  const realIds = new Set(events.map((e) => e.id));
+  const from = chain.find((e) => realIds.has(e.id)) ?? chain[0];
+  if (!from) throw new Error(`session ${sessionId} has no events (SES-8)`);
+  const summary = summarize(chain);
+  appendEvent(db, {
+    session_id: sessionId,
+    parent_id: head,
+    kind: "session_meta",
+    payload: {
+      compaction: { summary, from_event: from.id, to_event: head },
+    },
+  });
+  return { from_event: from.id, to_event: head };
 };
 
 export const authKindOf = (

@@ -1798,6 +1798,21 @@
       "status": "resolved",
       "id": "F-127",
       "fix_commit": null
+    },
+    {
+      "task": "P10-4",
+      "source": "clause_auditor",
+      "severity": "warning",
+      "clauses": [
+        "SES-7",
+        "SES-8"
+      ],
+      "summary": "SES-7 BranchSummary omitted lifecycle (clause outcome = lifecycle + last text); SES-8 from_event pointed at the synthetic summary id on a re-compact (non-existent in store)",
+      "root_cause": "spec_gap",
+      "fix": "added lifecycle to BranchSummary + CLI + test; SES-8 from_event resolves to the first real covered event via realIds set",
+      "status": "resolved",
+      "id": "F-128",
+      "fix_commit": null
     }
   ]
 }
