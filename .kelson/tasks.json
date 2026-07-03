@@ -719,6 +719,41 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-03T02:45:22Z"
+    },
+    {
+      "id": "P8-1",
+      "title": "Spec: Phase 8 clauses — AGT spec-loop, obligation done-condition, clause-auditor gate, ART-4 runtime block",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-03T04:13:59Z"
+    },
+    {
+      "id": "P8-2",
+      "title": "Spec hardening: divergence-test riskiest AGT-8 done-condition clause",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P8-3",
+      "title": "Build: SpecContext + in-loop obligation runner (touched-clause, hash-cached)",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P8-4",
+      "title": "Build: clause-auditor gate agent + ART-4 runtime block",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P8-5",
+      "title": "Verify: planted-violation blocks done, spec-less T1 blocked, Ollama smoke, audit",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }
