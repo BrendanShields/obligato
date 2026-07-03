@@ -772,16 +772,16 @@
     {
       "id": "P9-3",
       "title": "Build: per-step route/escalate + BudgetMonitor in-loop + triage",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T05:37:54Z"
     },
     {
       "id": "P9-4",
       "title": "Verify: mechanical steps route cheap, runaway pauses at 2x, bandit, audit",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T05:52:15Z"
     }
   ]
 }

@@ -1769,6 +1769,35 @@
       "status": "resolved",
       "id": "F-125",
       "fix_commit": null
+    },
+    {
+      "task": "P9-4",
+      "source": "clause_auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-10",
+        "AGT-12"
+      ],
+      "summary": "recordStepOutcome fired for every routed step, not just mechanical/T0 (AGT-10 scope)",
+      "root_cause": "spec_gap",
+      "fix": "gated recordStepOutcome to mechanical/T0 matching the exploration scope",
+      "status": "resolved",
+      "id": "F-126",
+      "fix_commit": null
+    },
+    {
+      "task": "P9-4",
+      "source": "clause_auditor",
+      "severity": "violation",
+      "clauses": [
+        "AGT-11"
+      ],
+      "summary": "headless budget triage inert: kernel BudgetMonitor.resolve clears the pause + grants headroom ONLY for continue, not escalate/block — so resolveHeadless(escalate) left the monitor paused, the !budget.paused guard then permanently disabled record(), accounting died and the run went unbounded to step_limit; resolveHeadless also never returned block (escalationDepth fixed at 0)",
+      "root_cause": "design_bug",
+      "fix": "headless now grants up to BUDGET_HEADLESS_CAP kernel continue extensions (the only resolve that clears+grants) then blocks with reason budget:blocked; AGT-11 clause corrected; discriminating block-at-cap test added",
+      "status": "resolved",
+      "id": "F-127",
+      "fix_commit": null
     }
   ]
 }

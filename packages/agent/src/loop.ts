@@ -1,6 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { join } from "node:path";
-import { endSession, safeIngest, ulid } from "@kelson/kernel";
+import {
+  type BudgetMonitor,
+  budgetEvents,
+  endSession,
+  safeIngest,
+  ulid,
+} from "@kelson/kernel";
 import type {
   ModelRegistryEntry,
   PermissionRule,
@@ -15,6 +21,14 @@ import {
 } from "ai";
 import { costOf, type Usage } from "./llm/registry.ts";
 import { decide } from "./permissions.ts";
+import {
+  escalateStep,
+  newSessionBudget,
+  type RoutingContext,
+  recordStepOutcome,
+  routeStep,
+  sessionPausedForBudget,
+} from "./routing.ts";
 import {
   appendEvent,
   assertResumable,
@@ -59,6 +73,10 @@ export interface StepDeps {
   spec?: SpecContext;
   // AGT-8: a recorded human override unblocks the ART-4 write gate.
   override?: { by: string; reason: string };
+  // AGT-10..12: live routing + budget. Absent => fixed model, no budget.
+  routing?: RoutingContext;
+  // AGT-11: session-level BudgetMonitor holder (runTurn-owned, seeded once).
+  budgetHolder?: { monitor: BudgetMonitor | null };
   onDelta?: (text: string) => void;
   onToolResult?: (name: string, ok: boolean) => void;
   onStepCost?: (costMicroUsd: number | null) => void;
@@ -75,6 +93,10 @@ interface ToolCall {
   name: string;
   input: Record<string, unknown>;
 }
+
+// AGT-11: how many headless budget extensions (each = +1 budget of headroom)
+// before a headless run blocks. Bounds unattended spend at (2 + CAP)× budget.
+const BUDGET_HEADLESS_CAP = 2;
 
 // AGT-6: pause reasons are validated non-empty at record time.
 export const validatePauseReason = (reason: string): string => {
@@ -342,6 +364,36 @@ const runObligations = (
   return head;
 };
 
+// AGT-10 feature heuristics. A step is mechanical when its last assistant
+// message only requested read-only tools (no write/edit/bash) — the routing
+// emulation's `task_type: mechanical` signal.
+const mechanicalStep = (chain: SessionEvent[]): boolean => {
+  const lastAssistant = [...chain]
+    .reverse()
+    .find((e) => e.kind === "assistant_message");
+  const calls = (lastAssistant?.payload.tool_calls ?? []) as ToolCall[];
+  if (calls.length === 0) return false;
+  const mutating = new Set(["write", "edit", "bash"]);
+  return calls.every((c) => !mutating.has(c.name));
+};
+
+// Max tier of the session's touched clauses (SpecContext), else T0.
+const touchedTier = (
+  spec: SpecContext | undefined,
+  chain: SessionEvent[],
+): "T0" | "T1" | "T2" => {
+  if (!spec || spec.empty) return "T0";
+  const order = { T0: 0, T1: 1, T2: 2 } as const;
+  let max: "T0" | "T1" | "T2" = "T0";
+  for (const c of obligationChecks(chain)) {
+    for (const abs of spec.filesByClause.get(c.clause_id) ?? []) {
+      const t = spec.tierByFile.get(abs) as "T0" | "T1" | "T2" | undefined;
+      if (t && order[t] > order[max]) max = t;
+    }
+  }
+  return max;
+};
+
 // AGT-1: one step = exactly one model call plus the tool executions it
 // requests; loop control is never delegated to the SDK.
 export const step = async (deps: StepDeps): Promise<StepResult> => {
@@ -352,13 +404,46 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
 
   if (pendingToolCalls(chain).length > 0) return resolveTools(deps, chain);
 
-  // UX-17: honor a chain-recorded model switch at the next model call —
-  // "a step's model id is fixed at the moment its model call is issued".
-  const activeRef = sessionModelOf(chain);
-  const { entry, model } =
-    activeRef !== null && activeRef !== deps.entry.id && deps.resolveModel
-      ? deps.resolveModel(activeRef)
-      : { entry: deps.entry, model: deps.model };
+  // AGT-10: with a RoutingContext, route this step and let the routed target
+  // pick the model; else UX-17 — honor a chain-recorded model switch. "A
+  // step's model id is fixed at the moment its model call is issued."
+  let routed: ReturnType<typeof routeStep> | null = null;
+  let entry: ModelRegistryEntry;
+  let model: LanguageModel;
+  // AGT-12: a one-shot obligation-fail escalation (the chain tail is a
+  // routing_escalation) uses the escalated model for this step, then routing
+  // resumes on the next step.
+  const tail = chain[chain.length - 1];
+  const escModelId =
+    tail?.kind === "session_meta" && tail.payload.routing_escalation
+      ? String((tail.payload.routing_escalation as { modelId: string }).modelId)
+      : null;
+  if (escModelId && deps.resolveModel) {
+    ({ entry, model } = deps.resolveModel(escModelId));
+  } else if (deps.routing && deps.resolveModel) {
+    routed = routeStep(deps.db, deps.routing, {
+      taskId: String(meta.payload.task_id),
+      stepEventId: ulid(),
+      repo: deps.spec?.repo ?? deps.ctx.cwd,
+      mechanical: mechanicalStep(chain),
+      tier: touchedTier(deps.spec, chain),
+    });
+    ({ entry, model } = deps.resolveModel(routed.modelId));
+    // AGT-11: seed the session budget once, from the first routed budget.
+    if (deps.budgetHolder && deps.budgetHolder.monitor === null)
+      deps.budgetHolder.monitor = newSessionBudget(
+        deps.db,
+        deps.sessionId,
+        deps.routing.policyVersion,
+        routed.decision.budget_tokens,
+      );
+  } else {
+    const activeRef = sessionModelOf(chain);
+    ({ entry, model } =
+      activeRef !== null && activeRef !== deps.entry.id && deps.resolveModel
+        ? deps.resolveModel(activeRef)
+        : { entry: deps.entry, model: deps.model });
+  }
 
   // Cast: the SDK's ToolSet union is incompatible with
   // exactOptionalPropertyTypes at this call site; inputs are re-validated by
@@ -450,16 +535,57 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
     session_id: deps.sessionId,
     sdlc_step: "build",
     model: entry.id,
-    effort: "medium",
+    effort: routed?.decision.effort ?? "medium",
     agent_id: "native",
     ...usage,
     unit_prices: entry.prices ? { ...entry.prices } : {},
     cost_micro_usd: cost,
-    budget_tokens: 1_000_000,
+    budget_tokens: routed?.decision.budget_tokens ?? 1_000_000,
     overrun: "none",
     span_id: null,
     schema_version: 1,
   });
+
+  // AGT-12: record the bandit outcome for a routed mechanical/T0 arm (the
+  // scope AGT-10 draws exploration on). A step that completed without an
+  // error is a success (1).
+  if (
+    deps.routing &&
+    routed &&
+    (mechanicalStep(chain) || touchedTier(deps.spec, chain) === "T0")
+  )
+    recordStepOutcome(
+      deps.db,
+      deps.routing,
+      routed.explored?.id ?? routed.decision.target,
+      true,
+    );
+
+  // AGT-11: record usage against the session budget at the model-call finish,
+  // before this step's tool executions. On the 2× pause, interactive surfaces
+  // triage (return paused("budget")); headless grants up to BUDGET_HEADLESS_CAP
+  // budget extensions (kernel `continue` — the only resolve that clears the
+  // pause and grants +1 budget of headroom), then blocks.
+  const budget = deps.budgetHolder?.monitor;
+  if (budget && !budget.paused) {
+    const total =
+      usage.tokens_in +
+      usage.tokens_out +
+      usage.tokens_cache_read +
+      usage.tokens_cache_write;
+    if (budget.record(total) === "paused") {
+      if (deps.headlessAsk === undefined)
+        return { status: "paused", reason: "budget" };
+      const extensions = budgetEvents(deps.db, deps.sessionId).filter(
+        (e) => e.kind === "triage_resolved" && e.action === "continue",
+      ).length;
+      if (extensions >= BUDGET_HEADLESS_CAP) {
+        budget.resolve("block", "auto", "budget_cap");
+        return { status: "paused", reason: "budget:blocked" };
+      }
+      budget.resolve("continue", "auto", "headless_extension");
+    }
+  }
 
   if (calls.length === 0) {
     // AGT-7 done-gate: refuse `done` while any accumulated touched clause's
@@ -471,14 +597,34 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
         reconstruct(listEvents(deps.db, deps.sessionId)),
       );
       if (failing.length > 0) {
-        appendEvent(deps.db, {
+        // AGT-12: an obligation failure escalates the retry model via the
+        // routing ladder rather than silently retrying on the same model.
+        let escalationNote = "";
+        let escModel: string | null = null;
+        if (deps.routing && routed) {
+          const esc = escalateStep(deps.db, deps.routing, routed.decision);
+          if (esc) {
+            escModel = esc.modelId;
+            escalationNote = ` The retry is escalated to a stronger model (${esc.decision.target}).`;
+          }
+        }
+        const injected = appendEvent(deps.db, {
           session_id: deps.sessionId,
           parent_id: assistant.id,
           kind: "user_message",
           payload: {
-            text: `Cannot finish: obligation checks are still failing for clause(s) ${failing.join(", ")}. Fix the governed code so their tests pass before ending.`,
+            text: `Cannot finish: obligation checks are still failing for clause(s) ${failing.join(", ")}. Fix the governed code so their tests pass before ending.${escalationNote}`,
           },
         });
+        // The escalation is a one-shot session_meta appended LAST so the next
+        // step's routing block sees it as the chain tail (then routing resumes).
+        if (escModel !== null)
+          appendEvent(deps.db, {
+            session_id: deps.sessionId,
+            parent_id: injected.id,
+            kind: "session_meta",
+            payload: { routing_escalation: { modelId: escModel } },
+          });
         return { status: "continue" };
       }
     }
@@ -497,15 +643,23 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
   return resolveTools(deps, chainWithAssistant);
 };
 
-// The shared driver for chat, run -p, and (Phase 7) the api executor.
-// stepLimit is a runaway safety valve, not loop control — budgets land in
-// Phase 9. ponytail: raise or route through BudgetMonitor then.
+// The shared driver for chat, run -p, and the api executor. stepLimit is a
+// runaway safety valve; a RoutingContext adds a real per-session BudgetMonitor
+// (AGT-11) that pauses at 2× the routed budget.
 export const runTurn = async (
   deps: StepDeps,
   stepLimit = 50,
 ): Promise<StepResult> => {
+  // AGT-11: a durable budget pause survives a fresh process — re-derive it
+  // from the append-only budget-event stream before running any step.
+  if (deps.routing && sessionPausedForBudget(deps.db, deps.sessionId))
+    return { status: "paused", reason: validatePauseReason("budget") };
+  // AGT-11: one session-scoped monitor holder, seeded on the first routed step.
+  const runDeps: StepDeps = deps.routing
+    ? { ...deps, budgetHolder: deps.budgetHolder ?? { monitor: null } }
+    : deps;
   for (let i = 0; i < stepLimit; i++) {
-    const result = await step(deps);
+    const result = await step(runDeps);
     if (result.status !== "continue") return result;
   }
   return { status: "paused", reason: validatePauseReason("step_limit") };

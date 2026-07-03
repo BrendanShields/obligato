@@ -6,6 +6,7 @@ import {
   instantiate,
   loadConfig,
   loadRegistry as loadModelRegistry,
+  loadRoutingContext,
   loadRules,
   loadSpecContext,
   localExec,
@@ -82,6 +83,8 @@ export const setupAgent = (
   // AGT-7/8/9: spec-native loop over the operator repo's artifact store —
   // empty (inert) when the repo has no trace links.
   const spec = loadSpecContext(db, root);
+  // AGT-10..12: live routing + budget from the repo's routing pack, if any.
+  const routing = loadRoutingContext(root) ?? undefined;
   return {
     deps: {
       db,
@@ -93,6 +96,7 @@ export const setupAgent = (
       authKind,
       resolveModel,
       spec,
+      ...(routing ? { routing } : {}),
     },
     entry,
     config,
