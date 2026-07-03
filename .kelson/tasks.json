@@ -782,6 +782,34 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-03T05:52:15Z"
+    },
+    {
+      "id": "P10-1",
+      "title": "Spec: Phase 10 clauses — /fork tree, compaction, /promote session→eval, branch compare, resumeFrom replay",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-03T05:57:05Z"
+    },
+    {
+      "id": "P10-2",
+      "title": "Spec hardening: divergence-test fork/resumeFrom semantics",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P10-3",
+      "title": "Build: fork/compare/compact + promote + resumeFrom replay",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P10-4",
+      "title": "Verify: fork+compare, promote+replay to verdict, audit",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }
