@@ -754,6 +754,34 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-03T04:38:39Z"
+    },
+    {
+      "id": "P9-1",
+      "title": "Spec: Phase 9 clauses — per-step routing, in-loop budget triage, T0 bandit",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-03T05:14:16Z"
+    },
+    {
+      "id": "P9-2",
+      "title": "Spec hardening: divergence-test riskiest budget-triage clause",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P9-3",
+      "title": "Build: per-step route/escalate + BudgetMonitor in-loop + triage",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "P9-4",
+      "title": "Verify: mechanical steps route cheap, runaway pauses at 2x, bandit, audit",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }
