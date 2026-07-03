@@ -31,7 +31,7 @@ import {
   writeLedgerEntry,
 } from "@kelson/kernel";
 import {
-  type Executor,
+  Executor,
   Lockfile,
   SandboxProfile,
   type Verdict,
@@ -100,7 +100,7 @@ const renderVerdict = (v: Verdict, minSample = 20): string => {
   return lines.join("\n");
 };
 
-const evalCommand = (argv: string[]): void => {
+const evalCommand = async (argv: string[]): Promise<void> => {
   const sub = argv[0];
   const { positional, named } = parseArgs(argv.slice(1));
   const dbPath = str(named.db, DEFAULT_DB_PATH);
@@ -111,9 +111,12 @@ const evalCommand = (argv: string[]): void => {
       typeof named.suite === "string"
         ? named.suite
         : die("--suite <dir> is required");
-    const executor = str(named.executor, "claude") as Executor;
-    if (executor !== "claude" && executor !== "command")
-      die(`unknown executor: ${executor}`);
+    const parsedExecutor = Executor.safeParse(str(named.executor, "claude"));
+    if (!parsedExecutor.success)
+      return die(
+        `unknown executor: ${str(named.executor, "claude")} (have: ${Executor.options.join(", ")})`,
+      );
+    const executor = parsedExecutor.data;
     const isolation = str(named.profile, "worktree");
     const profile = SandboxProfile.parse({
       isolation,
@@ -147,13 +150,17 @@ const evalCommand = (argv: string[]): void => {
     }
     const db = openDb(dbPath);
     try {
-      const result = runEval(db, {
+      // EVP-9: the composition root injects the native executor — kernel
+      // never imports agent.
+      const { apiExecutor } = await import("@kelson/agent");
+      const result = await runEval(db, {
         kind: sub,
         suiteDir,
         lockfileA,
         lockfileB,
         executor,
         profile,
+        extraExecutors: { api: apiExecutor },
         ...(typeof named.seed === "string" ? { seed: Number(named.seed) } : {}),
         ...(typeof named.repeats === "string"
           ? { repeats: Number(named.repeats) }

@@ -41,9 +41,9 @@ const overrideRun = (db: Database) =>
   });
 
 describe("EVP-8: a session model override is recorded in the manifest, applied to both sides, and bars ledger publication", () => {
-  it("the manifest carries session_model and session_base_url; both sides saw the override", () => {
+  it("the manifest carries session_model and session_base_url; both sides saw the override", async () => {
     const db = openDb(":memory:");
-    const result = overrideRun(db);
+    const result = await overrideRun(db);
     expect(result.manifest.model_versions.session_model).toBe("gemma4:e4b");
     expect(result.manifest.model_versions.session_base_url).toBe(
       "http://localhost:11434",
@@ -58,7 +58,7 @@ describe("EVP-8: a session model override is recorded in the manifest, applied t
     db.close();
   });
 
-  it("ledger publication from an overridden run is refused naming the override", () => {
+  it("ledger publication from an overridden run is refused naming the override", async () => {
     const db = openDb(":memory:");
     const runId = seedClaudeRun(db);
     db.query("UPDATE eval_run SET model_versions = ? WHERE id = ?").run(
@@ -76,7 +76,7 @@ describe("EVP-8: a session model override is recorded in the manifest, applied t
     db.close();
   });
 
-  it("with real credentials in the parent env, an override endpoint sees the dummy key and no OAuth token", () => {
+  it("with real credentials in the parent env, an override endpoint sees the dummy key and no OAuth token", async () => {
     const saved = {
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
       CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN,
@@ -102,9 +102,9 @@ describe("EVP-8: a session model override is recorded in the manifest, applied t
     }
   });
 
-  it("an un-overridden run's manifest carries no session_model", () => {
+  it("an un-overridden run's manifest carries no session_model", async () => {
     const db = openDb(":memory:");
-    const result = runEval(db, {
+    const result = await runEval(db, {
       kind: "ablate",
       suiteDir: makeSuite([baseTask({ id: "t", snapshot })]),
       lockfileA: lockWith([{ name: "p", enabled: true }]),

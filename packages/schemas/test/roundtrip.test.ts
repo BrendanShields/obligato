@@ -112,6 +112,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       harness_version: nonEmpty,
       schema_version: fc.integer({ min: 1, max: 99 }),
       status: fc.constantFrom("complete", "incomplete", "degraded"),
+      runner: fc.option(fc.constantFrom("cc", "native"), { nil: null }),
       trace_id: fc.option(nonEmpty, { nil: null }),
       started_at: isoUtc,
       ended_at: fc.option(isoUtc, { nil: null }),

@@ -54,6 +54,8 @@ export const ModelRegistryEntry = z.object({
 
 export const Credential = z.discriminatedUnion("type", [
   z.object({ type: z.literal("api_key"), key: z.string().min(1) }),
+  // PROV-5: long-lived subscription bearer token (`claude setup-token`).
+  z.object({ type: z.literal("token"), token: z.string().min(1) }),
   z.object({
     type: z.literal("oauth"),
     access: z.string().min(1),

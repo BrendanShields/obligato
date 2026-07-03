@@ -34,9 +34,9 @@ describe("EVAL-4: every run records enough to reproduce the comparison; re-runni
     gateOpts: FAST_GATE,
   };
 
-  it("the manifest records lockfile hashes, suite version, model versions, seed, and per-task snapshots", () => {
+  it("the manifest records lockfile hashes, suite version, model versions, seed, and per-task snapshots", async () => {
     const db = openDb(":memory:");
-    const { manifest } = runEval(db, opts);
+    const { manifest } = await runEval(db, opts);
     expect(manifest.config_a).toMatch(/^sha256:/);
     expect(manifest.config_b).toMatch(/^sha256:/);
     expect(manifest.config_a).not.toBe(manifest.config_b);
@@ -47,12 +47,12 @@ describe("EVAL-4: every run records enough to reproduce the comparison; re-runni
     db.close();
   });
 
-  it("re-running from the recorded parameters reproduces identical verdicts for deterministic tasks", () => {
+  it("re-running from the recorded parameters reproduces identical verdicts for deterministic tasks", async () => {
     const db1 = openDb(":memory:");
-    const first = runEval(db1, opts);
+    const first = await runEval(db1, opts);
     db1.close();
     const db2 = openDb(":memory:");
-    const second = runEval(db2, opts);
+    const second = await runEval(db2, opts);
     db2.close();
     expect(second.manifestHash).toBe(first.manifestHash);
     expect(second.verdict.decision).toBe(first.verdict.decision);

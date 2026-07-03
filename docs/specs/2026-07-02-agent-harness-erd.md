@@ -342,7 +342,7 @@ erDiagram
         string config_a "lockfile hash"
         string config_b "lockfile hash, null for replay"
         int seed
-        string executor "claude|command (EVP-7)"
+        string executor "claude|command|api (EVP-7/EVP-9); migration 0009 rebuilt the table via transient eval_run_new to widen the CHECK"
         json model_versions
         json sandbox_profile "SEC-3"
         string manifest_hash "reproduction key (EVAL-4)"

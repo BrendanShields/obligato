@@ -16,7 +16,7 @@ const store = tmpDir();
 const snapshot = makeSnapshot({ "README.md": "x\n" }, store);
 
 describe("SEC-3: every eval run records its sandbox profile in the run manifest", () => {
-  it("the manifest schema requires isolation level and network policy", () => {
+  it("the manifest schema requires isolation level and network policy", async () => {
     expect(SandboxProfile.safeParse({ isolation: "worktree" }).success).toBe(
       false,
     );
@@ -25,10 +25,10 @@ describe("SEC-3: every eval run records its sandbox profile in the run manifest"
     );
   });
 
-  it("a live run's manifest and eval_run row carry the profile", () => {
+  it("a live run's manifest and eval_run row carry the profile", async () => {
     const db = openDb(":memory:");
     const suiteDir = makeSuite([baseTask({ id: "t", snapshot })]);
-    const { manifest, runId } = runEval(db, {
+    const { manifest, runId } = await runEval(db, {
       kind: "ablate",
       suiteDir,
       lockfileA: lockWith([{ name: "p", enabled: true }]),

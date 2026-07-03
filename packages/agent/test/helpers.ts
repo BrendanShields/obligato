@@ -80,6 +80,7 @@ export const fixture = (
     harness_version: "0.0.1",
     model: TEST_ENTRY.id,
     system: "You are a test agent.",
+    auth_kind: "none",
   });
   appendEvent(db, {
     session_id: sessionId,

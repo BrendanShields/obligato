@@ -138,6 +138,47 @@ export const assertResumable = (chain: SessionEvent[]): void => {
   if (state !== "paused") throw new SessionNotPausedError(state);
 };
 
+// UX-17 (divergence-pinned): the active model derives from the chain — the
+// last model_switch wins, else the session's starting model. Never re-reads
+// the config default.
+export const sessionModelOf = (chain: SessionEvent[]): string | null => {
+  for (let i = chain.length - 1; i >= 0; i--) {
+    const e = chain[i];
+    if (e?.kind !== "session_meta") continue;
+    const sw = e.payload.model_switch as { to?: string } | undefined;
+    if (sw?.to) return sw.to;
+    if (e.payload.model) return String(e.payload.model);
+  }
+  return null;
+};
+
+// UX-17: one session event per switch; same-model switches are the caller's
+// no-op (nothing appended here by contract). Refuses when invoked with a
+// stale expected head — a switch appended mid-step would orphan off the
+// reconstructed chain (audit F-088 class; the TUI's serialized turns make
+// this unreachable, but the exported API guards it).
+export const appendModelSwitch = (
+  db: Database,
+  sessionId: string,
+  from: string,
+  to: string,
+  expectedHead?: string,
+): SessionEvent => {
+  const chain = reconstruct(listEvents(db, sessionId));
+  const head = chain[chain.length - 1];
+  if (!head) throw new Error("session has no events");
+  if (expectedHead !== undefined && head.id !== expectedHead)
+    throw new Error(
+      "model switch raced the session head — the chain moved under it (UX-17)",
+    );
+  return appendEvent(db, {
+    session_id: sessionId,
+    parent_id: head.id,
+    kind: "session_meta",
+    payload: { model_switch: { from, to } },
+  });
+};
+
 export interface AgentSession {
   sessionId: string;
   taskId: string;
@@ -166,9 +207,13 @@ export const createAgentSession = (
     harness_version: string;
     model: string;
     system: string;
+    // PROV-6: how the session authenticates; ledger/degradation policy reads
+    // this — required so every creator states it.
+    auth_kind: "subscription" | "api_key" | "none";
   },
 ): AgentSession => {
   const sessionId = startSession(db, {
+    runner: "native",
     repo: args.repo,
     lockfile_hash: args.lockfile_hash,
     harness_version: args.harness_version,
@@ -183,7 +228,17 @@ export const createAgentSession = (
       model: args.model,
       system: args.system,
       runner: "native",
+      auth_kind: args.auth_kind,
     },
   });
   return { sessionId, taskId, rootEventId: root.id };
 };
+
+export const authKindOf = (
+  credential: { type: string } | null,
+): "subscription" | "api_key" | "none" =>
+  credential === null
+    ? "none"
+    : credential.type === "api_key"
+      ? "api_key"
+      : "subscription";

@@ -1,11 +1,13 @@
 import {
   answerPermission,
   appendEvent,
+  appendModelSwitch,
   continueSession,
   createAgentSession,
   listEvents,
   reconstruct,
   runTurn,
+  sessionModelOf,
 } from "@kelson/agent";
 import {
   type CliRenderer,
@@ -23,6 +25,7 @@ import {
   type ChatModel,
   type ChatMsg,
   createChat,
+  listModels,
   renderChat,
   slashTargets,
   update,
@@ -48,13 +51,18 @@ export const chatCommand = async (
             harness_version: "0.0.1",
             model: setup.entry.id,
             system: SYSTEM_PROMPT,
+            auth_kind: setup.authKind,
           });
           return { sessionId: created.sessionId, head: created.rootEventId };
         })();
   let head: string | null = startHead;
 
   const renderer = await createCliRenderer({ exitOnCtrlC: false });
-  let model = createChat(setup.entry.id);
+  // UX-17: a continued session's active model derives from the chain.
+  const startingModel =
+    sessionModelOf(reconstruct(listEvents(setup.deps.db, sessionId))) ??
+    setup.entry.id;
+  let model = createChat(startingModel);
   const slash = slashTargets(commands);
 
   const transcript = new TextRenderable(renderer, {
@@ -212,6 +220,40 @@ export const chatCommand = async (
         process.stdout.write = original;
       }
       dispatch({ type: "info", text: captured.join("").trimEnd() });
+    } else if (effect.type === "list_models") {
+      // UX-17: the listing is the exported registry function's return value.
+      const lines = listModels()
+        .map(
+          (m) =>
+            `${m.id === model.modelId ? "→" : " "} ${m.id} (${m.provider})`,
+        )
+        .join("\n");
+      dispatch({
+        type: "info",
+        text: `models:\n${lines}\n/model <id> to switch`,
+      });
+    } else if (effect.type === "switch_model") {
+      // UX-17: unknown ids error without appending; a real switch appends
+      // one session event and takes effect at the next model call.
+      if (!listModels().some((m) => m.id === effect.id)) {
+        dispatch({
+          type: "error",
+          message: `unknown model "${effect.id}" — /model lists available models`,
+        });
+        return;
+      }
+      // Pass the tracked head so a mid-turn race (should be impossible given
+      // the reducer's busy-rejection) refuses loudly rather than orphaning.
+      appendModelSwitch(
+        setup.deps.db,
+        sessionId,
+        model.modelId,
+        effect.id,
+        head ?? undefined,
+      );
+      const chain = reconstruct(listEvents(setup.deps.db, sessionId));
+      head = chain[chain.length - 1]?.id ?? head;
+      dispatch({ type: "model_switched", to: effect.id });
     }
   };
 

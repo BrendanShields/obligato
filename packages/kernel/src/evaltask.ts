@@ -19,7 +19,11 @@ export interface ExecContext {
   sideEnv: Record<string, string>;
 }
 
-export type ExecutorFn = (ctx: ExecContext) => SessionOutcome;
+// Async union: the native api executor streams (EVP-9); the built-ins stay
+// synchronous.
+export type ExecutorFn = (
+  ctx: ExecContext,
+) => SessionOutcome | Promise<SessionOutcome>;
 
 // EVP-7 (divergence-pinned): cost file must be a bare non-negative integer;
 // malformed content records 0 with a warning detail, absence records 0
@@ -153,7 +157,9 @@ export const claudeExecutor: ExecutorFn = (ctx) => {
   };
 };
 
-export const EXECUTORS: Record<Executor, ExecutorFn> = {
+// Partial: "api" is injected by the CLI via EvalRunOptions.extraExecutors —
+// kernel never imports agent (EVP-9); unresolved names refuse at pre-flight.
+export const EXECUTORS: Partial<Record<Executor, ExecutorFn>> = {
   command: commandExecutor,
   claude: claudeExecutor,
 };
@@ -218,14 +224,14 @@ export interface TaskRunOutcome {
 }
 
 // EVP-1: fpar_pass = all checks passed within budget and timeout.
-export const runTask = (
+export const runTask = async (
   task: BenchmarkTask,
   workspace: Workspace,
   executor: ExecutorFn,
   sideEnv: Record<string, string>,
-): TaskRunOutcome => {
+): Promise<TaskRunOutcome> => {
   const timeoutMs = task.timeout_minutes * 60_000;
-  const session = executor({ task, workspace, timeoutMs, sideEnv });
+  const session = await executor({ task, workspace, timeoutMs, sideEnv });
   const checks: CheckResult[] = [];
   if (!session.ok)
     checks.push({

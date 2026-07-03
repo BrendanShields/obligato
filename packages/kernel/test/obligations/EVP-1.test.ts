@@ -33,23 +33,25 @@ const kelspecVague = makeSnapshot(
   store,
 );
 
-const run = (over: Parameters<typeof baseTask>[0]) => {
+const run = async (over: Parameters<typeof baseTask>[0]) => {
   const task = baseTask(over);
   const ws = createWorkspace(WORKTREE, {
     snapshot: task.snapshot,
     storeDir: store,
   });
   try {
-    return runTask(task, ws, commandExecutor, {});
+    return await runTask(task, ws, commandExecutor, {});
   } finally {
     ws.cleanup();
   }
 };
 
 describe("EVP-1: each check kind, each failure class, budget breach, and timeout are exercised and recorded", () => {
-  it("command check: pass and fail classes", () => {
-    expect(run({ id: "t", snapshot: plainSnapshot }).fpar_pass).toBe(true);
-    const failed = run({
+  it("command check: pass and fail classes", async () => {
+    expect((await run({ id: "t", snapshot: plainSnapshot })).fpar_pass).toBe(
+      true,
+    );
+    const failed = await run({
       id: "t",
       snapshot: plainSnapshot,
       checks: [{ kind: "command", run: "exit 3" }],
@@ -60,15 +62,17 @@ describe("EVP-1: each check kind, each failure class, budget breach, and timeout
     );
   });
 
-  it("artifact_exists check: present and missing", () => {
+  it("artifact_exists check: present and missing", async () => {
     expect(
-      run({
-        id: "t",
-        snapshot: plainSnapshot,
-        checks: [{ kind: "artifact_exists", path: "README.md" }],
-      }).fpar_pass,
+      (
+        await run({
+          id: "t",
+          snapshot: plainSnapshot,
+          checks: [{ kind: "artifact_exists", path: "README.md" }],
+        })
+      ).fpar_pass,
     ).toBe(true);
-    const missing = run({
+    const missing = await run({
       id: "t",
       snapshot: plainSnapshot,
       checks: [{ kind: "artifact_exists", path: "nope.md" }],
@@ -77,15 +81,17 @@ describe("EVP-1: each check kind, each failure class, budget breach, and timeout
     expect(missing.check_results[0]?.detail).toContain("nope.md");
   });
 
-  it("obligations check: compiling kelspec passes, vague kelspec fails", () => {
+  it("obligations check: compiling kelspec passes, vague kelspec fails", async () => {
     expect(
-      run({
-        id: "t",
-        snapshot: kelspecGood,
-        checks: [{ kind: "obligations" }],
-      }).fpar_pass,
+      (
+        await run({
+          id: "t",
+          snapshot: kelspecGood,
+          checks: [{ kind: "obligations" }],
+        })
+      ).fpar_pass,
     ).toBe(true);
-    const vague = run({
+    const vague = await run({
       id: "t",
       snapshot: kelspecVague,
       checks: [{ kind: "obligations" }],
@@ -94,8 +100,8 @@ describe("EVP-1: each check kind, each failure class, budget breach, and timeout
     expect(vague.check_results[0]?.detail).toContain("WID-1");
   });
 
-  it("session failure is a task failure with the exit recorded", () => {
-    const out = run({
+  it("session failure is a task failure with the exit recorded", async () => {
+    const out = await run({
       id: "t",
       snapshot: plainSnapshot,
       session_command: "exit 7",
@@ -104,8 +110,8 @@ describe("EVP-1: each check kind, each failure class, budget breach, and timeout
     expect(out.check_results[0]?.detail).toContain("exited 7");
   });
 
-  it("budget breach fails the task even when all checks pass (cost discipline is correctness)", () => {
-    const out = run({
+  it("budget breach fails the task even when all checks pass (cost discipline is correctness)", async () => {
+    const out = await run({
       id: "t",
       snapshot: plainSnapshot,
       session_command: CMD.cost("999"),
@@ -118,8 +124,8 @@ describe("EVP-1: each check kind, each failure class, budget breach, and timeout
     ).toBe(true);
   });
 
-  it("timeout fails the task", () => {
-    const out = run({
+  it("timeout fails the task", async () => {
+    const out = await run({
       id: "t",
       snapshot: plainSnapshot,
       session_command: "sleep 5",

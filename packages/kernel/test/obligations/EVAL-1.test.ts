@@ -15,14 +15,14 @@ import {
 const store = tmpDir();
 const snapshot = makeSnapshot({ "README.md": "x\n" }, store);
 
-const ablate = (sessionCommand: string, seed: number) => {
+const ablate = async (sessionCommand: string, seed: number) => {
   const db = openDb(":memory:");
   const suiteDir = makeSuite(
     Array.from({ length: 4 }, (_, i) =>
       baseTask({ id: `t${i}`, snapshot, session_command: sessionCommand }),
     ),
   );
-  const result = runEval(db, {
+  const result = await runEval(db, {
     kind: "ablate",
     suiteDir,
     // A = effectpack enabled, B = toggled off.
@@ -40,27 +40,27 @@ const ablate = (sessionCommand: string, seed: number) => {
 };
 
 describe("EVAL-1: a fixture pack with a known injected effect produces the expected sign of delta on every run", () => {
-  it("an injected cost reduction yields a negative cost delta on every run", () => {
+  it("an injected cost reduction yields a negative cost delta on every run", async () => {
     for (const seed of [1, 2, 3]) {
-      const { verdict } = ablate(CMD.costEffect, seed);
+      const { verdict } = await ablate(CMD.costEffect, seed);
       expect(verdict.cost_delta_pct.mean).toBeLessThan(0);
       expect(verdict.fpar_delta.mean).toBe(0);
     }
   });
 
-  it("an injected FPAR improvement yields a positive fpar delta on every run", () => {
+  it("an injected FPAR improvement yields a positive fpar delta on every run", async () => {
     for (const seed of [1, 2, 3]) {
-      const { verdict } = ablate(CMD.fparEffect, seed);
+      const { verdict } = await ablate(CMD.fparEffect, seed);
       expect(verdict.fpar_delta.mean).toBeGreaterThan(0);
     }
   });
 
-  it("paired per-task deltas are reported (per-task raw results persisted per side)", () => {
+  it("paired per-task deltas are reported (per-task raw results persisted per side)", async () => {
     const db = openDb(":memory:");
     const suiteDir = makeSuite([
       baseTask({ id: "t0", snapshot, session_command: CMD.costEffect }),
     ]);
-    const { runId } = runEval(db, {
+    const { runId } = await runEval(db, {
       kind: "ablate",
       suiteDir,
       lockfileA: lockWith([{ name: "effectpack", enabled: true }]),

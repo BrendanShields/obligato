@@ -7,3 +7,7 @@ packages/schemas/json-schema/
 .kelson/runtime/
 .kelson/tools/
 packages/ui/dist/
+.kelson/config.json
+.kelson/auth.json
+.kelson/models.json
+.kelson/permissions.json

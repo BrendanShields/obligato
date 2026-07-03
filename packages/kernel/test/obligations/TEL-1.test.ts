@@ -37,6 +37,7 @@ describe("TEL-1: ingestion yields exactly N step records with token counts summi
       fc.property(transcriptArb, (steps) => {
         const db = openDb(":memory:");
         const session = startSession(db, {
+          runner: null,
           repo: "r",
           lockfile_hash: sha,
           harness_version: "0",
@@ -75,6 +76,7 @@ describe("TEL-1: ingestion yields exactly N step records with token counts summi
   it("rejects a malformed event at the boundary (ERD §2: validate at every storage boundary)", () => {
     const db = openDb(":memory:");
     const session = startSession(db, {
+      runner: null,
       repo: "r",
       lockfile_hash: sha,
       harness_version: "0",

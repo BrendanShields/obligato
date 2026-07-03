@@ -18,18 +18,18 @@ import {
 const store = tmpDir();
 const snapshot = makeSnapshot({ "README.md": "x\n" }, store);
 
-const costOf = (sessionCommand: string) => {
+const costOf = async (sessionCommand: string) => {
   const task = baseTask({ id: "t", snapshot, session_command: sessionCommand });
   const ws = createWorkspace(WORKTREE, { snapshot, storeDir: store });
   try {
-    return runTask(task, ws, commandExecutor, {});
+    return await runTask(task, ws, commandExecutor, {});
   } finally {
     ws.cleanup();
   }
 };
 
 describe("EVP-7: executor recorded in manifest; cost-file contract; ledger refuses non-claude runs", () => {
-  it("the run manifest schema requires the executor field", () => {
+  it("the run manifest schema requires the executor field", async () => {
     const res = RunManifest.safeParse({
       schema_version: 1,
       kind: "ablate",
@@ -46,25 +46,25 @@ describe("EVP-7: executor recorded in manifest; cost-file contract; ledger refus
     expect(res.success).toBe(false);
   });
 
-  it("a known cost written to $KELSON_COST_FILE is recorded exactly", () => {
-    expect(costOf(CMD.cost("1500")).cost_micro_usd).toBe(1500);
+  it("a known cost written to $KELSON_COST_FILE is recorded exactly", async () => {
+    expect((await costOf(CMD.cost("1500"))).cost_micro_usd).toBe(1500);
   });
 
-  it("malformed cost content records 0 with a warning; absence records 0 silently", () => {
+  it("malformed cost content records 0 with a warning; absence records 0 silently", async () => {
     for (const garbage of ["abc", "-5", "1.5", ""]) {
-      const out = costOf(`printf '${garbage}' > "$KELSON_COST_FILE"`);
+      const out = await costOf(`printf '${garbage}' > "$KELSON_COST_FILE"`);
       expect(out.cost_micro_usd).toBe(0);
     }
-    expect(costOf("true").cost_micro_usd).toBe(0);
+    expect((await costOf("true")).cost_micro_usd).toBe(0);
   });
 
-  it("a command run with a task missing session_command refuses at pre-flight", () => {
+  it("a command run with a task missing session_command refuses at pre-flight", async () => {
     const db = openDb(":memory:");
     const suiteDir = makeSuite([
       baseTask({ id: "has-cmd", snapshot }),
       baseTask({ id: "no-cmd", snapshot, session_command: null }),
     ]);
-    expect(() =>
+    await expect(
       runEval(db, {
         kind: "compare",
         suiteDir,
@@ -76,7 +76,7 @@ describe("EVP-7: executor recorded in manifest; cost-file contract; ledger refus
         snapshotStoreDir: store,
         gateOpts: FAST_GATE,
       }),
-    ).toThrow(/session_command; missing in task\(s\): no-cmd/);
+    ).rejects.toThrow(/session_command; missing in task\(s\): no-cmd/);
     const rows = db.query("SELECT COUNT(*) AS n FROM eval_run").get() as {
       n: number;
     };
@@ -84,10 +84,10 @@ describe("EVP-7: executor recorded in manifest; cost-file contract; ledger refus
     db.close();
   });
 
-  it("ledger publication from a command-executor run is refused with a diagnostic", () => {
+  it("ledger publication from a command-executor run is refused with a diagnostic", async () => {
     const db = openDb(":memory:");
     const suiteDir = makeSuite([baseTask({ id: "t", snapshot })]);
-    const result = runEval(db, {
+    const result = await runEval(db, {
       kind: "ablate",
       suiteDir,
       lockfileA: lockWith([{ name: "somepack", enabled: true }]),

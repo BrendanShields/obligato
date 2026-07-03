@@ -20,6 +20,7 @@ import {
   listEvents,
   pendingToolCalls,
   reconstruct,
+  sessionModelOf,
 } from "./sessions.ts";
 import type { AgentTool, ToolContext } from "./tools.ts";
 
@@ -35,6 +36,14 @@ export interface StepDeps {
   // feedback to the model, not a crash), or to allow when the caller passed
   // the explicit allow flag. Undefined = interactive (pause on ask).
   headlessAsk?: "deny" | "allow";
+  // PROV-6/7: how the session authenticates — drives the 401 re-mint hint.
+  authKind?: "subscription" | "api_key" | "none";
+  // UX-17: lets a step honor a chain-recorded model switch at the next model
+  // call. Without it the deps' model is fixed (fixtures, the api executor).
+  resolveModel?: (ref: string) => {
+    entry: ModelRegistryEntry;
+    model: LanguageModel;
+  };
   onDelta?: (text: string) => void;
   onToolResult?: (name: string, ok: boolean) => void;
   onStepCost?: (costMicroUsd: number | null) => void;
@@ -241,6 +250,14 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
 
   if (pendingToolCalls(chain).length > 0) return resolveTools(deps, chain);
 
+  // UX-17: honor a chain-recorded model switch at the next model call —
+  // "a step's model id is fixed at the moment its model call is issued".
+  const activeRef = sessionModelOf(chain);
+  const { entry, model } =
+    activeRef !== null && activeRef !== deps.entry.id && deps.resolveModel
+      ? deps.resolveModel(activeRef)
+      : { entry: deps.entry, model: deps.model };
+
   // Cast: the SDK's ToolSet union is incompatible with
   // exactOptionalPropertyTypes at this call site; inputs are re-validated by
   // our own Zod schemas in resolveTools before execution.
@@ -251,7 +268,7 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
     ]),
   ) as ToolSet;
   const result = streamText({
-    model: deps.model,
+    model,
     system: String(meta.payload.system),
     messages: toMessages(chain),
     tools: aiTools,
@@ -291,13 +308,24 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
         tokens_cache_write: cacheWrite,
       };
     } else if (part.type === "error") {
-      throw part.error instanceof Error
-        ? part.error
-        : new Error(String(part.error));
+      const err =
+        part.error instanceof Error
+          ? part.error
+          : new Error(String(part.error));
+      // PROV-7: an auth failure on a subscription token names the re-mint
+      // path; no silent retry, no credential fallback mid-session.
+      if (
+        deps.authKind === "subscription" &&
+        (err as { statusCode?: number }).statusCode === 401
+      )
+        throw new Error(
+          `anthropic rejected the subscription token (401) — re-mint it with \`claude setup-token\` and re-run \`kelson auth login anthropic --token <token>\` (PROV-7): ${err.message}`,
+        );
+      throw err;
     }
   }
 
-  const cost = costOf(usage, deps.entry);
+  const cost = costOf(usage, entry);
   deps.onStepCost?.(cost);
   const assistant = appendEvent(deps.db, {
     session_id: deps.sessionId,
@@ -307,7 +335,7 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
       text,
       tool_calls: calls,
       usage: { ...usage },
-      model: deps.entry.id,
+      model: entry.id,
       cost_micro_usd: cost,
     },
   });
@@ -319,11 +347,11 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
     task_id: String(meta.payload.task_id),
     session_id: deps.sessionId,
     sdlc_step: "build",
-    model: deps.entry.id,
+    model: entry.id,
     effort: "medium",
     agent_id: "native",
     ...usage,
-    unit_prices: deps.entry.prices ? { ...deps.entry.prices } : {},
+    unit_prices: entry.prices ? { ...entry.prices } : {},
     cost_micro_usd: cost,
     budget_tokens: 1_000_000,
     overrun: "none",

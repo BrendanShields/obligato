@@ -1,4 +1,9 @@
+import { loadRegistry } from "@kelson/agent";
 import type { DispatchTable } from "../wizards.js";
+
+// UX-17: the /model listing IS the exported registry function — identity
+// asserted by the obligation test, not a reimplementation.
+export const listModels = loadRegistry;
 
 export type ChatEntry =
   | { kind: "user"; text: string }
@@ -30,6 +35,7 @@ export type ChatMsg =
   | { type: "paused"; ask: PermissionAsk }
   | { type: "answer"; decision: "allow" | "deny"; always: boolean }
   | { type: "turn_done"; status: "done" | "paused"; reason?: string }
+  | { type: "model_switched"; to: string }
   | { type: "info"; text: string }
   | { type: "error"; message: string };
 
@@ -42,6 +48,8 @@ export type ChatEffect =
       always: boolean;
     }
   | { type: "dispatch"; command: string; argv: string[] }
+  | { type: "list_models" }
+  | { type: "switch_model"; id: string }
   | { type: "exit" };
 
 // UX-14: slash commands dispatch through the same functions as typed CLI
@@ -56,6 +64,7 @@ export const slashTargets = (
 
 export const HELP_TEXT = [
   "/help — this help",
+  "/model [id] — list registry models or switch the session model (UX-17)",
   "/route <flags> — routing transparency (same as `kelson route explain`)",
   "/exit — leave the chat",
 ].join("\n");
@@ -77,7 +86,24 @@ export const update = (
   switch (msg.type) {
     case "submit": {
       const text = msg.text.trim();
-      if (text === "" || model.busy) return { model, effects: [] };
+      if (text === "") return { model, effects: [] };
+      // UX-17 (audit re-pin): the TUI serializes turns — a control command or
+      // message submitted mid-generation is rejected with a message, never
+      // applied mid-step (which would orphan a switch off the chain).
+      if (model.busy)
+        return {
+          model: {
+            ...model,
+            entries: [
+              ...model.entries,
+              {
+                kind: "info",
+                text: "busy — wait for the current turn to finish",
+              },
+            ],
+          },
+          effects: [],
+        };
       if (text === "/exit")
         return {
           model: { ...model, exited: true },
@@ -91,6 +117,24 @@ export const update = (
           },
           effects: [],
         };
+      if (text === "/model")
+        return { model, effects: [{ type: "list_models" }] };
+      if (text.startsWith("/model ")) {
+        const id = text.slice("/model ".length).trim();
+        // UX-17: selecting the already-active model appends nothing.
+        if (id === model.modelId)
+          return {
+            model: {
+              ...model,
+              entries: [
+                ...model.entries,
+                { kind: "info", text: `${id} is already the active model` },
+              ],
+            },
+            effects: [],
+          };
+        return { model, effects: [{ type: "switch_model", id }] };
+      }
       if (text.startsWith("/")) {
         const [command = "", ...args] = text.slice(1).split(/\s+/);
         return {
@@ -169,6 +213,18 @@ export const update = (
                   { kind: "info", text: `paused: ${msg.reason}` },
                 ]
               : model.entries,
+        },
+        effects: [],
+      };
+    case "model_switched":
+      return {
+        model: {
+          ...model,
+          modelId: msg.to,
+          entries: [
+            ...model.entries,
+            { kind: "info", text: `model → ${msg.to}` },
+          ],
         },
         effects: [],
       };

@@ -17,7 +17,7 @@ const store = tmpDir();
 const snapshot = makeSnapshot({ "README.md": "x\n" }, store);
 
 describe("EVT-1: ablate produces a four-way verdict with effect sizes and CIs, never a bare pass/fail", () => {
-  it("the Verdict schema admits only the four decisions and requires deltas with CIs", () => {
+  it("the Verdict schema admits only the four decisions and requires deltas with CIs", async () => {
     expect(Verdict.shape.decision.options).toEqual([
       "helps",
       "hurts",
@@ -32,12 +32,12 @@ describe("EVT-1: ablate produces a four-way verdict with effect sizes and CIs, n
     expect(bare.success).toBe(false);
   });
 
-  it("a live ablate returns decision + both deltas with CIs + n + alpha + B", () => {
+  it("a live ablate returns decision + both deltas with CIs + n + alpha + B", async () => {
     const db = openDb(":memory:");
     const suiteDir = makeSuite([
       baseTask({ id: "t0", snapshot, session_command: CMD.costEffect }),
     ]);
-    const { verdict } = runEval(db, {
+    const { verdict } = await runEval(db, {
       kind: "ablate",
       suiteDir,
       lockfileA: lockWith([{ name: "effectpack", enabled: true }]),

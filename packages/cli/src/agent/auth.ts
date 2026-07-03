@@ -24,7 +24,7 @@ export const authCommand = async (argv: string[]): Promise<void> => {
   const [sub, provider] = argv;
   if (sub !== "login" || !provider)
     return fail(
-      "usage: kelson auth login <anthropic|ollama> [--key --model --base-url]",
+      "usage: kelson auth login <anthropic|ollama> [--key <api-key> | --token <setup-token>] [--model --base-url]",
     );
   const named: Record<string, string> = {};
   for (let i = 2; i < argv.length; i++) {
@@ -39,9 +39,19 @@ export const authCommand = async (argv: string[]): Promise<void> => {
     return fail("no .kelson directory — run `kelson init` first");
 
   if (provider === "anthropic") {
+    // PROV-5: --token stores a Claude subscription bearer (`claude
+    // setup-token` output); --key stores an API key. One or the other.
+    if (named.token && named.key)
+      return fail("pass --key or --token, not both");
+    const token = named.token ?? process.env.CLAUDE_CODE_OAUTH_TOKEN;
     const key = named.key ?? process.env.ANTHROPIC_API_KEY;
-    if (!key) return fail("pass --key <api-key> (or set ANTHROPIC_API_KEY)");
-    saveCredential("anthropic", { type: "api_key", key });
+    if (named.token || (!key && token))
+      saveCredential("anthropic", { type: "token", token: token as string });
+    else if (key) saveCredential("anthropic", { type: "api_key", key });
+    else
+      return fail(
+        "pass --key <api-key> or --token <setup-token> (or set ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN)",
+      );
     const model = named.model ?? SHIPPED_MODELS[0]?.id;
     if (!model) return fail("no shipped models — pass --model");
     saveConfig(root, { default_model: model, schema_version: 1 });

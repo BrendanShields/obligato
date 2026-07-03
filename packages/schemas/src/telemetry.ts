@@ -34,6 +34,8 @@ export const Session = z.object({
   harness_version: z.string().min(1),
   schema_version: SchemaVersion,
   status: SessionStatus,
+  // SES-5: which runtime created the row; pre-0008 rows read back null.
+  runner: z.enum(["cc", "native"]).nullable(),
   trace_id: z.string().nullable(),
   started_at: IsoUtc,
   ended_at: IsoUtc.nullable(),

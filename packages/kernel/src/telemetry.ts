@@ -19,6 +19,9 @@ export const startSession = (
     repo: string;
     lockfile_hash: string;
     harness_version: string;
+    // SES-5: required so every creator states its runner (null = a fixture
+    // or legacy caller that is deliberately runner-less).
+    runner: "cc" | "native" | null;
     trace_id?: string;
   },
 ): string => {
@@ -29,13 +32,14 @@ export const startSession = (
     harness_version: args.harness_version,
     schema_version: 1,
     status: "incomplete",
+    runner: args.runner,
     trace_id: args.trace_id ?? null,
     started_at: new Date().toISOString(),
     ended_at: null,
   });
   db.query(
-    `INSERT INTO session (id, repo, lockfile_hash, harness_version, schema_version, status, trace_id, started_at, ended_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO session (id, repo, lockfile_hash, harness_version, schema_version, status, runner, trace_id, started_at, ended_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     row.id,
     row.repo,
@@ -43,6 +47,7 @@ export const startSession = (
     row.harness_version,
     row.schema_version,
     row.status,
+    row.runner,
     row.trace_id,
     row.started_at,
     row.ended_at,

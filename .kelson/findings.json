@@ -1658,6 +1658,63 @@
       "status": "resolved",
       "id": "F-117",
       "fix_commit": null
+    },
+    {
+      "task": "P7-2",
+      "source": "implementation",
+      "severity": "warning",
+      "clauses": [
+        "EVP-9"
+      ],
+      "summary": "Widening the Executor Zod enum left migration 0003 eval_run CHECK (executor IN claude,command) behind — the enum typechecks but the INSERT dies at runtime; caught by the EVP-9 e2e obligation test, fixed by rebuild migration 0009",
+      "root_cause": "test_blindspot",
+      "fix": "migration 0009 rebuilds eval_run with the widened CHECK; convention added to CLAUDE.md (enum widening greps migrations for matching CHECKs)",
+      "status": "resolved",
+      "id": "F-118",
+      "fix_commit": null
+    },
+    {
+      "task": "P7-5",
+      "source": "clause_auditor",
+      "severity": "violation",
+      "clauses": [
+        "EVP-8",
+        "EVP-9"
+      ],
+      "summary": "apiExecutor set credential=null for override endpoints, but the AI SDK anthropic adapter falls back to process.env.ANTHROPIC_API_KEY — leaking the operator real key as x-api-key to an arbitrary endpoint (probe-confirmed). buildClaudeEnv substitutes a dummy; the native path did not",
+      "root_cause": "design_bug",
+      "fix": "substitute {type:api_key,key:kelson-local} when overridden; EVP-9 obligation extended with a capture-server assertion on the header value (verification-independence)",
+      "status": "resolved",
+      "id": "F-119",
+      "fix_commit": null
+    },
+    {
+      "task": "P7-5",
+      "source": "clause_auditor",
+      "severity": "violation",
+      "clauses": [
+        "UX-17"
+      ],
+      "summary": "UX-17 divergence-pinned switch-while-busy was unimplemented — the reducer silently dropped all busy-time submits, and applying a switch mid-step would orphan the event off the reconstructed chain",
+      "root_cause": "spec_contradiction",
+      "fix": "re-pinned UX-17 to paused/idle (the serialized-turn TUI cannot latch mid-stream); busy submits now rejected with a message; appendModelSwitch guards a moved head; busy-rejection obligation added",
+      "status": "resolved",
+      "id": "F-120",
+      "fix_commit": null
+    },
+    {
+      "task": "P7-5",
+      "source": "clause_auditor",
+      "severity": "warning",
+      "clauses": [
+        "PROV-7"
+      ],
+      "summary": "apiExecutor recorded auth_kind but never passed authKind into runTurn deps, so the PROV-7 401 re-mint diagnostic could never fire on subscription-auth eval runs",
+      "root_cause": "test_blindspot",
+      "fix": "wired authKind: authKindOf(credential) into the executor deps",
+      "status": "resolved",
+      "id": "F-121",
+      "fix_commit": null
     }
   ]
 }

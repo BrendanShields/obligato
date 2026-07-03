@@ -695,30 +695,30 @@
     {
       "id": "P7-2",
       "title": "Build: async ExecutorFn + extraExecutors injection + apiExecutor",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T02:23:24Z"
     },
     {
       "id": "P7-3",
       "title": "Build: subscription OAuth credential source + refresh",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T02:23:24Z"
     },
     {
       "id": "P7-4",
       "title": "Build: session.runner migration + /model + registry overlay surfaces",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T02:23:24Z"
     },
     {
       "id": "P7-5",
       "title": "Verify: eval ablate --executor api on seed suite, OAuth expiry fixture, audit",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-03T02:45:22Z"
     }
   ]
 }

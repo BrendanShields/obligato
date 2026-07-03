@@ -19,7 +19,7 @@ import {
 } from "@kelson/schemas";
 import { hashContent } from "./artifacts.ts";
 import { BudgetMonitor } from "./budget.ts";
-import { EXECUTORS, runTask } from "./evaltask.ts";
+import { EXECUTORS, type ExecutorFn, runTask } from "./evaltask.ts";
 import { evaluateFlakiness, type QuarantineEvent } from "./flaky.ts";
 import { canonicalJson, hashLockfile } from "./packs.ts";
 import {
@@ -150,6 +150,9 @@ export interface EvalRunOptions {
   modelVersions?: Record<string, string>;
   // EVP-8: same override on both sides; recorded in the manifest; bars ledger.
   sessionModel?: { model: string; baseUrl?: string };
+  // EVP-9: caller-supplied executors (the CLI injects the native "api"
+  // executor here — kernel never imports agent).
+  extraExecutors?: Partial<Record<Executor, ExecutorFn>>;
   // RTR-1/CTX-4 integration: when the named pack is enabled on a side, each
   // task is routed (decision recorded, model + budget from the policy);
   // a disabled side runs the baseline (highest-cost) registry model.
@@ -166,7 +169,10 @@ export interface EvalRunResult {
   quarantine: QuarantineEvent[];
 }
 
-export const runEval = (db: Database, opts: EvalRunOptions): EvalRunResult => {
+export const runEval = async (
+  db: Database,
+  opts: EvalRunOptions,
+): Promise<EvalRunResult> => {
   const { suite, tasks } = loadSuite(opts.suiteDir);
   // EVP-7 (divergence-pinned): executor/task-shape mismatch refuses at
   // pre-flight, before any sandbox or task starts — never mid-run.
@@ -179,6 +185,18 @@ export const runEval = (db: Database, opts: EvalRunOptions): EvalRunResult => {
         `executor "command" requires session_command; missing in task(s): ${missing.join(", ")}`,
       );
   }
+  // EVP-9: resolution = built-in table merged with caller-supplied executors;
+  // unresolved names refuse here, and the api executor refuses the container
+  // profile rather than degrading (EVP-2 discipline).
+  const executor = { ...EXECUTORS, ...opts.extraExecutors }[opts.executor];
+  if (!executor)
+    throw new Error(
+      `executor "${opts.executor}" is not resolvable in this invocation — the CLI injects it via extraExecutors (EVP-9)`,
+    );
+  if (opts.executor === "api" && opts.profile.isolation === "container")
+    throw new Error(
+      'executor "api" under the container profile is refused — the native runtime\'s file tools do not cross the container boundary yet (EVP-9)',
+    );
   const repeats = opts.repeats ?? 3;
   const runSeed = opts.seed ?? 0;
   const runId = ulid();
@@ -271,7 +289,6 @@ export const runEval = (db: Database, opts: EvalRunOptions): EvalRunResult => {
     new Date().toISOString(),
   );
 
-  const executor = EXECUTORS[opts.executor];
   const sides = [
     { side: "A" as const, lockfile: opts.lockfileA },
     { side: "B" as const, lockfile: opts.lockfileB },
@@ -340,7 +357,7 @@ export const runEval = (db: Database, opts: EvalRunOptions): EvalRunResult => {
               routedEnv = { ANTHROPIC_MODEL: routing.baseline.endpoint.ref };
             }
           }
-          const outcome = runTask(task, ws, executor, {
+          const outcome = await runTask(task, ws, executor, {
             ...sideEnvFor(
               side,
               lockfile,

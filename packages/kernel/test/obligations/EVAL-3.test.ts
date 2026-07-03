@@ -17,7 +17,7 @@ const store = tmpDir();
 const snapshot = makeSnapshot({ "README.md": "x\n" }, store);
 
 describe("EVAL-3: a flaky task is quarantined, excluded from gating, and sticky until re-approved by a human", () => {
-  it("quarantine excludes the task from gate math in the triggering run and stays until promote", () => {
+  it("quarantine excludes the task from gate math in the triggering run and stays until promote", async () => {
     const db = openDb(":memory:");
     const suiteDir = makeSuite([
       baseTask({ id: "stable", snapshot }),
@@ -37,7 +37,7 @@ describe("EVAL-3: a flaky task is quarantined, excluded from gating, and sticky 
     // window fills mixed; the stable task must survive every run.
     let quarantinedAt: number | null = null;
     for (let seed = 0; seed < 12 && quarantinedAt === null; seed++) {
-      const result = runEval(db, { ...opts, seed });
+      const result = await runEval(db, { ...opts, seed });
       if (result.verdict.quarantined_tasks.includes("flaky")) {
         quarantinedAt = seed;
         expect(result.verdict.n).toBe(1);
@@ -48,12 +48,12 @@ describe("EVAL-3: a flaky task is quarantined, excluded from gating, and sticky 
     expect(quarantinedAt).not.toBeNull();
 
     // Sticky: still excluded next run even if results would look clean.
-    const after = runEval(db, { ...opts, seed: 99 });
+    const after = await runEval(db, { ...opts, seed: 99 });
     expect(after.verdict.quarantined_tasks).toContain("flaky");
 
     // Human re-admission (kelson eval suite promote) clears it.
     promoteTask(db, "fixture-suite", "1", "flaky");
-    const readmitted = runEval(db, { ...opts, seed: 100 });
+    const readmitted = await runEval(db, { ...opts, seed: 100 });
     // The task may re-quarantine from its live window this same run — EVP-5
     // retains the window — but it must have re-entered evaluation: either it
     // counts in n (not quarantined) or it was re-quarantined by the detector

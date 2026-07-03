@@ -25,6 +25,7 @@ export const pinnedLockfileHash = (root: string): string => {
 
 export const beginSession = (db: Database, repo: string): string =>
   startSession(db, {
+    runner: "cc",
     repo,
     lockfile_hash: pinnedLockfileHash(repo),
     harness_version: HARNESS_VERSION,

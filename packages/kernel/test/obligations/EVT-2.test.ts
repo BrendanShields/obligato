@@ -26,11 +26,11 @@ const PACK_KINDS = [
 ];
 
 describe("EVT-2: every pack type runs through ablate uniformly", () => {
-  it("one fixture of each pack type completes ablate with a verdict", () => {
+  it("one fixture of each pack type completes ablate with a verdict", async () => {
     const suiteDir = makeSuite([baseTask({ id: "t0", snapshot })]);
     for (const pack of PACK_KINDS) {
       const db = openDb(":memory:");
-      const result = runEval(db, {
+      const result = await runEval(db, {
         kind: "ablate",
         suiteDir,
         lockfileA: lockWith(

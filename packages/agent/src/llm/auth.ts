@@ -34,11 +34,9 @@ export const saveCredential = (
   renameSync(tmp, path);
 };
 
-const ENV_FALLBACK: Record<string, string> = {
-  anthropic: "ANTHROPIC_API_KEY",
-};
-
-// PROV-2: stored credential wins over env.
+// PROV-2/PROV-5: stored credential wins over env; env resolves
+// ANTHROPIC_API_KEY before CLAUDE_CODE_OAUTH_TOKEN (subscription token from
+// `claude setup-token`).
 export const resolveCredential = (
   provider: string,
   path = defaultAuthPath(),
@@ -46,7 +44,10 @@ export const resolveCredential = (
 ): Credential | null => {
   const stored = loadAuth(path)[provider];
   if (stored) return stored;
-  const envVar = ENV_FALLBACK[provider];
-  const key = envVar ? env[envVar] : undefined;
-  return key ? { type: "api_key", key } : null;
+  if (provider !== "anthropic") return null;
+  if (env.ANTHROPIC_API_KEY)
+    return { type: "api_key", key: env.ANTHROPIC_API_KEY };
+  if (env.CLAUDE_CODE_OAUTH_TOKEN)
+    return { type: "token", token: env.CLAUDE_CODE_OAUTH_TOKEN };
+  return null;
 };

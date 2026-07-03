@@ -11,9 +11,22 @@ export const instantiate = (
   credential: Credential | null,
 ): LanguageModel => {
   if (entry.provider === "anthropic") {
+    const bearer =
+      credential?.type === "token"
+        ? credential.token
+        : credential?.type === "oauth"
+          ? credential.access
+          : null;
     const provider = createAnthropic({
       ...(credential?.type === "api_key" ? { apiKey: credential.key } : {}),
-      ...(credential?.type === "oauth" ? { authToken: credential.access } : {}),
+      // PROV-5: subscription tokens ride Authorization: Bearer plus the OAuth
+      // beta header (claude-api reference) — never x-api-key.
+      ...(bearer
+        ? {
+            authToken: bearer,
+            headers: { "anthropic-beta": "oauth-2025-04-20" },
+          }
+        : {}),
       ...(entry.base_url ? { baseURL: entry.base_url } : {}),
     });
     return provider(entry.id);

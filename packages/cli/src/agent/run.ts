@@ -46,6 +46,7 @@ export const runCommand = async (argv: string[]): Promise<void> => {
             harness_version: "0.0.1",
             model: setup.entry.id,
             system: SYSTEM_PROMPT,
+            auth_kind: setup.authKind,
           });
           return { sessionId: created.sessionId, head: created.rootEventId };
         })();

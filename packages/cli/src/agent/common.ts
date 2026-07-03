@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  authKindOf,
   CORE_TOOLS,
   instantiate,
   loadConfig,
@@ -32,6 +33,7 @@ export interface AgentSetup {
   config: AgentConfig;
   lockfileHash: string;
   root: string;
+  authKind: "subscription" | "api_key" | "none";
 }
 
 // PROV-4: no configuration → instruct, never probe.
@@ -61,7 +63,21 @@ export const setupAgent = (
       "no anthropic credential — run `kelson auth login anthropic` first",
     );
   const model = instantiate(entry, credential);
+  const authKind = authKindOf(credential);
   const db = openDb(dbPath);
+  // UX-17: chain-recorded model switches resolve through the same registry
+  // as setup; a credential-less anthropic target fails with the login hint.
+  const resolveModel = (ref: string) => {
+    const nextEntry = resolveEntry(loadModelRegistry(), ref);
+    const nextCredential = resolveCredential(
+      nextEntry.provider === "anthropic" ? "anthropic" : nextEntry.id,
+    );
+    if (nextEntry.provider === "anthropic" && nextCredential === null)
+      return fail(
+        "no anthropic credential — run `kelson auth login anthropic` first",
+      );
+    return { entry: nextEntry, model: instantiate(nextEntry, nextCredential) };
+  };
   return {
     deps: {
       db,
@@ -70,10 +86,13 @@ export const setupAgent = (
       tools: CORE_TOOLS,
       rules: loadRules(root),
       ctx: { cwd: root, exec: localExec(root) },
+      authKind,
+      resolveModel,
     },
     entry,
     config,
     lockfileHash,
     root,
+    authKind,
   };
 };

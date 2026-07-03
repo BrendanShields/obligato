@@ -9,7 +9,8 @@ import {
   Ulid,
 } from "./scalars.ts";
 
-export const Executor = z.enum(["claude", "command"]);
+// "api" = the native runtime (EVP-9)
+export const Executor = z.enum(["claude", "command", "api"]);
 export const RunKind = z.enum(["ablate", "compare"]);
 export const Side = z.enum(["A", "B"]);
 export const VerdictDecision = z.enum([

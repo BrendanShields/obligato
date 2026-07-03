@@ -33,6 +33,7 @@ describe("TEL-5: collector failure never aborts the session; partial records nev
   it("killed collector (dropped table) -> ingest reports failure without throwing, session stays incomplete", () => {
     const db = openDb(":memory:");
     const session = startSession(db, {
+      runner: null,
       repo: "r",
       lockfile_hash: sha,
       harness_version: "0",
@@ -56,6 +57,7 @@ describe("TEL-5: collector failure never aborts the session; partial records nev
   it("failed capture followed by a clean session end never becomes gate-eligible", () => {
     const db = openDb(":memory:");
     const session = startSession(db, {
+      runner: null,
       repo: "r",
       lockfile_hash: sha,
       harness_version: "0",
@@ -70,11 +72,13 @@ describe("TEL-5: collector failure never aborts the session; partial records nev
   it("only cleanly ended sessions are gate-eligible", () => {
     const db = openDb(":memory:");
     const dead = startSession(db, {
+      runner: null,
       repo: "r",
       lockfile_hash: sha,
       harness_version: "0",
     });
     const clean = startSession(db, {
+      runner: null,
       repo: "r",
       lockfile_hash: sha,
       harness_version: "0",
