@@ -18,7 +18,7 @@ import {
   SelectRenderableEvents,
   TextRenderable,
 } from "@opentui/core";
-import { SYSTEM_PROMPT, setupAgent } from "../agent/common.js";
+import { setupAgent, systemPromptFor } from "../agent/common.js";
 import type { DispatchTable } from "../wizards.js";
 import {
   type ChatEffect,
@@ -50,7 +50,7 @@ export const chatCommand = async (
             lockfile_hash: setup.lockfileHash,
             harness_version: "0.0.1",
             model: setup.entry.id,
-            system: SYSTEM_PROMPT,
+            system: systemPromptFor(setup.root),
             auth_kind: setup.authKind,
           });
           return { sessionId: created.sessionId, head: created.rootEventId };

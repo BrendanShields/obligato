@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import type { ExecResult } from "@kelson/kernel";
 import type { SessionEvent } from "@kelson/schemas";
 import type { ModelMessage, SystemModelMessage } from "ai";
 
@@ -44,6 +47,58 @@ export const toMessages = (chain: SessionEvent[]): ModelMessage[] => {
     }
   }
   return messages;
+};
+
+// AGT-15: the one system-prompt builder — chat/run and the api executor both
+// compose through here (F-085). Recorded once in the session root (SES-1),
+// so it is the PROV-8 cache-stable block; mid-session changes never churn it.
+const CONVENTIONS_CAP = 8_000;
+
+export const buildSystemPrompt = (args: {
+  identity: string;
+  cwd: string;
+  exec: (
+    command: string,
+    opts?: { env?: Record<string, string>; timeoutMs?: number },
+  ) => ExecResult;
+}): string => {
+  const parts = [args.identity];
+
+  // Environment block — git line best-effort, absent on failure. Two execs,
+  // parsed structurally: a combined command misparses detached HEAD, where
+  // --show-current prints nothing and the dirty count masquerades as the
+  // branch name (audit 2026-07-05).
+  let gitLine = "";
+  try {
+    // --show-current (not rev-parse): survives an unborn HEAD in a fresh repo
+    const branch = args.exec("git branch --show-current 2>/dev/null", {
+      timeoutMs: 5_000,
+    });
+    const name = branch.stdout.trim();
+    if (branch.exitCode === 0 && name.length > 0) {
+      const dirty = args.exec("git status --porcelain 2>/dev/null | wc -l", {
+        timeoutMs: 5_000,
+      });
+      gitLine = `\ngit: branch ${name}, ${Number(dirty.stdout.trim() || 0)} dirty file(s)`;
+    }
+  } catch {
+    // non-git workspace or no git binary — omit, never error
+  }
+  parts.push(
+    `Environment:\ncwd: ${args.cwd}\nplatform: ${process.platform}\ndate: ${new Date().toISOString().slice(0, 10)}${gitLine}`,
+  );
+
+  // Workspace conventions: AGENTS.md, else CLAUDE.md, capped with notice.
+  for (const name of ["AGENTS.md", "CLAUDE.md"]) {
+    const p = join(args.cwd, name);
+    if (!existsSync(p)) continue;
+    let text = readFileSync(p, "utf8");
+    if (text.length > CONVENTIONS_CAP)
+      text = `${text.slice(0, CONVENTIONS_CAP)}\n(truncated at ${CONVENTIONS_CAP} characters)`;
+    parts.push(`Project conventions (${name}):\n${text}`);
+    break;
+  }
+  return parts.join("\n\n");
 };
 
 export interface AssembledContext {

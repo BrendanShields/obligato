@@ -46,6 +46,16 @@ describe("PROV-8: prompt-cache breakpoints on the system block and the final mes
     expect(marked[0]).toBe(ctx.messages.at(-1) as (typeof ctx.messages)[0]);
   });
 
+  it("an empty assembled context (root-only chain) marks only instructions and assembles without error", () => {
+    const f = fixture([]);
+    const chain = reconstruct(listEvents(f.db, f.sessionId));
+    // strip everything after the session_meta root
+    const rootOnly = chain.slice(0, 1);
+    const ctx = assembleContext(rootOnly);
+    expect(marker(ctx.instructions)).toEqual({ type: "ephemeral" });
+    expect(ctx.messages).toEqual([]);
+  });
+
   it("a capturing anthropic fixture observes cache_control on the system block and the final message", async () => {
     let body: string | null = null;
     const server = Bun.serve({

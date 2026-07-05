@@ -933,51 +933,62 @@
     {
       "id": "C1-5",
       "title": "PROV-9 retry/backoff on transient stream errors",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "PROV-9"
+      ],
+      "completed_at": "2026-07-05T12:41:25Z"
     },
     {
       "id": "C1-6",
       "title": "Robust edit: tolerant match + near-miss diff error",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "AGT-13"
+      ],
+      "completed_at": "2026-07-05T12:44:43Z"
     },
     {
       "id": "C1-7",
       "title": "Ripgrep search: gitignore-aware, capped, fallback",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "AGT-14"
+      ],
+      "completed_at": "2026-07-05T12:46:44Z"
     },
     {
       "id": "C1-8",
       "title": "System prompt builder: env block + conventions",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "AGT-15"
+      ],
+      "completed_at": "2026-07-05T12:50:26Z"
     },
     {
       "id": "C1-9",
       "title": "PERM-4 granular headless permission rules",
       "state": "open",
       "clauses": [],
-      "completed_at": null
+      "completed_at": null,
+      "notes": "PERM-4 headless rules — next session"
     },
     {
       "id": "C1-10",
       "title": "AGT auto-compaction trigger in loop",
       "state": "open",
       "clauses": [],
-      "completed_at": null
+      "completed_at": null,
+      "notes": "AGT-16 auto-compaction — next session (seam + summarizer injection points ready)"
     },
     {
       "id": "C1-11",
       "title": "Bench validation: Ollama smoke + subscription baseline",
-      "state": "in_progress",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-07-05T12:52:28Z",
+      "notes": "Ollama A/A smoke green through kelson bench (/bin/zsh). Same-model S1 baseline ready but blocked on operator-minted subscription token: run 'claude setup-token', then 'kelson auth login anthropic --token <tok>', then 'bun packages/cli/src/index.ts bench --suite suites/seed --agents api,claude --model claude-sonnet-5 --repeats 1'. Mixed-model run deliberately skipped (weak evidence, quota spend)."
     }
   ]
 }

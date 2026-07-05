@@ -7,7 +7,7 @@ import {
 import { RunResult } from "@kelson/schemas";
 import { emitJson } from "../output/json.js";
 import { streamOut } from "../output/stream.js";
-import { fail, SYSTEM_PROMPT, setupAgent } from "./common.js";
+import { fail, setupAgent, systemPromptFor } from "./common.js";
 
 // UX-15: same runTurn driver as chat, plain text to stdout, --json validated
 // against RunResult; exit 0 only when the session reached done.
@@ -45,7 +45,7 @@ export const runCommand = async (argv: string[]): Promise<void> => {
             lockfile_hash: setup.lockfileHash,
             harness_version: "0.0.1",
             model: setup.entry.id,
-            system: SYSTEM_PROMPT,
+            system: systemPromptFor(setup.root),
             auth_kind: setup.authKind,
           });
           return { sessionId: created.sessionId, head: created.rootEventId };

@@ -12,13 +12,7 @@ import type {
   PermissionRule,
   SessionEvent,
 } from "@kelson/schemas";
-import {
-  type LanguageModel,
-  type ModelMessage,
-  streamText,
-  type ToolSet,
-  tool,
-} from "ai";
+import { type LanguageModel, streamText, type ToolSet, tool } from "ai";
 import { assembleContext } from "./context.ts";
 import { costOf, type Usage } from "./llm/registry.ts";
 import { decide } from "./permissions.ts";
@@ -70,6 +64,14 @@ export interface StepDeps {
     entry: ModelRegistryEntry;
     model: LanguageModel;
   };
+  // PROV-9: transport-retry knobs; injectable for fixture determinism (the
+  // F-126 discipline — stochastic loop behavior needs a test switch).
+  retry?: {
+    maxRetries?: number;
+    baseDelayMs?: number;
+    sleep?: (ms: number) => Promise<void>;
+    random?: () => number;
+  };
   // AGT-7/8/9: the spec-native loop. Absent or empty => inert (Phase 6/7).
   spec?: SpecContext;
   // AGT-8: a recorded human override unblocks the ART-4 write gate.
@@ -98,6 +100,30 @@ interface ToolCall {
 // AGT-11: how many headless budget extensions (each = +1 budget of headroom)
 // before a headless run blocks. Bounds unattended spend at (2 + CAP)× budget.
 const BUDGET_HEADLESS_CAP = 2;
+
+// PROV-9: transport classification — the adapter's own isRetryable plus the
+// canonical transient statuses; a numeric retry-after is honored, capped.
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 529]);
+const RETRY_AFTER_CAP_MS = 30_000;
+const retryDecision = (
+  err: unknown,
+): { retryable: boolean; retryAfterMs: number | null } => {
+  const e = err as {
+    isRetryable?: boolean;
+    statusCode?: number;
+    responseHeaders?: Record<string, string>;
+  };
+  const retryable =
+    e.isRetryable === true ||
+    (typeof e.statusCode === "number" && RETRYABLE_STATUS.has(e.statusCode));
+  const ra = e.responseHeaders?.["retry-after"];
+  const sec = ra !== undefined && /^\d+$/.test(ra) ? Number(ra) : null;
+  return {
+    retryable,
+    retryAfterMs:
+      sec === null ? null : Math.min(sec * 1000, RETRY_AFTER_CAP_MS),
+  };
+};
 
 // AGT-6: pause reasons are validated non-empty at record time.
 export const validatePauseReason = (reason: string): string => {
@@ -424,52 +450,78 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
   ) as ToolSet;
   // PROV-8: the system prompt rides as an instructions SystemModelMessage so
   // it can carry its cache breakpoint (ai v7's documented caching path).
+  // The context is attempt-invariant: a PROV-9 retry re-issues it byte-
+  // identically (the failed attempt appended nothing).
   const context = assembleContext(chain);
-  const result = streamText({
-    model,
-    instructions: context.instructions,
-    messages: context.messages,
-    tools: aiTools,
-    ...(deps.abort ? { abortSignal: deps.abort } : {}),
-  });
+  const maxRetries = deps.retry?.maxRetries ?? 2;
+  const baseDelayMs = deps.retry?.baseDelayMs ?? 500;
+  const sleep =
+    deps.retry?.sleep ??
+    ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const random = deps.retry?.random ?? Math.random;
 
   let text = "";
-  const calls: ToolCall[] = [];
+  let calls: ToolCall[] = [];
   let usage: Usage = {
     tokens_in: 0,
     tokens_out: 0,
     tokens_cache_read: 0,
     tokens_cache_write: 0,
   };
-  for await (const part of result.fullStream) {
-    if (part.type === "text-delta") {
-      text += part.text;
-      deps.onDelta?.(part.text);
-    } else if (part.type === "tool-call") {
-      calls.push({
-        id: part.toolCallId,
-        name: part.toolName,
-        input: (part.input ?? {}) as Record<string, unknown>,
+  for (let attempt = 0; ; attempt++) {
+    text = "";
+    calls = [];
+    usage = {
+      tokens_in: 0,
+      tokens_out: 0,
+      tokens_cache_read: 0,
+      tokens_cache_write: 0,
+    };
+    // PROV-9: only failures BEFORE the first streamed part retry — after
+    // output began, splicing partial attempts is v1-out-of-scope.
+    let streamed = false;
+    try {
+      const result = streamText({
+        model,
+        instructions: context.instructions,
+        messages: context.messages,
+        tools: aiTools,
+        ...(deps.abort ? { abortSignal: deps.abort } : {}),
       });
-    } else if (part.type === "finish") {
-      const u = part.totalUsage;
-      const cacheRead = u.inputTokenDetails.cacheReadTokens ?? 0;
-      const cacheWrite = u.inputTokenDetails.cacheWriteTokens ?? 0;
-      usage = {
-        // tokens_in is the non-cached class, mirroring the CC transcript
-        // convention so downstream math is runner-blind.
-        tokens_in:
-          u.inputTokenDetails.noCacheTokens ??
-          Math.max(0, (u.inputTokens ?? 0) - cacheRead - cacheWrite),
-        tokens_out: u.outputTokens ?? 0,
-        tokens_cache_read: cacheRead,
-        tokens_cache_write: cacheWrite,
-      };
-    } else if (part.type === "error") {
-      const err =
-        part.error instanceof Error
-          ? part.error
-          : new Error(String(part.error));
+      for await (const part of result.fullStream) {
+        if (part.type === "text-delta") {
+          streamed = true;
+          text += part.text;
+          deps.onDelta?.(part.text);
+        } else if (part.type === "tool-call") {
+          streamed = true;
+          calls.push({
+            id: part.toolCallId,
+            name: part.toolName,
+            input: (part.input ?? {}) as Record<string, unknown>,
+          });
+        } else if (part.type === "finish") {
+          const u = part.totalUsage;
+          const cacheRead = u.inputTokenDetails.cacheReadTokens ?? 0;
+          const cacheWrite = u.inputTokenDetails.cacheWriteTokens ?? 0;
+          usage = {
+            // tokens_in is the non-cached class, mirroring the CC transcript
+            // convention so downstream math is runner-blind.
+            tokens_in:
+              u.inputTokenDetails.noCacheTokens ??
+              Math.max(0, (u.inputTokens ?? 0) - cacheRead - cacheWrite),
+            tokens_out: u.outputTokens ?? 0,
+            tokens_cache_read: cacheRead,
+            tokens_cache_write: cacheWrite,
+          };
+        } else if (part.type === "error") {
+          throw part.error instanceof Error
+            ? part.error
+            : Object.assign(new Error(String(part.error)), part.error);
+        }
+      }
+      break;
+    } catch (err) {
       // PROV-7: an auth failure on a subscription token names the re-mint
       // path; no silent retry, no credential fallback mid-session.
       if (
@@ -477,9 +529,19 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
         (err as { statusCode?: number }).statusCode === 401
       )
         throw new Error(
-          `anthropic rejected the subscription token (401) — re-mint it with \`claude setup-token\` and re-run \`kelson auth login anthropic --token <token>\` (PROV-7): ${err.message}`,
+          `anthropic rejected the subscription token (401) — re-mint it with \`claude setup-token\` and re-run \`kelson auth login anthropic --token <token>\` (PROV-7): ${(err as Error).message}`,
         );
-      throw err;
+      const { retryable, retryAfterMs } = retryDecision(err);
+      if (!streamed && retryable && attempt < maxRetries) {
+        // equal-jitter multiplier in [0.5, 1] on the exponential base;
+        // an explicit retry-after wins.
+        const backoff =
+          retryAfterMs ??
+          Math.round(baseDelayMs * 2 ** attempt * (0.5 + random() / 2));
+        await sleep(backoff);
+        continue;
+      }
+      throw err instanceof Error ? err : new Error(String(err));
     }
   }
 

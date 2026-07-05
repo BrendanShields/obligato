@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   authKindOf,
+  buildSystemPrompt,
   CORE_TOOLS,
   instantiate,
   loadConfig,
@@ -22,12 +23,20 @@ export const fail = (msg: string): never => {
   process.exit(1);
 };
 
-// Pi-style minimal system prompt: the model already knows what a coding
-// agent is; the harness adds constraints, not lectures.
-export const SYSTEM_PROMPT =
+// Pi-style minimal identity: the model already knows what a coding agent is;
+// the harness adds constraints, not lectures. AGT-15 composes the full
+// prompt (environment block + workspace conventions) through the one shared
+// builder — PROMPT_BUILDER is the identity the obligation test checks.
+export const PROMPT_BUILDER = buildSystemPrompt;
+const IDENTITY =
   "You are Kelson, a coding agent working in the current repository. " +
   "Use the tools to read, search, and modify files and to run commands. " +
+  "Prefer edit over rewriting whole files; search before modifying; verify " +
+  "with the project's tests when available. " +
   "When the task is complete, reply with a short summary and stop calling tools.";
+
+export const systemPromptFor = (root: string): string =>
+  PROMPT_BUILDER({ identity: IDENTITY, cwd: root, exec: localExec(root) });
 
 export interface AgentSetup {
   deps: Omit<StepDeps, "sessionId">;

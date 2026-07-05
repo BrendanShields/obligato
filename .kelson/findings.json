@@ -1965,6 +1965,133 @@
       "id": "F-139",
       "status": "fixed",
       "fix_commit": "85b367b"
+    },
+    {
+      "task": "C1-7",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "AGT-14"
+      ],
+      "summary": "in-shell | head -n 200 swallowed the search exit code (pipeline status = head's), making the error branch dead in both branches — an invalid regex returned (no matches) instead of exit 2 + stderr, contradicting the clause's fallback-preserved-verbatim claim",
+      "root_cause": "design_bug",
+      "fix": "cap moved entirely into the tool (capNotice line+char caps); clause names the pipe-masking hazard; bad-regex fixture asserts exit 2 under both branches",
+      "id": "F-140",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-14"
+      ],
+      "summary": "exactly-200-line untruncated results claimed the cap notice (post-shell, 200-exact and clipped were indistinguishable)",
+      "root_cause": "design_bug",
+      "fix": "JS-side cap sees the full result; notice only on actual truncation; exactly-200 fixture added",
+      "id": "F-141",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-13"
+      ],
+      "summary": "all=true splice-ordering fixture was non-discriminating (same-length old/new — front-to-back splicing would still pass, F-100 class)",
+      "root_cause": "test_blindspot",
+      "fix": "length-changing multi-window fixture added (3-line new over 2-line old, two windows)",
+      "id": "F-142",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-5",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PROV-9"
+      ],
+      "summary": "the streamed gate armed only on text-delta/tool-call while the clause said first streamed part — reasoning/tool-input parts would still retry",
+      "root_cause": "spec_contradiction",
+      "fix": "clause re-pinned to first streamed content part (text delta or tool call — the parts the loop consumes)",
+      "id": "F-143",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-8",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-15"
+      ],
+      "summary": "detached HEAD misparse: git branch --show-current prints nothing, so the dirty count masqueraded as the branch name in the env block",
+      "root_cause": "design_bug",
+      "fix": "two structural execs; git line emitted only on a non-empty branch name",
+      "id": "F-144",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-7",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-14"
+      ],
+      "summary": "no-rg PATH fixture hardcoded /usr/bin:/bin — on a runner with rg in /usr/bin the fallback fixtures exercise the wrong branch",
+      "root_cause": "test_blindspot",
+      "fix": "no-rg PATH built by excluding the resolved rg directory; obligation names the rule",
+      "id": "F-145",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-4",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PROV-8"
+      ],
+      "summary": "the non-empty-context conditional had no discriminating fixture (empty-messages guard untested)",
+      "root_cause": "test_blindspot",
+      "fix": "root-only-chain case added: instructions marked, messages empty, no error; obligation extended",
+      "id": "F-146",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-8",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-15",
+        "AGT-14"
+      ],
+      "summary": "caps stated as bytes but measured in UTF-16 code units (.length/.slice) — multibyte content overshoots up to 3x",
+      "root_cause": "spec_contradiction",
+      "fix": "caps restated as characters in both clauses and notices",
+      "id": "F-147",
+      "status": "fixed",
+      "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-6",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-13"
+      ],
+      "summary": "CRLF files: tolerant replacements land LF while untouched lines keep CRLF — mixed endings, spec silent",
+      "root_cause": "spec_gap",
+      "fix": "pinned out-of-scope in the clause (tolerant replacements land LF in v1)",
+      "id": "F-148",
+      "status": "fixed",
+      "fix_commit": "2169edf"
     }
   ]
 }

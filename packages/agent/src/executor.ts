@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type ExecutorFn, openDb } from "@kelson/kernel";
 import { AgentConfig } from "@kelson/schemas";
+import { buildSystemPrompt } from "./context.ts";
 import { resolveCredential } from "./llm/auth.ts";
 import { loadRegistry, resolveEntry } from "./llm/registry.ts";
 import { instantiate } from "./llm/resolve.ts";
@@ -52,9 +53,16 @@ export const apiExecutor: ExecutorFn = async (ctx) => {
     lockfile_hash: `sha256:${"0".repeat(64)}`,
     harness_version: "0.0.1",
     model: entry.id,
-    system:
-      "You are Kelson, a coding agent completing a benchmark task in this workspace. " +
-      "Use the tools; when the task is complete, reply with a short summary and stop calling tools.",
+    // AGT-15: the shared builder — benchmark identity + workspace env block.
+    system: buildSystemPrompt({
+      identity:
+        "You are Kelson, a coding agent completing a benchmark task in this workspace. " +
+        "Use the tools; prefer edit over rewriting whole files; verify with the " +
+        "project's tests when available. When the task is complete, reply with a " +
+        "short summary and stop calling tools.",
+      cwd: ctx.workspace.dir,
+      exec: ctx.workspace.exec,
+    }),
     auth_kind: authKindOf(credential),
   });
   appendEvent(db, {
