@@ -7,9 +7,11 @@ import {
   AuthFile,
   Credential,
   DriftEvent,
+  InitResult,
   InterventionEvent,
   Lockfile,
   ModelRegistryEntry,
+  PackLintResult,
   PackManifest,
   PermissionRule,
   RunResult,
@@ -489,6 +491,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
     Credential,
     fc.oneof(
       fc.record({ type: fc.constant("api_key" as const), key: nonEmpty }),
+      fc.record({ type: fc.constant("token" as const), token: nonEmpty }),
       fc.record({
         type: fc.constant("oauth" as const),
         access: nonEmpty,
@@ -503,6 +506,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       kebab,
       fc.oneof(
         fc.record({ type: fc.constant("api_key" as const), key: nonEmpty }),
+        fc.record({ type: fc.constant("token" as const), token: nonEmpty }),
         fc.record({
           type: fc.constant("oauth" as const),
           access: nonEmpty,
@@ -525,6 +529,30 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       text: fc.string({ maxLength: 50 }),
       steps: count,
       cost_micro_usd: fc.option(count, { nil: null }),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  InitResult: [
+    InitResult,
+    fc.record({
+      store_path: nonEmpty,
+      lockfile: fc.constantFrom("created" as const, "existing" as const),
+      hooked: fc.array(nonEmpty, { maxLength: 4 }),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  PackLintResult: [
+    PackLintResult,
+    fc.record({
+      ok: fc.boolean(),
+      required_bump: fc.constantFrom(
+        "major" as const,
+        "minor" as const,
+        "patch" as const,
+        "none" as const,
+      ),
+      prev_version: nonEmpty,
+      next_version: nonEmpty,
       schema_version: fc.constant(1),
     }),
   ],

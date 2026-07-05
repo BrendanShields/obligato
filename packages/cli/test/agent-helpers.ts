@@ -75,14 +75,20 @@ const turnBody = (turn: MockTurn): string => {
 export interface MockServer {
   url: string;
   calls: () => number;
+  // Parsed request bodies in arrival order — lets a test assert what the
+  // provider actually received (SES-4's empty-assistant-drop is only
+  // observable on the wire).
+  bodies: () => unknown[];
   stop: () => void;
 }
 
 export const mockOpenAiServer = (turns: MockTurn[]): MockServer => {
   let call = 0;
+  const bodies: unknown[] = [];
   const server = Bun.serve({
     port: 0,
-    fetch: () => {
+    fetch: async (req) => {
+      bodies.push(await req.json().catch(() => null));
       const turn = turns[Math.min(call, turns.length - 1)] as MockTurn;
       call++;
       return new Response(turnBody(turn), {
@@ -93,6 +99,7 @@ export const mockOpenAiServer = (turns: MockTurn[]): MockServer => {
   return {
     url: `http://127.0.0.1:${server.port}/v1`,
     calls: () => call,
+    bodies: () => [...bodies],
     stop: () => server.stop(true),
   };
 };

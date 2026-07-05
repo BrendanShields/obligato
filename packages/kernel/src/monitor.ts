@@ -302,7 +302,10 @@ export const checkMonitor = (
 
 // LOOP-9 attribution: inter-apply stratum isolation; exactly one implicated
 // diff is reverted; both/neither/starved → indistinguishable → revert the
-// last-applied only. One revert per sweep, never two.
+// last-applied only. One revert per sweep, never two. Apply order is taken
+// from rowid, not applied_at — two applies in the same millisecond tie on the
+// timestamp and would make the A-before-B designation and the last-applied
+// revert target nondeterministic (F-060/F-067 class).
 export const monitorSweep = (
   db: Database,
   ctx: CheckContext & { applyCtx: ApplyContext },
@@ -310,7 +313,7 @@ export const monitorSweep = (
   const open = (
     db
       .query(
-        "SELECT proposal_id, applied_at FROM monitor_record WHERE status = 'open' ORDER BY applied_at",
+        "SELECT proposal_id, applied_at FROM monitor_record WHERE status = 'open' ORDER BY rowid",
       )
       .all() as { proposal_id: string; applied_at: string }[]
   ).map((r) => r.proposal_id);

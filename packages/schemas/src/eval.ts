@@ -11,7 +11,11 @@ import {
 
 // "api" = the native runtime (EVP-9)
 export const Executor = z.enum(["claude", "command", "api"]);
+// Request kinds a RunManifest carries (an A/B comparison or a single-config
+// ablation). A stored eval_run row may additionally be "replay"; EvalRunKind is
+// the full mirror of the eval_run.kind SQL CHECK and is what read/UI paths use.
 export const RunKind = z.enum(["ablate", "compare"]);
+export const EvalRunKind = z.enum(["ablate", "compare", "replay"]);
 export const Side = z.enum(["A", "B"]);
 export const VerdictDecision = z.enum([
   "helps",
@@ -138,6 +142,7 @@ export const EvalSuite = z.strictObject({
 
 export type Executor = z.infer<typeof Executor>;
 export type RunKind = z.infer<typeof RunKind>;
+export type EvalRunKind = z.infer<typeof EvalRunKind>;
 export type Side = z.infer<typeof Side>;
 export type VerdictDecision = z.infer<typeof VerdictDecision>;
 export type SuiteRole = z.infer<typeof SuiteRole>;

@@ -90,6 +90,14 @@ export const InterventionEvent = z.object({
   schema_version: SchemaVersion,
 });
 
+export type SessionStatus = z.infer<typeof SessionStatus>;
+export type SdlcStep = z.infer<typeof SdlcStep>;
+export type Effort = z.infer<typeof Effort>;
+export type TaskState = z.infer<typeof TaskState>;
+export type AcceptanceSignal = z.infer<typeof AcceptanceSignal>;
+export type InterventionClass = z.infer<typeof InterventionClass>;
+export type BudgetOverrun = z.infer<typeof BudgetOverrun>;
+
 export const CheckStatus = z.enum(["passed", "failed", "skipped"]);
 export const FailureClass = z.enum([
   "code_defect",

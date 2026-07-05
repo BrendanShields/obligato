@@ -1,6 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import type { ExecResult } from "@kelson/kernel";
 import { z } from "zod";
 
@@ -33,11 +40,36 @@ export const localExec =
     };
   };
 
+// AGT-4: containment must survive symlink traversal, not just `..`. A prefix
+// test on the lexically-resolved path lets a symlink created inside the
+// workspace (e.g. `ln -s / link`) point out of it. We realpath the cwd
+// baseline and the deepest existing ancestor of the target (write targets may
+// not exist yet), re-attach the non-existent tail, and check the *real* path —
+// so a link anywhere along the existing prefix that leaves cwd is refused,
+// while a symlinked temp root (macOS /tmp -> /private/tmp) does not spuriously
+// reject because the baseline is realpath'd too.
 const contained = (cwd: string, path: string): string => {
-  const abs = resolve(cwd, path);
-  if (abs !== cwd && !abs.startsWith(cwd + sep))
+  const realCwd = realpathSync(cwd);
+  const abs = resolve(realCwd, path);
+  let existing = abs;
+  const tail: string[] = [];
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) break;
+    // basename, not slice(parent.length + 1): at the root, parent "/" already
+    // ends in the separator, and the slice eats the tail's first character —
+    // "/xprivate/…" re-attached as "private/…" was wrongly ACCEPTED as an
+    // aliased in-workspace path (audit 2026-07-05).
+    tail.unshift(basename(existing));
+    existing = parent;
+  }
+  const real =
+    tail.length > 0
+      ? join(realpathSync(existing), ...tail)
+      : realpathSync(existing);
+  if (real !== realCwd && !real.startsWith(realCwd + sep))
     throw new Error(`path escapes the workspace: ${path}`);
-  return abs;
+  return real;
 };
 
 export interface AgentTool {

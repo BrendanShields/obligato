@@ -46,14 +46,17 @@ if (mode === "task") {
     d.tasks.push(task);
   }
   task.state = state;
+  // re-marking an already-completed task must not falsify its history
   task.completed_at =
     state === "completed"
-      ? `${new Date().toISOString().slice(0, 19)}Z`
+      ? (task.completed_at ?? `${new Date().toISOString().slice(0, 19)}Z`)
       : null;
   const noteIdx = rest.indexOf("--note");
   if (noteIdx !== -1) task.notes = rest[noteIdx + 1];
   const clausesIdx = rest.indexOf("--clauses");
-  if (clausesIdx !== -1) task.clauses = rest[clausesIdx + 1].split(",");
+  // "" means no clauses -> [], never [""] (F-audit 2026-07-05)
+  if (clausesIdx !== -1)
+    task.clauses = rest[clausesIdx + 1] ? rest[clausesIdx + 1].split(",") : [];
   save(TASKS, d);
   console.log(`${id} -> ${state}`);
 } else if (mode === "finding") {

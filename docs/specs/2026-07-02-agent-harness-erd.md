@@ -12,7 +12,7 @@ Three tiers, one rule each:
 | Tier | Holds | Rule |
 |---|---|---|
 | **Git-tracked files** (in the target repo and in pack repos) | Specs/PRDs/ERDs/ADRs, spec clauses, packs (manifests, rules, routing policy structure, agent registry), lockfile, changelog, eval ledger | Anything a human reviews, a PR carries, or that must survive Kelson's removal is a file |
-| **Local SQLite** (per operator, `~/.kelson/kelson.db`, WAL mode) | Sessions, tasks, step events, interventions, routing decisions, bundle/budget events, verification reports, eval runs/results/verdicts, replay records, drift events, routing weights, the artifact index | Anything measured, high-volume, or queried statistically lives in SQLite |
+| **Local SQLite** (WAL mode; store resolved repo-first per UX-13 — `./.kelson/kelson.db` when that file exists in the working directory, else the per-operator `~/.kelson/kelson.db`) | Sessions, tasks, step events, interventions, routing decisions, bundle/budget events, verification reports, eval runs/results/verdicts, replay records, drift events, routing weights, the artifact index | Anything measured, high-volume, or queried statistically lives in SQLite |
 | **OTel projection** (optional, off by default; PRD TEL-6) | Traces/spans/metrics derived from SQLite-bound events at emit time | A projection, never a source of truth; content-stripped per TEL-3 |
 
 The **artifact index** (hashes, trace links, staleness) is derived from files and rebuildable at any time (`kelson index rebuild`) — SQLite is disposable without losing anything a human authored.

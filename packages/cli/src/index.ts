@@ -32,7 +32,9 @@ import {
 } from "@kelson/kernel";
 import {
   Executor,
+  type InitResult,
   Lockfile,
+  type PackLintResult,
   SandboxProfile,
   type Verdict,
 } from "@kelson/schemas";
@@ -475,19 +477,28 @@ const loopCommand = (argv: string[]): void => {
 // and settings are preserved; ours append only if absent).
 const initCommand = (argv: string[]): void => {
   const { named } = parseArgs(argv);
+  const asJson = named.json === true;
+  const say = (m: string) => {
+    if (!asJson) write(m);
+  };
   const root = str(named.dir, process.cwd());
 
   mkdirSync(join(root, ".kelson", "telemetry"), { recursive: true });
   mkdirSync(join(root, ".claude", "hooks"), { recursive: true });
 
   const lockPath = join(root, "kelson.lock");
+  let lockfile: InitResult["lockfile"];
   if (!existsSync(lockPath)) {
     writeFileSync(
       lockPath,
       `${JSON.stringify({ schema_version: 1, parent_hash: null, entries: [] }, null, 2)}\n`,
     );
-    write("created kelson.lock");
-  } else write("kelson.lock exists — left untouched");
+    lockfile = "created";
+    say("created kelson.lock");
+  } else {
+    lockfile = "existing";
+    say("kelson.lock exists — left untouched");
+  }
 
   const settingsPath = join(root, ".claude", "settings.json");
   const settings = existsSync(settingsPath)
@@ -500,13 +511,15 @@ const initCommand = (argv: string[]): void => {
     string,
     { hooks: { type: string; command: string }[] }[]
   >;
+  const hooked: string[] = [];
   const ensure = (event: string, command: string) => {
     hooks[event] ??= [];
     const flat = hooks[event].flatMap((h) => h.hooks.map((x) => x.command));
     if (!flat.some((c) => c.includes(command.split("/").pop() as string))) {
       hooks[event].push({ hooks: [{ type: "command", command }] });
-      write(`hooked ${event}`);
-    } else write(`${event} hook exists — left untouched`);
+      hooked.push(event);
+      say(`hooked ${event}`);
+    } else say(`${event} hook exists — left untouched`);
   };
   ensure(
     "SessionStart",
@@ -518,11 +531,20 @@ const initCommand = (argv: string[]): void => {
   );
   settings.hooks = hooks;
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
-  const db = openDb(join(root, ".kelson", "kelson.db"));
+  const storePath = join(root, ".kelson", "kelson.db");
+  const db = openDb(storePath);
   db.close();
-  write(
-    "kelson initialized: .kelson store ready, hooks layered, lockfile pinned",
-  );
+  if (asJson)
+    emitJson({
+      store_path: storePath,
+      lockfile,
+      hooked,
+      schema_version: 1,
+    } satisfies InitResult);
+  else
+    write(
+      "kelson initialized: .kelson store ready, hooks layered, lockfile pinned",
+    );
 };
 
 // PACK-3: kelson pack lint — required bump from diffing against the
@@ -539,7 +561,19 @@ const packCommand = (argv: string[]): void => {
   const prev = loadPack(prevDir);
   const required = requiredBump(prev, next);
   const declared = { prev: prev.manifest.version, next: next.manifest.version };
-  if (!bumpSatisfies(declared, required))
+  const ok = bumpSatisfies(declared, required);
+  if (named.json === true) {
+    emitJson({
+      ok,
+      required_bump: required,
+      prev_version: declared.prev,
+      next_version: declared.next,
+      schema_version: 1,
+    } satisfies PackLintResult);
+    if (!ok) process.exit(1);
+    return;
+  }
+  if (!ok)
     die(
       `pack lint (PACK-3): required bump "${required}" but ${declared.prev} -> ${declared.next} does not satisfy it`,
     );

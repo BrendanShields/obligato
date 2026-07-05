@@ -9,10 +9,13 @@ export interface QuarantineEvent {
 }
 
 // EVP-5: window = most recent K results per (task, config lockfile hash),
-// ordered by (run started_at, repeat_index), pooled across runs regardless of
-// which side letter carried the hash; sides never mix because the hash is the
-// key. Flaky = full window, mixed, minority >= min_minority. Quarantine is
-// task-level and sticky (only `eval suite promote` clears it).
+// ordered by insertion (eval_task_result.rowid) — NOT started_at, which ties
+// within a millisecond and makes the K-boundary drop nondeterministic across
+// two runs sharing an instant (F-060/F-067 timestamp-tie class). Pooled across
+// runs regardless of which side letter carried the hash; sides never mix
+// because the hash is the key. Flaky = full window, mixed, minority >=
+// min_minority. Quarantine is task-level and sticky (only `eval suite promote`
+// clears it).
 export const evaluateFlakiness = (
   db: Database,
   args: {
@@ -39,7 +42,7 @@ export const evaluateFlakiness = (
              JOIN eval_run er ON er.id = r.run_id
             WHERE r.bench_task_id = ?
               AND ((r.side = 'A' AND er.config_a = ?) OR (r.side = 'B' AND er.config_b = ?))
-            ORDER BY er.started_at DESC, r.repeat_index DESC
+            ORDER BY r.rowid DESC
             LIMIT ?`,
         )
         .all(task.id, config, config, k) as {

@@ -10,11 +10,17 @@ import {
 } from "../../src/loop.ts";
 import {
   checkMonitor,
+  monitorSweep,
   openMonitor,
   pooledNullBootstrap,
 } from "../../src/monitor.ts";
 import { openDb } from "../../src/storage.ts";
-import { draftProposal, loopCtx, seedSession } from "../loop-helpers.ts";
+import {
+  draftProposal,
+  loopCtx,
+  seedSession,
+  seedVerdictEvidence,
+} from "../loop-helpers.ts";
 
 describe("LOOP-9: frozen quarantine-filtered baselines, seeded pooled-null bootstrap, stall semantics, content-hash quarantine with human-only release", () => {
   it("the pooled-null bootstrap is seeded and replayable; a real shift is significant, a null shift is not", () => {
@@ -92,6 +98,80 @@ describe("LOOP-9: frozen quarantine-filtered baselines, seeded pooled-null boots
     // Content hash unblocked: a fresh identical proposal is creatable again.
     const again = draftProposal(db, ctx);
     expect(again.state).toBe("proposed");
+    db.close();
+  });
+
+  it("two same-instant applies attribute by insertion order (rowid), not applied_at: the last-inserted is reverted", () => {
+    const db = openDb(":memory:");
+    const ctx = loopCtx();
+    const metrics = new Map<
+      string,
+      { fpar: number | null; tpac: number | null }
+    >();
+    const provider = (id: string) =>
+      metrics.get(id) ?? { fpar: null, tpac: null };
+    // Baselines well before either apply.
+    for (let i = 0; i < 12; i++) {
+      const id = seedSession(db, {
+        lockfileHash: `sha256:${"e".repeat(64)}`,
+        startedAt: `2026-06-2${i % 7}T00:00:00Z`,
+      });
+      metrics.set(id, { fpar: 0.8, tpac: 1000 });
+    }
+    // Apply A first (lower rowid), monitor stamped at the LATER instant.
+    const a = draftProposal(db, ctx);
+    enterGate(db, a.id, ctx.repoRoot);
+    transition(db, a.id, "approved", { actor: "human", reason: "t" });
+    const appliedA = applyProposal(db, a.id, ctx);
+    openMonitor(db, a.id, {
+      appliedAt: "2026-07-02T12:00:00Z",
+      lockfileAfter: appliedA.lockfileAfter,
+      changelog: readChangelog(ctx.changelogPath),
+    });
+    // 3 A-only sessions → inter-apply stratum starved (<8) → indistinguishable.
+    for (let i = 0; i < 3; i++) {
+      const id = seedSession(db, {
+        lockfileHash: appliedA.lockfileAfter,
+        startedAt: `2026-07-03T0${i}:00:00Z`,
+      });
+      metrics.set(id, { fpar: 0.8, tpac: 1000 });
+    }
+    // Apply B second (higher rowid) but stamp it at an EARLIER applied_at.
+    const b = draftProposal(db, ctx, {
+      targetPack: "routing-default",
+      diff: {
+        kind: "lockfile" as const,
+        ops: [{ op: "disable" as const, pack: "routing-default" }],
+      },
+      evidence: seedVerdictEvidence(db),
+    });
+    enterGate(db, b.id, ctx.repoRoot);
+    transition(db, b.id, "approved", { actor: "human", reason: "t" });
+    const appliedB = applyProposal(db, b.id, ctx);
+    openMonitor(db, b.id, {
+      appliedAt: "2026-07-01T12:00:00Z",
+      lockfileAfter: appliedB.lockfileAfter,
+      changelog: readChangelog(ctx.changelogPath),
+    });
+    // A+B sessions regress hard on both monitors.
+    for (let i = 0; i < 10; i++) {
+      const id = seedSession(db, {
+        lockfileHash: appliedB.lockfileAfter,
+        startedAt: `2026-07-04T0${i % 10}:00:00Z`,
+      });
+      metrics.set(id, { fpar: 0.3, tpac: 1000 });
+    }
+    const { reverted } = monitorSweep(db, {
+      now: "2026-07-05T12:00:00Z",
+      changelog: readChangelog(ctx.changelogPath),
+      metrics: provider,
+      applyCtx: ctx,
+    });
+    // Insertion order [A, B] designates B last-applied → revert B; A survives.
+    // Ordering by applied_at would rank B (earlier stamp) first and revert A.
+    expect(reverted).toBe(b.id);
+    expect(getProposal(db, b.id).state).toBe("quarantined");
+    expect(getProposal(db, a.id).state).toBe("monitoring");
     db.close();
   });
 

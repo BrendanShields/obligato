@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ArtifactType, Authority, Tier } from "./artifacts.ts";
-import { Delta, VerdictDecision } from "./eval.ts";
+import { Delta, EvalRunKind, VerdictDecision } from "./eval.ts";
 import { ChangelogEntry, ProposalState } from "./loop.ts";
 import { IsoUtc, MicroUsd, Sha256, Ulid } from "./scalars.ts";
 
@@ -47,7 +47,7 @@ export type UiTelemetryView = z.infer<typeof UiTelemetryView>;
 
 export const UiEvalRunRow = z.strictObject({
   id: Ulid,
-  kind: z.enum(["ablate", "compare", "replay"]),
+  kind: EvalRunKind,
   suite_id: z.string().min(1),
   suite_version: z.string().min(1),
   started_at: IsoUtc,

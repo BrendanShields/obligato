@@ -148,27 +148,28 @@ export const answerPermission = (
   }
 };
 
-const toMessages = (chain: SessionEvent[]): ModelMessage[] => {
+export const toMessages = (chain: SessionEvent[]): ModelMessage[] => {
   const messages: ModelMessage[] = [];
   for (const e of chain) {
     if (e.kind === "user_message") {
       messages.push({ role: "user", content: String(e.payload.text) });
     } else if (e.kind === "assistant_message") {
       const calls = (e.payload.tool_calls ?? []) as ToolCall[];
-      messages.push({
-        role: "assistant",
-        content: [
-          ...(e.payload.text
-            ? [{ type: "text" as const, text: String(e.payload.text) }]
-            : []),
-          ...calls.map((c) => ({
-            type: "tool-call" as const,
-            toolCallId: c.id,
-            toolName: c.name,
-            input: c.input,
-          })),
-        ],
-      });
+      const content = [
+        ...(e.payload.text
+          ? [{ type: "text" as const, text: String(e.payload.text) }]
+          : []),
+        ...calls.map((c) => ({
+          type: "tool-call" as const,
+          toolCallId: c.id,
+          toolName: c.name,
+          input: c.input,
+        })),
+      ];
+      // SES-4: a done turn can carry neither text nor tool calls; providers
+      // reject an empty-content assistant message on --continue, so drop it —
+      // it references no tool results and loses nothing from the chain.
+      if (content.length > 0) messages.push({ role: "assistant", content });
     } else if (e.kind === "tool_result") {
       messages.push({
         role: "tool",

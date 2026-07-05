@@ -120,7 +120,7 @@ Replays pair each replayed task against **its own original recorded outcome** (n
 A task's flakiness window is its most recent **K = 5 results per (task, config lockfile hash)**, pooled across suite runs — sides are evaluated independently (never mixed), and a single run contributes `repeats` results (default 3) to the window. A task is **flaky** when a full window holds mixed results with minority count ≥ 2. Config keys: `eval.flaky.k` (5), `eval.flaky.min_minority` (2). Quarantine is automatic, logged, and sticky until `kelson eval suite promote` (human) re-admits it.
 
 - **EVP-5.** The flakiness detector shall evaluate the window rule on every suite run, pooling per (task, config) across runs, and shall move matching tasks to quarantine before gate math executes.
-  *Obligation:* deterministic-flaky fixture (seeded 50% pass) quarantined as soon as its window fills (the second suite run at default repeats); stable fixtures never quarantined across 100 runs; sides never pool together.
+  *Obligation:* deterministic-flaky fixture (seeded 50% pass) quarantined as soon as its window fills (the second suite run at default repeats); stable fixtures never quarantined across 100 runs; sides never pool together; two suite runs sharing a wall-clock `started_at` compose the window by insertion order (`rowid`), never by timestamp — window membership is deterministic under a millisecond tie.
 
 ## 7. Ledger Entry Format (`ledger/<pack>/<version>.json` in the registry)
 

@@ -63,4 +63,71 @@ describe("SES-4: run --continue extends the same chain; new sessions get a kerne
     db.close();
     server.stop();
   }, 20_000);
+
+  it("a session done on a text-less, tool-less final turn is still --continue-able through kelson run (F-085 operator surface)", async () => {
+    // Turn 1 ends the session with neither text nor tool calls; the resumed
+    // chain must drop that empty assistant message before it reaches the
+    // provider — an empty-content assistant entry is a provider rejection.
+    const server = mockOpenAiServer([
+      { kind: "text", text: "" },
+      { kind: "text", text: "second answer" },
+    ]);
+    const t = makeTestRepo({ baseUrl: server.url, configured: true });
+    const dbPath = join(t.repo, ".kelson", "kelson.db");
+
+    const first = await runCli(t, [
+      "run",
+      "-p",
+      "first task",
+      "--db",
+      dbPath,
+      "--json",
+    ]);
+    expect(first.exitCode).toBe(0);
+    const sessionId = JSON.parse(first.stdout).session_id as string;
+
+    const second = await runCli(t, [
+      "run",
+      "-p",
+      "follow-up task",
+      "--continue",
+      sessionId,
+      "--db",
+      dbPath,
+      "--json",
+    ]);
+    expect(second.exitCode).toBe(0);
+    expect(JSON.parse(second.stdout).session_id).toBe(sessionId);
+
+    // Discriminating on the wire: no request ever carried an empty-content
+    // assistant message (reverting the toMessages drop re-adds it), and the
+    // resumed request did carry both user messages of the same chain.
+    // biome-ignore lint/suspicious/noExplicitAny: parsed mock request body
+    const requests = server.bodies() as any[];
+    expect(requests.length).toBe(2);
+    for (const body of requests) {
+      for (const m of body?.messages ?? []) {
+        if (m.role !== "assistant") continue;
+        const hasText =
+          typeof m.content === "string"
+            ? m.content.length > 0
+            : Array.isArray(m.content) && m.content.length > 0;
+        const hasCalls = (m.tool_calls?.length ?? 0) > 0;
+        expect(hasText || hasCalls).toBe(true);
+      }
+    }
+    const resumed = requests[1];
+    const userTexts = (resumed?.messages ?? [])
+      // biome-ignore lint/suspicious/noExplicitAny: parsed mock request body
+      .filter((m: any) => m.role === "user")
+      // biome-ignore lint/suspicious/noExplicitAny: parsed mock request body
+      .map((m: any) =>
+        typeof m.content === "string"
+          ? m.content
+          : // biome-ignore lint/suspicious/noExplicitAny: parsed mock request body
+            (m.content ?? []).map((p: any) => p.text ?? "").join(""),
+      );
+    expect(userTexts).toEqual(["first task", "follow-up task"]);
+    server.stop();
+  }, 20_000);
 });

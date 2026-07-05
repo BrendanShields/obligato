@@ -139,6 +139,39 @@ export const compileSpec = (
     .block as KelspecComponent;
   const events = eventSet(component);
 
+  // SPEC-6: mechanical tier escalation, checked at spec time (PRD §7.4). The
+  // declared tier is a floor the human may raise but never lower below the
+  // mechanical result; an under-declaration is a compile error (not a silent
+  // raise, so the file and the stored artifact tier never diverge). T1 when
+  // persistent state is mutated by ≥2 distinct event sources; T2 when
+  // domains_of_concern touches money/security/data_loss. (Pack-modification
+  // T2 has no schema field yet — deferred.)
+  const ESCALATION_DOMAINS = new Set(["money", "security", "data_loss"]);
+  const TIER_RANK = { T0: 0, T1: 1, T2: 2 } as const;
+  const mechanical = ((): { tier: "T1" | "T2"; reason: string } | null => {
+    const hit = component.domains_of_concern.filter((d) =>
+      ESCALATION_DOMAINS.has(d),
+    );
+    if (hit.length > 0)
+      return {
+        tier: "T2",
+        reason: `domains_of_concern includes ${hit.join(", ")}`,
+      };
+    const sources = new Set<string>();
+    for (const sv of component.state)
+      for (const ev of sv.mutated_by) sources.add(ev);
+    if (sources.size >= 2)
+      return {
+        tier: "T1",
+        reason: `persistent state is mutated by ${sources.size} event sources`,
+      };
+    return null;
+  })();
+  if (mechanical && TIER_RANK[component.tier] < TIER_RANK[mechanical.tier])
+    err(
+      `component declares tier ${component.tier} but escalation criteria require ${mechanical.tier} (SPEC-6: ${mechanical.reason}); raise the declared tier — the compiler never lowers below the mechanical result`,
+    );
+
   const domains = new Map<string, KelspecDomain>();
   for (const b of blocks) {
     if (b.block.kind !== "domain") continue;

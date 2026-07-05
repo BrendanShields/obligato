@@ -139,7 +139,7 @@ A single statusline badge (`degraded: telemetry`) and one line at session start.
 ## 6. UX Requirements (EARS + obligations, PRD format)
 
 - **UX-1.** Every `kelson` CLI command shall support `--json` emitting schema-validated output equivalent to its rendered view.
-  *Obligation:* CI matrix — every registered command runs with `--json`; output validates against its Zod schema.
+  *Obligation:* CI matrix — a JSON-output registry maps every entry in the `COMMANDS` dispatch table to either its Zod output schema or a recorded reason it is not matrix-validated (interactive/streaming surfaces like `chat`/`ui` that emit no single view, or a command whose `--json` is discharged by its own family's obligations); the registry's key set must equal the dispatch table's (the test fails closed, so a newly-registered command must declare its `--json` contract or its skip reason), and every offline schema-backed command emits `--json` validating against its declared schema.
 - **UX-2.** Every interactive prompt shall display the evidence for the decision, a recommended default, and shall be dismissible with a single keystroke selecting the default.
   *Obligation:* prompt-component unit tests + a lint rule that no prompt renders without `evidence` and `default` props.
 - **UX-3.** While a session is healthy, ambient mechanisms shall render at most the statusline segment; when degraded or paused, exactly one panel explains why and names the verb (UX-P5).

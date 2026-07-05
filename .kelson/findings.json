@@ -1813,6 +1813,74 @@
       "status": "resolved",
       "id": "F-128",
       "fix_commit": null
+    },
+    {
+      "task": "C1-0",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "SES-4"
+      ],
+      "summary": "SES-4 obligation promises the empty-final-turn --continue case through kelson run (operator surface), but staged coverage was a unit test on toMessages only — the CLI path never exercised the empty-turn resume",
+      "root_cause": "test_blindspot",
+      "fix": "cli SES-4 test extended: empty first turn via mock, --continue exits 0, wire-level assertion (captured request bodies) that no empty-content assistant message reaches the provider",
+      "id": "F-129",
+      "status": "fixed",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-0",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-4"
+      ],
+      "summary": "contained() tail re-attach used existing.slice(parent.length+1), off by one at the root: /x<realCwd>/f re-attached to <realCwd>/f and was wrongly ACCEPTED as an aliased in-workspace write at a path the model never named",
+      "root_cause": "design_bug",
+      "fix": "basename(existing) for the tail component; discriminating fixture: write to /x<realCwd>/probe.txt must throw escapes-the-workspace and create nothing",
+      "id": "F-130",
+      "status": "fixed",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-0",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-4"
+      ],
+      "summary": "AGT-4 obligation names symlink refusal for read/write/edit/ls but the test discriminated only write",
+      "root_cause": "test_blindspot",
+      "fix": "parametrized symlink-refusal test over all four tools asserting the escape error per tool",
+      "id": "F-131",
+      "status": "fixed",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-0",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-1"
+      ],
+      "summary": "InitResult/PackLintResult shipped without paired arbitraries in roundtrip.test.ts, breaking the schema-arbitrary pairing convention the analogous RunResult follows",
+      "root_cause": "process_gap",
+      "fix": "both arbitraries added to the roundtrip suite",
+      "id": "F-132",
+      "status": "fixed",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-0",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "board rows REV-8/REV-9 carried clauses:[\"\"] (empty-string entry) and board.mjs task re-marking clobbered completed_at, falsifying history on repair",
+      "root_cause": "process_gap",
+      "fix": "board.mjs: --clauses \"\" now yields []; completed_at preserved on re-mark; both rows repaired through the tool",
+      "id": "F-133",
+      "status": "fixed",
+      "fix_commit": null
     }
   ]
 }

@@ -21,6 +21,7 @@ let runCounter = 0;
 const addRun = (
   db: Database,
   results: { side: "A" | "B"; passes: boolean[] }[],
+  at?: string,
 ): void => {
   const runId = ulid();
   runCounter++;
@@ -31,7 +32,7 @@ const addRun = (
     runId,
     HASH_A,
     HASH_B,
-    `2026-01-01T00:00:${String(runCounter).padStart(2, "0")}Z`,
+    at ?? `2026-01-01T00:00:${String(runCounter).padStart(2, "0")}Z`,
   );
   for (const { side, passes } of results)
     passes.forEach((p, i) => {
@@ -68,6 +69,22 @@ describe("EVP-5: window rule pooled per (task, config) across runs; sides never 
     expect(events).toHaveLength(1);
     expect(events[0]?.task_id).toBe("t");
     expect(isQuarantined(db)).toBe(true);
+    db.close();
+  });
+
+  it("two same-instant runs compose the window by insertion order (rowid), deterministic under a started_at tie", () => {
+    const db = openDb(":memory:");
+    setup(db);
+    const TIE = "2026-02-01T00:00:00Z";
+    addRun(db, [{ side: "A", passes: [true, true, true] }], TIE);
+    addRun(db, [{ side: "A", passes: [false, false, false] }], TIE);
+    const events = detect(db);
+    // Most recent 5 by insertion: run 2's three fails + run 1's last two
+    // passes → chronological window [T,T,F,F,F], a 2-3 split → flaky. Ordering
+    // by started_at ties on TIE and interleaves the two runs by repeat_index,
+    // yielding a different (nondeterministic) window (F-060/F-067 class).
+    expect(events).toHaveLength(1);
+    expect(events[0]?.window).toEqual([true, true, false, false, false]);
     db.close();
   });
 

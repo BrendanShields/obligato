@@ -810,6 +810,168 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-03T06:14:42Z"
+    },
+    {
+      "id": "REV-1",
+      "title": "Symlink workspace escape: realpath containment",
+      "state": "completed",
+      "clauses": [
+        "AGT-4"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-2",
+      "title": "SPEC-6 mechanical tier escalation + reject-lowering",
+      "state": "completed",
+      "clauses": [
+        "SPEC-6"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-3",
+      "title": "UX-1 --json matrix + init/pack --json",
+      "state": "completed",
+      "clauses": [
+        "UX-1"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-4",
+      "title": "TEL-4 intervention storage obligation test",
+      "state": "completed",
+      "clauses": [
+        "TEL-4"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-5",
+      "title": "flaky window order by rowid (determinism)",
+      "state": "completed",
+      "clauses": [
+        "EVP-5"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-6",
+      "title": "monitor sweep order by rowid (determinism)",
+      "state": "completed",
+      "clauses": [
+        "LOOP-9"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-7",
+      "title": "toMessages drop empty assistant msg (continue)",
+      "state": "completed",
+      "clauses": [
+        "SES-4"
+      ],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-8",
+      "title": "Credential token roundtrip arbitrary",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "REV-9",
+      "title": "RunKind vs eval_run.kind reconcile + ERD storage doc",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-03T07:41:11Z"
+    },
+    {
+      "id": "C1-0",
+      "title": "Gates green + commit REV WIP baseline",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-05T12:00:52Z",
+      "notes": "REV baseline + 5 audit findings fixed (F-129..F-133)"
+    },
+    {
+      "id": "C1-1",
+      "title": "EVP-11 cross-agent bench: spec + kernel bench module",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-2",
+      "title": "UX-18 kelson bench CLI command + --json",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-3",
+      "title": "Context seam: assembleContext + reconstruct-once",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-4",
+      "title": "PROV-8 Anthropic prompt-cache breakpoints",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-5",
+      "title": "PROV-9 retry/backoff on transient stream errors",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-6",
+      "title": "Robust edit: tolerant match + near-miss diff error",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-7",
+      "title": "Ripgrep search: gitignore-aware, capped, fallback",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-8",
+      "title": "System prompt builder: env block + conventions",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-9",
+      "title": "PERM-4 granular headless permission rules",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-10",
+      "title": "AGT auto-compaction trigger in loop",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-11",
+      "title": "Bench validation: Ollama smoke + subscription baseline",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }

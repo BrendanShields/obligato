@@ -57,6 +57,7 @@ export const Lockfile = z.object({
   entries: z.array(LockfileEntry),
 });
 
+export type PackKind = z.infer<typeof PackKind>;
 export type Capability = z.infer<typeof Capability>;
 export type PackManifest = z.infer<typeof PackManifest>;
 export type Lockfile = z.infer<typeof Lockfile>;
