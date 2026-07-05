@@ -2092,6 +2092,18 @@
       "id": "F-148",
       "status": "fixed",
       "fix_commit": "2169edf"
+    },
+    {
+      "task": "C1-0",
+      "severity": "warning",
+      "clauses": [],
+      "root_cause": "process_gap",
+      "summary": "SMOKE-TEST ROW (will verify flag form then keep as postmortem record): findings flag form added to board.mjs",
+      "fix": "flag form self-test",
+      "source": "clause-auditor",
+      "id": "F-149",
+      "status": "fixed",
+      "fix_commit": "7c86dc7"
     }
   ]
 }

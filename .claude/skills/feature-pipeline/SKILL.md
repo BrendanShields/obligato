@@ -10,7 +10,7 @@ Kelson's pipeline is ideation → planning → spec → build → verify, with t
 ## Stages
 
 1. **Ideation** — interview one question at a time (PIPE-2 discipline): surface the unknowns, resolve them before any solutioning. *Exit: no open unknowns.*
-2. **Planning** — write the requirement as EARS clauses **with obligations** directly in the governing spec doc (spec-sync skill owns the mechanics). Architecturally significant choices get an ADR draft (PIPE-4). *Exit: spec-lint hook passes; clauses reviewed by the user.*
+2. **Planning** — write the requirement as EARS clauses **with obligations** directly in the governing spec doc (spec-sync skill owns the mechanics). Architecturally significant choices get an ADR draft (PIPE-4). Plans reference new clauses by *feature name*; clause numbers are assigned at landing time (next free number then), never pre-allocated in a plan — landing order and plan order diverge (postmortem 2026-07-05: a plan's "AGT-13 compaction" collided with robust-edit landing first). *Exit: spec-lint hook passes; clauses reviewed by the user.*
 3. **Spec hardening** — for clauses that gate non-trivial implementation, run the **divergence** skill on the riskiest 1–2 clauses; fold clarifying clauses back in. *Exit: no material divergence on probed clauses.*
 4. **Build** — implement per the clauses. Route mechanical sub-work (renames, formatting, path updates, changelog lines) to the **mechanical** agent — that's the RTR routing emulation; don't burn frontier tokens on it. Obligation tests land with the code (obligation-test skill). *Exit: code + `<CLAUSE-ID>.test.ts` exist for every touched clause.*
 5. **Verify** — run tests; run the **clause-auditor** agent on the diff; fix violations. *Exit: `AUDIT: PASS`.*

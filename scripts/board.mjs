@@ -61,7 +61,23 @@ if (mode === "task") {
   console.log(`${id} -> ${state}`);
 } else if (mode === "finding") {
   const d = load(FINDINGS);
-  const row = JSON.parse(rest[0] ?? die("finding requires a JSON argument"));
+  // Flag form (postmortem 2026-07-05: inline JSON in shell is an escaping
+  // hazard — apostrophes bit three times in one session):
+  //   board.mjs finding --task C1-1 --severity warning --clauses A,B \
+  //     --root-cause design_bug --summary "..." --fix "..." [--source s]
+  let row;
+  if ((rest[0] ?? "").startsWith("--")) {
+    row = {};
+    for (let i = 0; i < rest.length; i += 2) {
+      const key = rest[i]?.slice(2).replaceAll("-", "_");
+      const val = rest[i + 1];
+      if (!key || val === undefined) die(`flag ${rest[i]} needs a value`);
+      row[key] = key === "clauses" ? (val ? val.split(",") : []) : val;
+    }
+    row.source ??= "clause-auditor";
+  } else {
+    row = JSON.parse(rest[0] ?? die("finding requires a JSON argument or flags"));
+  }
   // taxonomy is an object (slug -> description); Object.keys, not .length/.includes
   const taxonomy = Object.keys(d.root_cause_taxonomy ?? {});
   if (taxonomy.length && !taxonomy.includes(row.root_cause))
