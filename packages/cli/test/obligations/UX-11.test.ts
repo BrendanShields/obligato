@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb } from "@kelson/kernel";
 import {
+  UiBenchView,
   UiEvalView,
   UiLoopView,
   UiTelemetryView,
@@ -14,6 +15,7 @@ import { API_PATHS, createUiServer } from "../../src/ui/server.ts";
 const SCHEMAS = {
   "/api/telemetry": UiTelemetryView,
   "/api/evals": UiEvalView,
+  "/api/bench": UiBenchView,
   "/api/loop": UiLoopView,
   "/api/trace": UiTraceView,
 } as const;

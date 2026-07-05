@@ -2104,6 +2104,91 @@
       "id": "F-149",
       "status": "fixed",
       "fix_commit": "7c86dc7"
+    },
+    {
+      "task": "UIA-DRIFT",
+      "source": "divergence",
+      "severity": "violation",
+      "clauses": [
+        "UX-22",
+        "SPEC-8"
+      ],
+      "summary": "Both blind readers committed to all-or-nothing promotion (invalid id rejects the whole batch, non-zero exit) but promoteInferred silently skips non-inferred ids — partial promotion of a curated selection; F-120 class: agreed reading, unimplemented surface",
+      "root_cause": "spec_gap",
+      "fix": "UX-22 pins strict all-or-nothing; promoteInferred gains validate-then-throw (no mutation on a bad batch); collapsed module counts pinned authority-split (reader B)",
+      "status": "fixed",
+      "id": "F-150",
+      "fix_commit": null
+    },
+    {
+      "task": "UIA-INDEX",
+      "source": "divergence",
+      "severity": "warning",
+      "clauses": [
+        "UX-26"
+      ],
+      "summary": "UX-26 readers converged on git-index enumeration and unrestricted deletion of unregenerable rows; kernel has no git dependency and opaque artifact rows cannot be classified as file-gone, so unrestricted deletion is destructive",
+      "root_cause": "spec_gap",
+      "fix": "UX-26 re-pinned: filesystem scan (no git), deletion confined to provably spec-derived rows (logical_id naming a *.spec.md source), full count semantics pinned",
+      "status": "fixed",
+      "id": "F-151",
+      "fix_commit": null
+    },
+    {
+      "task": "UIA-DOCTOR",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-19"
+      ],
+      "summary": "doctor store probe used openDb, which creates the missing store and reports it passing — a diagnostic that mutates state and misdirects a fresh clone",
+      "root_cause": "spec_gap",
+      "fix": "UX-19 pinned read-only probing (missing store fails naming kelson init, never created); existsSync guard + missing-store fixture",
+      "status": "fixed",
+      "id": "F-152",
+      "fix_commit": null
+    },
+    {
+      "task": "UIA-DRIFT",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-22"
+      ],
+      "summary": "duplicate-id dedupe pinned in UX-22 but untested; drift list survival threshold 0 undeclared vs SPEC-8 default 20",
+      "root_cause": "test_blindspot",
+      "fix": "UX-22 obligation gains the duplicate-id case (test added); clause pins list threshold 0 with --min-sessions filter",
+      "status": "fixed",
+      "id": "F-153",
+      "fix_commit": null
+    },
+    {
+      "task": "UIA-REPLAY",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-23"
+      ],
+      "summary": "a runTask/createWorkspace failure left the replay eval_run row with finished_at NULL — forever-running in the eval view",
+      "root_cause": "spec_gap",
+      "fix": "UX-23 pins finished_at stamping on failure; runReplay stamps in finally; missing-snapshot fixture added",
+      "status": "fixed",
+      "id": "F-154",
+      "fix_commit": null
+    },
+    {
+      "task": "UIA-DRIFT",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-22"
+      ],
+      "summary": "docs/guides/brownfield.md still said drift promote ships with the TUI — stale after this diff shipped it as a static command",
+      "root_cause": "process_gap",
+      "fix": "guide line updated to name kelson drift list/promote",
+      "status": "fixed",
+      "id": "F-155",
+      "fix_commit": null
     }
   ]
 }

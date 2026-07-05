@@ -3,19 +3,28 @@ import fc from "fast-check";
 import { z } from "zod";
 import {
   AgentConfig,
+  AgentsListResult,
   Artifact,
   AuthFile,
   BenchReport,
   Credential,
+  DivergenceListResult,
+  DoctorReport,
   DriftEvent,
+  DriftListResult,
+  EvalReportResult,
+  IndexRebuildResult,
   InitResult,
   InterventionEvent,
   Lockfile,
   ModelRegistryEntry,
   PackLintResult,
   PackManifest,
+  PackNewResult,
   PermissionRule,
+  ReplayResult,
   RunResult,
+  SdlcStep,
   Session,
   SessionEvent,
   SessionEventKind,
@@ -23,7 +32,9 @@ import {
   SharedStepEvent,
   StepEvent,
   Task,
+  TaskType,
   TraceLink,
+  UiBenchView,
   UiEvalView,
   UiLoopView,
   UiTelemetryView,
@@ -63,6 +74,16 @@ const delta = fc
       ci95: [z0(Math.min(a, b)), z0(Math.max(a, b))] as [number, number],
     };
   });
+
+// UX-20: divergence outcomes — `value` stays within JSON-safe primitives
+// (arbitrary unknowns would trip the -0/undefined serialization edges).
+const divergenceOutcome = fc.oneof(
+  fc.record({
+    tag: fc.constant("returned" as const),
+    value: fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+  }),
+  fc.record({ tag: fc.constant("threw" as const), errorName: nonEmpty }),
+);
 
 const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
   SharedStepEvent: [
@@ -608,6 +629,246 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       }),
       manifest_hash: nonEmpty,
       schema_version: fc.constant(1),
+    }),
+  ],
+  DoctorReport: [
+    DoctorReport,
+    fc.record({
+      ok: fc.boolean(),
+      components: fc.array(
+        fc.record({
+          name: fc.constantFrom("store", "lockfile", "auth", "telemetry"),
+          status: fc.constantFrom("pass", "warn", "fail"),
+          detail: nonEmpty,
+          fix: fc.option(nonEmpty, { nil: null }),
+        }),
+        { maxLength: 4 },
+      ),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  DivergenceListResult: [
+    DivergenceListResult,
+    fc.record({
+      reports: fc.array(
+        fc.record({
+          id: nonEmpty,
+          spec_hash: nonEmpty,
+          clause_ids: fc.array(nonEmpty, { maxLength: 3 }),
+          entries: fc.array(
+            fc.record({
+              clause_id: nonEmpty,
+              // keys avoid "__proto__", values avoid -0 (SessionEvent note)
+              probe_input: fc.dictionary(
+                kebab,
+                fc.oneof(
+                  fc.string(),
+                  fc.integer(),
+                  fc.boolean(),
+                  fc.constant(null),
+                ),
+                { maxKeys: 3 },
+              ),
+              differing_path: fc.string({ maxLength: 20 }),
+              outcome_a: divergenceOutcome,
+              outcome_b: divergenceOutcome,
+              redacted_paths: fc.array(fc.string({ maxLength: 10 }), {
+                maxLength: 2,
+              }),
+            }),
+            { maxLength: 2 },
+          ),
+          resolved: fc.boolean(),
+          at: isoUtc,
+        }),
+        { maxLength: 3 },
+      ),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  PackNewResult: [
+    PackNewResult,
+    fc.record({
+      dir: nonEmpty,
+      files: fc.array(nonEmpty, { maxLength: 5 }),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  DriftListResult: [
+    DriftListResult,
+    fc.record({
+      survival: fc.array(
+        fc.record({ logical_id: nonEmpty, sessions_survived: count }),
+        { maxLength: 4 },
+      ),
+      collapsed: fc.boolean(),
+      items: fc.array(
+        fc.record({
+          artifact_id: nonEmpty,
+          module: nonEmpty,
+          direction: fc.constantFrom(
+            "code_under_spec",
+            "spec_over_code",
+            "upstream_stale",
+          ),
+          authority: fc.constantFrom("authored", "inferred", "confirmed"),
+          detected_at: isoUtc,
+        }),
+        { maxLength: 4 },
+      ),
+      modules: fc.array(
+        fc.record({ module: nonEmpty, blocking: count, informational: count }),
+        { maxLength: 3 },
+      ),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  EvalReportResult: [
+    EvalReportResult,
+    fc.record({
+      runs: fc.array(
+        fc.record({
+          run_id: ulid,
+          kind: fc.constantFrom("ablate", "compare", "replay"),
+          suite_id: nonEmpty,
+          suite_version: nonEmpty,
+          finished_at: fc.option(isoUtc, { nil: null }),
+          decision: fc.constantFrom(
+            "helps",
+            "hurts",
+            "no_effect",
+            "underpowered",
+          ),
+          fpar_delta: delta,
+          cost_delta_pct: delta,
+          n: fc.nat(100),
+          alpha: fc.constant(0.05),
+        }),
+        { maxLength: 3 },
+      ),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  ReplayResult: [
+    ReplayResult,
+    fc.record({
+      record: fc.record({
+        id: ulid,
+        source_session_id: nonEmpty,
+        snapshot_ref: sha256,
+        config: sha256,
+        run_id: fc.option(ulid, { nil: null }),
+        outcome: fc.record({
+          fpar_pass: fc.boolean(),
+          cost_micro_usd: count,
+          original_fpar_pass: fc.boolean(),
+          original_cost_micro_usd: count,
+        }),
+        validity: fc.constantFrom("valid", "advisory"),
+        advisory_reason: fc.option(
+          fc.constantFrom(
+            "snapshot_hash_mismatch",
+            "model_mismatch",
+            "source_session_not_complete",
+          ),
+          { nil: null },
+        ),
+        at: isoUtc,
+        schema_version: fc.constant(1),
+      }),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  AgentsListResult: [
+    AgentsListResult,
+    fc.record({
+      registry_dir: nonEmpty,
+      agents: fc.array(
+        fc.record({
+          schema_version: fc.constant(1),
+          id: kebab,
+          kind: fc.constantFrom("base_model", "subagent", "custom_agent"),
+          // .default([])/.default({}) fields must always be present in the
+          // arbitrary, or parse() fills them and toEqual fails
+          capabilities: fc.array(
+            fc.record(
+              {
+                domain: nonEmpty,
+                lang: nonEmpty,
+                task_type: fc.constantFrom(...TaskType.options),
+                step: fc.constantFrom(...SdlcStep.options),
+              },
+              { requiredKeys: [] },
+            ),
+            { maxLength: 2 },
+          ),
+          cost_class: fc.integer({ min: 1, max: 5 }),
+          constraints: fc.oneof(
+            fc.constant({}),
+            fc.record({
+              max_context_tokens: fc.integer({ min: 1, max: 1_000_000 }),
+            }),
+          ),
+          endpoint: fc.record({
+            type: fc.constantFrom("base_model", "claude_subagent"),
+            ref: nonEmpty,
+          }),
+        }),
+        { maxLength: 2 },
+      ),
+      schema_version: fc.constant(1),
+    }),
+  ],
+  IndexRebuildResult: [
+    IndexRebuildResult,
+    fc.record({
+      ingested: count,
+      changed: count,
+      discrepancies: count,
+      schema_version: fc.constant(1),
+    }),
+  ],
+  UiBenchView: [
+    UiBenchView,
+    fc.record({
+      empty_verb: nonEmpty,
+      runs: fc.array(
+        fc.record({
+          id: ulid,
+          suite_id: nonEmpty,
+          suite_version: nonEmpty,
+          candidate: fc.constantFrom("claude", "command", "api"),
+          baseline: fc.constantFrom("claude", "command", "api"),
+          started_at: isoUtc,
+          finished_at: fc.option(isoUtc, { nil: null }),
+          decision: fc.option(
+            fc.constantFrom("helps", "hurts", "no_effect", "underpowered"),
+            { nil: null },
+          ),
+          fpar_delta: fc.option(delta, { nil: null }),
+          cost_delta_pct: fc.option(delta, { nil: null }),
+          n: fc.option(fc.nat(100), { nil: null }),
+          rows: fc.array(
+            fc.record({
+              task_id: nonEmpty,
+              candidate_fpar: fc.constantFrom(0, 1),
+              baseline_fpar: fc.constantFrom(0, 1),
+              candidate_cost_micro_usd: fc.double({
+                min: 0,
+                max: 1_000_000,
+                noNaN: true,
+              }),
+              baseline_cost_micro_usd: fc.double({
+                min: 0,
+                max: 1_000_000,
+                noNaN: true,
+              }),
+            }),
+            { maxLength: 3 },
+          ),
+        }),
+        { maxLength: 2 },
+      ),
     }),
   ],
 };

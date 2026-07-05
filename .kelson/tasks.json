@@ -996,6 +996,97 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-05T13:15:23Z"
+    },
+    {
+      "id": "UIA-SPEC",
+      "title": "Phase A: land UX-* clauses for Tier-1 surfaces (PRD 2026-07-05)",
+      "state": "completed",
+      "clauses": [
+        "UX-19",
+        "UX-20",
+        "UX-21",
+        "UX-22",
+        "UX-23",
+        "UX-24",
+        "UX-25",
+        "UX-26"
+      ],
+      "completed_at": "2026-07-05T21:05:54Z"
+    },
+    {
+      "id": "UIA-DOCTOR",
+      "title": "T1.5 kelson doctor",
+      "state": "completed",
+      "clauses": [
+        "UX-19"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-DIVERGENCE",
+      "title": "T1.7 kelson divergence list|show",
+      "state": "completed",
+      "clauses": [
+        "UX-20"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-PACKNEW",
+      "title": "T1.9 kelson pack new",
+      "state": "completed",
+      "clauses": [
+        "UX-21"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-DRIFT",
+      "title": "T1.1 kelson drift list|promote",
+      "state": "completed",
+      "clauses": [
+        "UX-22",
+        "SPEC-8"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-REPLAY",
+      "title": "T1.6 kelson eval replay|report",
+      "state": "completed",
+      "clauses": [
+        "UX-23",
+        "EVP-3"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-AGENTS",
+      "title": "T1.3 kelson agents register|list",
+      "state": "completed",
+      "clauses": [
+        "UX-24"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-BENCHWEB",
+      "title": "T1.8 bench tab in web eval explorer",
+      "state": "completed",
+      "clauses": [
+        "UX-25",
+        "UX-11"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
+    },
+    {
+      "id": "UIA-INDEX",
+      "title": "T1.4 kelson index rebuild",
+      "state": "completed",
+      "clauses": [
+        "UX-26"
+      ],
+      "completed_at": "2026-07-05T21:32:18Z"
     }
   ]
 }

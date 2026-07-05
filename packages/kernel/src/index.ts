@@ -17,6 +17,7 @@ export * from "./packs.ts";
 export * from "./predicate.ts";
 export * from "./privacy.ts";
 export * from "./propose.ts";
+export * from "./reindex.ts";
 export * from "./replay.ts";
 export * from "./routing.ts";
 export * from "./sandbox.ts";

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
+  benchView,
   DEFAULT_DB_PATH,
   evalView,
   loopView,
@@ -9,6 +10,7 @@ import {
   traceView,
 } from "@kelson/kernel";
 import {
+  UiBenchView,
   UiEvalView,
   UiLoopView,
   UiTelemetryView,
@@ -46,6 +48,9 @@ const routes: Record<
     build: (ctx) => telemetryView(ctx.db),
   },
   "/api/evals": { schema: UiEvalView, build: (ctx) => evalView(ctx.db) },
+  // UX-25: bench runs in the eval surface (bench_run/bench_task_result only —
+  // the EVP-11 ledger fence keeps them out of /api/evals)
+  "/api/bench": { schema: UiBenchView, build: (ctx) => benchView(ctx.db) },
   "/api/loop": {
     schema: UiLoopView,
     build: (ctx) => loopView(ctx.db, ctx.changelogPath),

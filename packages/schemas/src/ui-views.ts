@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ArtifactType, Authority, Tier } from "./artifacts.ts";
-import { Delta, EvalRunKind, VerdictDecision } from "./eval.ts";
+import { BenchTaskRow } from "./cli.ts";
+import { Delta, EvalRunKind, Executor, VerdictDecision } from "./eval.ts";
 import { ChangelogEntry, ProposalState } from "./loop.ts";
 import { IsoUtc, MicroUsd, Sha256, Ulid } from "./scalars.ts";
 
@@ -98,6 +99,30 @@ export const UiTraceEdge = z.strictObject({
   downstream_id: z.string().min(1),
 });
 export type UiTraceEdge = z.infer<typeof UiTraceEdge>;
+
+// UX-25: bench runs in the web eval surface — per-task rows compose the CLI
+// BenchTaskRow by reference (UX-11 discipline).
+export const UiBenchRunRow = z.strictObject({
+  id: Ulid,
+  suite_id: z.string().min(1),
+  suite_version: z.string().min(1),
+  candidate: Executor,
+  baseline: Executor,
+  started_at: IsoUtc,
+  finished_at: IsoUtc.nullable(),
+  decision: VerdictDecision.nullable(),
+  fpar_delta: Delta.nullable(),
+  cost_delta_pct: Delta.nullable(),
+  n: z.number().int().nonnegative().nullable(),
+  rows: z.array(BenchTaskRow),
+});
+export type UiBenchRunRow = z.infer<typeof UiBenchRunRow>;
+
+export const UiBenchView = z.strictObject({
+  empty_verb: EmptyVerb,
+  runs: z.array(UiBenchRunRow),
+});
+export type UiBenchView = z.infer<typeof UiBenchView>;
 
 export const UiTraceView = z.strictObject({
   empty_verb: EmptyVerb,

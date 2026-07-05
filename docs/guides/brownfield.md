@@ -16,7 +16,7 @@ Run excavation on the modules you touch most. Inferred clauses land with `author
 
 ## Ongoing: promotion by survival (SPEC-8)
 
-An inferred clause that survives 20 sessions without violation or human edit queues for one-click batched promotion (`promotionQueue`/`promoteInferred` in the kernel; the `kelson drift promote` CLI surface ships with the TUI). Promoted clauses become `confirmed` and start gating. Drift alerts arrive batched at session end — never mid-flow — grouped by module, with inferred violations visually distinct from confirmed ones.
+An inferred clause that survives 20 sessions without violation or human edit queues for one-click batched promotion (`promotionQueue`/`promoteInferred` in the kernel; review with `kelson drift list`, promote with `kelson drift promote <logical-id ...>` — UX-22). Promoted clauses become `confirmed` and start gating. Drift alerts arrive batched at session end — never mid-flow — grouped by module, with inferred violations visually distinct from confirmed ones.
 
 ## When to write your first authored kelspec
 

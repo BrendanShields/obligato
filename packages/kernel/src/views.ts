@@ -1,9 +1,12 @@
 import type { Database } from "bun:sqlite";
 import type {
+  EvalReportResult,
+  UiBenchView,
   UiEvalView,
   UiLoopView,
   UiTelemetryView,
   UiTraceView,
+  Verdict,
 } from "@kelson/schemas";
 import { readChangelog } from "./loop.ts";
 
@@ -90,6 +93,121 @@ export const evalView = (db: Database): UiEvalView => {
   };
 };
 
+// UX-23: stored verdicts for `kelson eval report` — a re-render, never a run.
+export const evalReport = (
+  db: Database,
+  opts: { since?: string } = {},
+): EvalReportResult["runs"] => {
+  const rows = db
+    .query(
+      `SELECT r.id, r.kind, r.suite_id, r.suite_version, r.finished_at,
+              v.decision, v.deltas, v.n, v.alpha
+       FROM eval_run r JOIN verdict v ON v.run_id = r.id
+       WHERE r.started_at >= ?
+       ORDER BY r.rowid DESC LIMIT 200`,
+    )
+    .all(opts.since ?? "") as {
+    id: string;
+    kind: "ablate" | "compare" | "replay";
+    suite_id: string;
+    suite_version: string;
+    finished_at: string | null;
+    decision: EvalReportResult["runs"][number]["decision"];
+    deltas: string;
+    n: number;
+    alpha: number;
+  }[];
+  return rows.map((r) => {
+    const deltas = JSON.parse(r.deltas) as {
+      fpar: EvalReportResult["runs"][number]["fpar_delta"];
+      cost_pct: EvalReportResult["runs"][number]["cost_delta_pct"];
+    };
+    return {
+      run_id: r.id,
+      kind: r.kind,
+      suite_id: r.suite_id,
+      suite_version: r.suite_version,
+      finished_at: r.finished_at ?? null,
+      decision: r.decision,
+      fpar_delta: deltas.fpar,
+      cost_delta_pct: deltas.cost_pct,
+      n: r.n,
+      alpha: r.alpha,
+    };
+  });
+};
+
+// UX-25: bench runs for the web eval surface. Task rows re-aggregate
+// bench_task_result with runBench's exact semantics: strict majority
+// (passes*2 > repeats) and mean cost over repeats (EVP-11 pin).
+export const benchView = (db: Database): UiBenchView => {
+  const runs = db
+    .query(
+      `SELECT id, suite_id, suite_version, executor_candidate,
+              executor_baseline, verdict, started_at, finished_at
+       FROM bench_run ORDER BY rowid DESC LIMIT 50`,
+    )
+    .all() as {
+    id: string;
+    suite_id: string;
+    suite_version: string;
+    executor_candidate: UiBenchView["runs"][number]["candidate"];
+    executor_baseline: UiBenchView["runs"][number]["baseline"];
+    verdict: string | null;
+    started_at: string;
+    finished_at: string | null;
+  }[];
+  return {
+    empty_verb: "kelson bench --suite <dir>",
+    runs: runs.map((r) => {
+      const verdict = r.verdict ? (JSON.parse(r.verdict) as Verdict) : null;
+      const agg = db
+        .query(
+          `SELECT bench_task_id, agent,
+                  (SUM(fpar_pass) * 2 > COUNT(*)) AS fpar,
+                  AVG(cost_micro_usd) AS cost
+           FROM bench_task_result WHERE run_id = ?
+           GROUP BY bench_task_id, agent ORDER BY bench_task_id`,
+        )
+        .all(r.id) as {
+        bench_task_id: string;
+        agent: "candidate" | "baseline";
+        fpar: 0 | 1;
+        cost: number;
+      }[];
+      const byTask = new Map<
+        string,
+        Partial<Record<"candidate" | "baseline", { fpar: 0 | 1; cost: number }>>
+      >();
+      for (const a of agg) {
+        const t = byTask.get(a.bench_task_id) ?? {};
+        t[a.agent] = { fpar: a.fpar, cost: a.cost };
+        byTask.set(a.bench_task_id, t);
+      }
+      return {
+        id: r.id,
+        suite_id: r.suite_id,
+        suite_version: r.suite_version,
+        candidate: r.executor_candidate,
+        baseline: r.executor_baseline,
+        started_at: r.started_at,
+        finished_at: r.finished_at ?? null,
+        decision: verdict?.decision ?? null,
+        fpar_delta: verdict?.fpar_delta ?? null,
+        cost_delta_pct: verdict?.cost_delta_pct ?? null,
+        n: verdict?.n ?? null,
+        rows: [...byTask.entries()].map(([task_id, t]) => ({
+          task_id,
+          candidate_fpar: t.candidate?.fpar ?? 0,
+          baseline_fpar: t.baseline?.fpar ?? 0,
+          candidate_cost_micro_usd: t.candidate?.cost ?? 0,
+          baseline_cost_micro_usd: t.baseline?.cost ?? 0,
+        })),
+      };
+    }),
+  };
+};
+
 export const loopView = (db: Database, changelogPath: string): UiLoopView => {
   const proposals = db
     .query(
@@ -123,9 +241,8 @@ export const traceView = (db: Database): UiTraceView => {
     .query("SELECT upstream_id, downstream_id FROM trace_link ORDER BY rowid")
     .all() as UiTraceView["edges"];
   return {
-    // `kelson index rebuild` (UX §3) is not dispatchable yet — point the
-    // verb at onboarding, which installs the hooks that register artifacts
-    empty_verb: "kelson init",
+    // UX-26: the artifact index regenerates from the files of record
+    empty_verb: "kelson index rebuild",
     nodes: nodes.map((n) => ({ ...n, drift_open: n.drift_open === 1 })),
     edges,
   };

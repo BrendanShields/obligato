@@ -64,6 +64,11 @@ restated.
 
 ### Tier 1 — Keep the spec's promises
 
+*(Landed 2026-07-06 as final clauses in the UX spec: T1.5→UX-19, T1.7→UX-20,
+T1.9→UX-21, T1.1→UX-22, T1.6→UX-23, T1.3→UX-24, T1.8→UX-25, T1.4→UX-26 —
+UX-22/UX-26 divergence-hardened, findings F-150/F-151. T1.2 signals starts its
+SIG-* work per the Phase A plan and lands in Phase B.)*
+
 **T1.1 `kelson drift list | promote`** — the J2 spine. `list` renders drift events
 grouped by module with survival counts, confidence, and evidence links; inferred
 clauses render visually distinct from confirmed (informational vs blocking, §5.4);

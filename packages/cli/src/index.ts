@@ -8,6 +8,7 @@ import {
   createProposal,
   DEFAULT_DB_PATH,
   enterGate,
+  evalReport,
   evaluateGate,
   extractFeatures,
   getProposal,
@@ -25,21 +26,29 @@ import {
   resolveRule,
   revertProposal,
   runEval,
+  runReplay,
   togglePack,
   transition,
   validatePolicyTargets,
   writeLedgerEntry,
 } from "@kelson/kernel";
 import {
+  type Delta,
+  EvalReportResult,
   Executor,
   type InitResult,
   Lockfile,
   type PackLintResult,
+  PackManifest,
+  type PackNewResult,
+  ReplayResult,
   SandboxProfile,
   type Verdict,
 } from "@kelson/schemas";
+import { loadRepoRegistry, unionRegistries } from "./commands/agents.js";
 import { kvGrid, panel, renderVerdict, table } from "./components/render.js";
 import { write } from "./components/sink.js";
+import { SYM } from "./components/theme.js";
 import { emitJson } from "./output/json.js";
 import { uiCommand } from "./ui/server.js";
 import type { DispatchTable } from "./wizards.js";
@@ -231,8 +240,136 @@ const evalCommand = async (argv: string[]): Promise<void> => {
     return;
   }
 
+  if (sub === "report") {
+    const db = openDb(dbPath);
+    try {
+      const runs = evalReport(
+        db,
+        typeof named.since === "string" ? { since: named.since } : {},
+      );
+      const result = EvalReportResult.parse({ runs, schema_version: 1 });
+      if (json) {
+        emitJson(result);
+        return;
+      }
+      if (runs.length === 0) {
+        write(
+          "no stored verdicts — run one: kelson eval ablate <pack> --suite <dir>",
+        );
+        return;
+      }
+      // UX-23/EVT-1: re-render from the store — decision + deltas with CIs,
+      // never a bare label; nothing executes.
+      const fmtDelta = (d: Delta): string =>
+        `${d.mean.toFixed(3)} [${d.ci95[0].toFixed(3)}, ${d.ci95[1].toFixed(3)}]`;
+      write(
+        table(
+          [
+            { header: "run" },
+            { header: "kind" },
+            { header: "suite" },
+            { header: "decision" },
+            { header: "fpar Δ [ci95]" },
+            { header: "cost%Δ [ci95]" },
+            { header: "n", align: "right" },
+          ],
+          runs.map((r) => [
+            r.run_id,
+            r.kind,
+            `${r.suite_id}@${r.suite_version}`,
+            r.decision,
+            fmtDelta(r.fpar_delta),
+            fmtDelta(r.cost_delta_pct),
+            String(r.n),
+          ]),
+        ),
+      );
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  if (sub === "replay") {
+    const sessionId =
+      typeof named.session === "string"
+        ? named.session
+        : die(
+            "usage: kelson eval replay --session <id> --suite <staging-dir> --config <lockfile>",
+          );
+    const suiteDir =
+      typeof named.suite === "string"
+        ? named.suite
+        : die(
+            "--suite <staging-dir> is required (where the session was promoted)",
+          );
+    const configPath =
+      typeof named.config === "string"
+        ? named.config
+        : die("--config <lockfile> is required (the candidate config)");
+    const parsedExecutor = Executor.safeParse(str(named.executor, "claude"));
+    if (!parsedExecutor.success)
+      return die(
+        `unknown executor: ${str(named.executor, "claude")} (have: ${Executor.options.join(", ")})`,
+      );
+    const isolation = str(named.profile, "worktree");
+    const profile = SandboxProfile.parse({
+      isolation,
+      network:
+        isolation === "container"
+          ? { policy: "deny", allowlist: [] }
+          : { policy: "inherit" },
+    });
+    const lockfile = loadLockfile(configPath);
+    const db = openDb(dbPath);
+    try {
+      const { apiExecutor } = await import("@kelson/agent");
+      const record = await runReplay(db, {
+        sessionId,
+        suiteDir,
+        lockfile,
+        profile,
+        executor: parsedExecutor.data,
+        extraExecutors: { api: apiExecutor },
+        ...(typeof named.model === "string" ? { model: named.model } : {}),
+        ...(typeof named.snapshots === "string"
+          ? { snapshotStoreDir: named.snapshots }
+          : {}),
+      }).catch((e) => die((e as Error).message));
+      if (json) {
+        emitJson(ReplayResult.parse({ record, schema_version: 1 }));
+        return;
+      }
+      const money = (musd: number): string =>
+        `$${(musd / 1_000_000).toFixed(2)}`;
+      write(
+        kvGrid([
+          ["replay", `${record.id} (run ${record.run_id ?? "?"})`],
+          ["source session", record.source_session_id],
+          [
+            "validity",
+            record.validity === "valid"
+              ? `${SYM.pass} valid`
+              : `${SYM.warn} advisory (${record.advisory_reason})`,
+          ],
+          [
+            "replayed",
+            `${record.outcome.fpar_pass ? SYM.pass : SYM.fail} fpar, ${money(record.outcome.cost_micro_usd)}`,
+          ],
+          [
+            "original",
+            `${record.outcome.original_fpar_pass ? SYM.pass : SYM.fail} fpar, ${money(record.outcome.original_cost_micro_usd)}`,
+          ],
+        ]),
+      );
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
   die(
-    `unknown eval subcommand: ${sub ?? "(none)"} (have: ablate, compare, suite promote, publish)`,
+    `unknown eval subcommand: ${sub ?? "(none)"} (have: ablate, compare, replay, report, suite promote, publish)`,
   );
 };
 
@@ -247,9 +384,15 @@ const routeCommand = (argv: string[]): void => {
       join(process.cwd(), "packs/routing-default/routing/policy.yaml"),
     ),
   );
-  const registry = loadRegistry(
+  const baseRegistry = loadRegistry(
     str(named.registry, join(process.cwd(), "packs/routing-default/agents")),
   );
+  // UX-24: repo-registered agents (`kelson agents register`) union in as
+  // candidates, repo entries winning by id; an explicit --registry opts out.
+  const registry =
+    typeof named.registry === "string"
+      ? baseRegistry
+      : unionRegistries(baseRegistry, loadRepoRegistry(process.cwd()));
   validatePolicyTargets(policy, registry);
   const vector = extractFeatures({
     step: str(named.step, "build") as never,
@@ -529,12 +672,83 @@ const initCommand = (argv: string[]): void => {
     );
 };
 
+// UX-21: kelson pack new — scaffold a pack whose manifest carries every
+// required field with explicit capability declarations (SEC-4) consistent
+// with the scaffolded content, self-lintable (`pack lint <dir> --prev <dir>`
+// against itself requires bump "none").
+const packNew = (argv: string[]): void => {
+  const { positional, named } = parseArgs(argv);
+  const name =
+    positional[0] ??
+    die("usage: kelson pack new <name> [--kind <kind>] [--dir <parent>]");
+  const kind = str(named.kind, "efficiency");
+  const description = `TODO: what ${name} improves, in one sentence`;
+  // Validate before any write — an invalid name/kind scaffolds nothing.
+  const parsed = PackManifest.safeParse({
+    schema_version: 1,
+    name,
+    version: "1.0.0",
+    kind,
+    kernel_compat: "*",
+    capabilities: ["rules"],
+    description,
+  });
+  if (!parsed.success)
+    return die(
+      `invalid pack manifest (${parsed.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ")})`,
+    );
+  const dir = join(str(named.dir, process.cwd()), name as string);
+  if (existsSync(dir)) return die(`${dir} already exists`);
+  mkdirSync(join(dir, "rules"), { recursive: true });
+  writeFileSync(
+    join(dir, "pack.yaml"),
+    [
+      "schema_version: 1",
+      `name: ${name}`,
+      'version: "1.0.0"',
+      `kind: ${kind}`,
+      "# semver range of kernels this pack supports",
+      'kernel_compat: "*"',
+      "# SEC-4 capability ceiling: every content dir maps to a capability",
+      "# (rules/** -> rules); undeclared content is refused by the loader.",
+      "capabilities:",
+      "  - rules",
+      `description: "${description}"`,
+      "",
+    ].join("\n"),
+  );
+  writeFileSync(
+    join(dir, "rules", "example.md"),
+    `# ${name}: example rule\n\nReplace with the guidance this pack injects.\n`,
+  );
+  writeFileSync(
+    join(dir, "README.md"),
+    `# ${name}\n\nMeasure it before shipping it: \`kelson eval ablate ./${name} --suite <dir>\` (J5).\n`,
+  );
+  // Verified through the real loader — a scaffold the loader refuses is a bug.
+  loadPack(dir);
+  const files = ["pack.yaml", "rules/example.md", "README.md"];
+  if (named.json === true) {
+    emitJson({ dir, files, schema_version: 1 } satisfies PackNewResult);
+    return;
+  }
+  write(`scaffolded ${dir} (${files.join(", ")})`);
+  write(`lint it: kelson pack lint ${dir} --prev ${dir}`);
+};
+
 // PACK-3: kelson pack lint — required bump from diffing against the
 // previous version's directory; declared bump below required exits 1.
 const packCommand = (argv: string[]): void => {
   const { positional, named } = parseArgs(argv);
   const sub = positional[0];
-  if (sub !== "lint") die("usage: kelson pack lint <dir> --prev <dir>");
+  if (sub === "new") {
+    packNew(argv.slice(1));
+    return;
+  }
+  if (sub !== "lint")
+    die(`unknown pack subcommand: ${sub ?? "(none)"} (have: lint, new)`);
   const dir =
     positional[1] ?? die("usage: kelson pack lint <dir> --prev <dir>");
   const prevDir =
@@ -587,6 +801,16 @@ export const COMMANDS: DispatchTable = {
     (await import("./agent/session.js")).promoteCommand(argv),
   bench: async (argv) =>
     (await import("./commands/bench.js")).benchCommand(argv),
+  doctor: async (argv) =>
+    (await import("./commands/doctor.js")).doctorCommand(argv),
+  divergence: async (argv) =>
+    (await import("./commands/divergence.js")).divergenceCommand(argv),
+  drift: async (argv) =>
+    (await import("./commands/drift.js")).driftCommand(argv),
+  agents: async (argv) =>
+    (await import("./commands/agents.js")).agentsCommand(argv),
+  index: async (argv) =>
+    (await import("./commands/reindex.js")).indexCommand(argv),
 };
 
 const help = (): void => {
@@ -595,10 +819,13 @@ const help = (): void => {
       "kelson",
       kvGrid([
         ["init", "install kelson into this repo"],
-        ["eval", "ablate | compare | suite promote | publish"],
+        [
+          "eval",
+          "ablate | compare | replay | report | suite promote | publish",
+        ],
         ["route", "explain — show the routing decision"],
         ["loop", "propose | status | review | gate | approve | apply | revert"],
-        ["pack", "lint — check a pack's version bump"],
+        ["pack", "lint | new — version-bump check, scaffold"],
         ["ui", "serve the local read-only web UI"],
         ["auth", "login <anthropic|ollama> — configure the native runtime"],
         ["run", 'run -p "<task>" — headless native session (--json)'],
@@ -606,6 +833,11 @@ const help = (): void => {
         ["session", "fork | compare | compact — tree-session ops"],
         ["promote", "<session> --suite <dir> — session → benchmark task"],
         ["bench", "--suite <dir> — native vs claude head-to-head (EVP-11)"],
+        ["doctor", "self-check: each failing component and its fix"],
+        ["divergence", "list | show <id> — recorded divergence reports"],
+        ["drift", "list | promote — drift review, clause promotion (SPEC-8)"],
+        ["agents", "register <manifest> | list — custom agent onboarding"],
+        ["index", "rebuild — reconcile the artifact index from files"],
         ["", ""],
         ["(no command)", "in a terminal: interactive launcher (UX-7)"],
       ]),

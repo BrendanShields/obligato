@@ -95,14 +95,37 @@ export const promotionQueue = (
 
 // One-click batched promotion: inferred → confirmed (a human action; the
 // promoted clauses start blocking per ART-4 from the next build gate).
+// All-or-nothing (UX-22, divergence pin F-150): any selected id that is not
+// currently an inferred clause rejects the whole batch — silent partial
+// promotion of a curated selection is data corruption. Duplicates dedupe.
+// Returns the promoted ids; an empty selection returns [] touching nothing.
 export const promoteInferred = (
   db: Database,
   repo: string,
   logicalIds: string[],
-): void => {
+): string[] => {
+  const ids = [...new Set(logicalIds)];
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => "?").join(", ");
+  const inferred = new Set(
+    (
+      db
+        .query(
+          `SELECT logical_id FROM artifact
+           WHERE repo = ? AND authority = 'inferred' AND logical_id IN (${placeholders})`,
+        )
+        .all(repo, ...ids) as { logical_id: string }[]
+    ).map((r) => r.logical_id),
+  );
+  const offending = ids.filter((id) => !inferred.has(id));
+  if (offending.length > 0)
+    throw new Error(
+      `cannot promote — not currently inferred: ${offending.join(", ")} (UX-22: the selection is rejected as a whole; nothing was promoted)`,
+    );
   const now = new Date().toISOString();
-  for (const id of logicalIds)
+  for (const id of ids)
     db.query(
       "UPDATE artifact SET authority = 'confirmed', updated_at = ? WHERE repo = ? AND logical_id = ? AND authority = 'inferred'",
     ).run(now, repo, id);
+  return ids;
 };

@@ -1,7 +1,9 @@
 import {
   BenchReport,
+  DivergenceListResult,
+  DoctorReport,
+  IndexRebuildResult,
   InitResult,
-  PackLintResult,
   RunResult,
 } from "@kelson/schemas";
 import type { ZodType } from "zod";
@@ -14,11 +16,22 @@ export type JsonOutput = { schema: ZodType } | { skip: string };
 
 export const JSON_OUTPUT: Record<string, JsonOutput> = {
   init: { schema: InitResult },
-  pack: { schema: PackLintResult },
+  pack: {
+    skip: "per-subcommand shapes: lint emits PackLintResult (UX-1 live-check), new emits PackNewResult (UX-21)",
+  },
   run: { schema: RunResult },
   bench: { schema: BenchReport },
+  doctor: { schema: DoctorReport },
+  divergence: { schema: DivergenceListResult },
+  index: { schema: IndexRebuildResult },
+  drift: {
+    skip: "per-subcommand shapes: list emits DriftListResult, promote mutates; validated by UX-22 obligations",
+  },
+  agents: {
+    skip: "register mutates the registry; list emits AgentsListResult, validated by UX-24 obligation",
+  },
   eval: {
-    skip: "per-subcommand verdict/underpowered JSON, validated by EVP/UX-J3 obligations",
+    skip: "per-subcommand verdict/underpowered JSON, validated by EVP/UX-J3 obligations; report/replay by UX-23",
   },
   route: { skip: "route --json validated by RTR/RPOL obligations" },
   loop: { skip: "many subcommand shapes; validated by LOOP obligations" },
