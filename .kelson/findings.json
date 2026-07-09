@@ -2228,7 +2228,7 @@
       "fix": "Workspace gained execAsync (Bun.spawn); command/claude session executors run async; obligation test now records actual completion order via an injected async executor and asserts it differs from persisted order",
       "status": "fixed",
       "id": "F-158",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2242,7 +2242,7 @@
       "fix": "Clause amended: container profile clamps effective concurrency to 1 via exported effectiveConcurrency (runEval consults it); single-flight acquisition deferred until container concurrency lands",
       "status": "fixed",
       "id": "F-159",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2256,7 +2256,7 @@
       "fix": "Pinned into PROV-10 clause text: any base_url reads as override, official endpoint spelled by omitting base_url",
       "status": "fixed",
       "id": "F-160",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2270,7 +2270,7 @@
       "fix": "Obligation reworded to name encoded-slash forms as the 404 cases and content-absence for raw literals",
       "status": "fixed",
       "id": "F-161",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2284,7 +2284,7 @@
       "fix": "Moved to chat/model.ts (pure) and tested against the exact payload shape loop.ts writes",
       "status": "fixed",
       "id": "F-162",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2298,7 +2298,7 @@
       "fix": "Intro updated to three surfaces including local surfaces",
       "status": "fixed",
       "id": "F-163",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2312,7 +2312,7 @@
       "fix": "CLI validates positive-integer concurrency and dies with usage message",
       "status": "fixed",
       "id": "F-164",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     },
     {
       "task": "SAK",
@@ -2327,7 +2327,7 @@
       "fix": "Reworked to capture via injected fetch on a no-base_url entry, matching PROV-5 obligation wording; PROV-10 test covers the withheld case",
       "status": "fixed",
       "id": "F-165",
-      "fix_commit": null
+      "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
     }
   ]
 }
