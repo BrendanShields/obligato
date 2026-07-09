@@ -2189,6 +2189,32 @@
       "status": "fixed",
       "id": "F-155",
       "fix_commit": null
+    },
+    {
+      "task": "PONYTAIL-AUDIT",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "Dropping packages/ui typescript ^6.0.3 devDep converges ui-build on root TS 5.9.3 — a compiler-major downgrade on fresh install that local gates did not exercise (stale 6.0.3 symlink survived bun install)",
+      "root_cause": "process_gap",
+      "fix": "Intentional: dual conflicting TS majors was the over-engineering finding; auditor force-compiled ui with root 5.9.3 clean; CI fresh-install path confirms post-push",
+      "status": "fixed",
+      "id": "F-156",
+      "fix_commit": null
+    },
+    {
+      "task": "PONYTAIL-AUDIT",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "SEC-5"
+      ],
+      "summary": "scanPack readdirSync rewrite changed symlink semantics: old walk read file symlinks (threw on dangling), new isFile() filter skips symlinks entirely; multi-dir traversal order may differ",
+      "root_cause": "spec_gap",
+      "fix": "Accepted: scanner scope now exactly equals loadPack isFile() scope (packs.ts:57) so nothing loadable escapes the scan; SEC-5 obligation is order-independent; symlink fixture optional follow-up",
+      "status": "fixed",
+      "id": "F-157",
+      "fix_commit": null
     }
   ]
 }

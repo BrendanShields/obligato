@@ -6,32 +6,11 @@ import {
   type DivergenceReportRow,
 } from "@kelson/schemas";
 import { fail } from "../agent/common.js";
+import { parseArgs } from "../args.js";
 import { panel, sideBySideDiff, table } from "../components/render.js";
 import { write } from "../components/sink.js";
 import { SYM } from "../components/theme.js";
 import { emitJson } from "../output/json.js";
-
-interface Flags {
-  positional: string[];
-  named: Record<string, string | true>;
-}
-
-const parseArgs = (argv: string[]): Flags => {
-  const positional: string[] = [];
-  const named: Record<string, string | true> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i] as string;
-    if (a.startsWith("--")) {
-      const key = a.slice(2);
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith("--")) {
-        named[key] = next;
-        i++;
-      } else named[key] = true;
-    } else positional.push(a);
-  }
-  return { positional, named };
-};
 
 // UX-20: unresolved first, then newest (open reports block build — SPEC-5).
 const loadReports = (db: Database): DivergenceReportRow[] =>

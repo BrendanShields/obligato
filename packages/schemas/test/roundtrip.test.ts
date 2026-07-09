@@ -85,6 +85,22 @@ const divergenceOutcome = fc.oneof(
   fc.record({ tag: fc.constant("threw" as const), errorName: nonEmpty }),
 );
 
+const benchTaskRow = fc.record({
+  task_id: nonEmpty,
+  candidate_fpar: fc.constantFrom(0, 1),
+  baseline_fpar: fc.constantFrom(0, 1),
+  candidate_cost_micro_usd: fc.double({
+    min: 0,
+    max: 1_000_000,
+    noNaN: true,
+  }),
+  baseline_cost_micro_usd: fc.double({
+    min: 0,
+    max: 1_000_000,
+    noNaN: true,
+  }),
+});
+
 const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
   SharedStepEvent: [
     SharedStepEvent,
@@ -593,24 +609,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
         "command" as const,
         "api" as const,
       ),
-      rows: fc.array(
-        fc.record({
-          task_id: nonEmpty,
-          candidate_fpar: fc.constantFrom(0, 1),
-          baseline_fpar: fc.constantFrom(0, 1),
-          candidate_cost_micro_usd: fc.double({
-            min: 0,
-            max: 1_000_000,
-            noNaN: true,
-          }),
-          baseline_cost_micro_usd: fc.double({
-            min: 0,
-            max: 1_000_000,
-            noNaN: true,
-          }),
-        }),
-        { maxLength: 4 },
-      ),
+      rows: fc.array(benchTaskRow, { maxLength: 4 }),
       verdict: fc.record({
         id: ulid,
         run_id: ulid,
@@ -848,24 +847,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
           fpar_delta: fc.option(delta, { nil: null }),
           cost_delta_pct: fc.option(delta, { nil: null }),
           n: fc.option(fc.nat(100), { nil: null }),
-          rows: fc.array(
-            fc.record({
-              task_id: nonEmpty,
-              candidate_fpar: fc.constantFrom(0, 1),
-              baseline_fpar: fc.constantFrom(0, 1),
-              candidate_cost_micro_usd: fc.double({
-                min: 0,
-                max: 1_000_000,
-                noNaN: true,
-              }),
-              baseline_cost_micro_usd: fc.double({
-                min: 0,
-                max: 1_000_000,
-                noNaN: true,
-              }),
-            }),
-            { maxLength: 3 },
-          ),
+          rows: fc.array(benchTaskRow, { maxLength: 3 }),
         }),
         { maxLength: 2 },
       ),

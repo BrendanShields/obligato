@@ -5,27 +5,9 @@ import {
   promoteSession,
 } from "@kelson/agent";
 import { DEFAULT_DB_PATH, openDb } from "@kelson/kernel";
+import { parseArgs } from "../args.js";
 import { write } from "../components/sink.js";
 import { fail } from "./common.js";
-
-// Minimal flag parser matching run.ts: `--k v` / `--k` (bool), rest positional.
-const parseArgs = (
-  argv: string[],
-): { positional: string[]; named: Record<string, string | true> } => {
-  const positional: string[] = [];
-  const named: Record<string, string | true> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i] as string;
-    if (a.startsWith("--")) {
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith("--")) {
-        named[a.slice(2)] = next;
-        i++;
-      } else named[a.slice(2)] = true;
-    } else positional.push(a);
-  }
-  return { positional, named };
-};
 
 const openStore = (dbPath?: string) =>
   openDb(typeof dbPath === "string" ? dbPath : DEFAULT_DB_PATH);

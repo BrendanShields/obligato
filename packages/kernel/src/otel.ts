@@ -8,12 +8,11 @@ import { stripStepEvent } from "./privacy.ts";
 // projection, so content-stripping is structural, not filtered.
 // (TEL-2's static network scan carries a named exemption for this file.)
 
-const hexId = (ulid: string, bytes: number): string => {
-  let hex = "";
-  for (let i = 0; i < ulid.length && hex.length < bytes * 2; i++)
-    hex += ulid.charCodeAt(i).toString(16).padStart(2, "0");
-  return hex.slice(0, bytes * 2).padEnd(bytes * 2, "0");
-};
+const hexId = (ulid: string, bytes: number): string =>
+  Buffer.from(ulid, "latin1")
+    .toString("hex")
+    .slice(0, bytes * 2)
+    .padEnd(bytes * 2, "0");
 
 const attr = (key: string, value: string | number) => ({
   key,

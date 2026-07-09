@@ -2,7 +2,6 @@
 // Single entry point for every gate — used identically by CI and by manual
 // runs when hooks aren't active. A gate not in this list doesn't exist.
 import { execSync } from 'node:child_process'
-import { readdirSync } from 'node:fs'
 
 const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 const run = (cmd, opts = {}) => execSync(cmd, { cwd: root, stdio: 'inherit', ...opts })

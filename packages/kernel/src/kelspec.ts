@@ -66,16 +66,11 @@ export interface RawBlock {
 // DSL-1: fenced `kelspec` blocks are the sole clause source; prose is never
 // load-bearing, so a prose-only file is an empty spec, not an error.
 export const extractBlocks = (markdown: string): RawBlock[] => {
-  const blocks: RawBlock[] = [];
   const fence = /^```kelspec[ \t]*\r?\n([\s\S]*?)^```[ \t]*$/gm;
-  let m = fence.exec(markdown);
-  let index = 0;
-  while (m !== null) {
-    blocks.push({ source: m[1] as string, index });
-    index++;
-    m = fence.exec(markdown);
-  }
-  return blocks;
+  return [...markdown.matchAll(fence)].map((m, i) => ({
+    source: m[1] as string,
+    index: i,
+  }));
 };
 
 const eventSet = (component: KelspecComponent): Set<string> => {

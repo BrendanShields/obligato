@@ -47,9 +47,6 @@ export class BudgetMonitor {
     this.pauseAt = 2 * id.budgetTokens;
   }
 
-  get usedTokens(): number {
-    return this.used;
-  }
   get paused(): boolean {
     return this.pausedFlag;
   }

@@ -16,16 +16,8 @@ import {
   UiTelemetryView,
   UiTraceView,
 } from "@kelson/schemas";
+import type { ZodType } from "zod";
 import { write } from "../components/sink.js";
-
-// structural stand-in for z.ZodType — cli doesn't depend on zod directly
-interface Validator {
-  safeParse: (
-    v: unknown,
-  ) =>
-    | { success: true; data: unknown }
-    | { success: false; error: { message: string }; data?: undefined };
-}
 
 export const DEFAULT_UI_PORT = 4553;
 
@@ -41,7 +33,7 @@ interface UiServerOptions {
 // with a fixed envelope, the invalid body never reaches the socket.
 const routes: Record<
   string,
-  { schema: Validator; build: (ctx: RouteCtx) => unknown }
+  { schema: ZodType; build: (ctx: RouteCtx) => unknown }
 > = {
   "/api/telemetry": {
     schema: UiTelemetryView,

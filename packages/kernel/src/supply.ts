@@ -1,10 +1,8 @@
 import { sign as edSign, generateKeyPairSync } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import type { LoadedPack } from "./packs.ts";
-import { hashPackContent, verifyPackSignature } from "./packs.ts";
-
-export { verifyPackSignature };
+import { hashPackContent } from "./packs.ts";
 
 // PACK-2 / SEC-5: Ed25519 over the pack content hash. The private key never
 // enters the repo (keys live under .kelson/keys/, gitignored); the public
@@ -30,8 +28,6 @@ export const signPack = (dir: string, privateKeyPem: string): string => {
   writeFileSync(join(dir, "pack.sig"), `${signature}\n`);
   return signature;
 };
-
-// verifyPackSignature lives in packs.ts (loadPack calls it; avoids a cycle).
 
 // SEC-5: static scan for injection patterns — instructions targeting other
 // packs, the gate, telemetry, or exfiltration. Pattern-based by design: the
@@ -91,27 +87,23 @@ export interface ScanFinding {
 
 export const scanPack = (dir: string): ScanFinding[] => {
   const findings: ScanFinding[] = [];
-  const walk = (d: string, rel = ""): void => {
-    for (const entry of readdirSync(d, { withFileTypes: true })) {
-      const path = rel ? `${rel}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) {
-        walk(join(d, entry.name), path);
-        continue;
-      }
-      if (!/\.(md|yaml|yml|txt|json)$/.test(entry.name)) continue;
-      const text = readFileSync(join(d, entry.name), "utf8");
-      for (const { pattern, label } of INJECTION_PATTERNS) {
-        const match = text.match(pattern);
-        if (match)
-          findings.push({
-            file: path,
-            label,
-            excerpt: (match[0] ?? "").slice(0, 80),
-          });
-      }
+  for (const entry of readdirSync(dir, {
+    recursive: true,
+    withFileTypes: true,
+  })) {
+    if (!entry.isFile()) continue;
+    if (!/\.(md|yaml|yml|txt|json)$/.test(entry.name)) continue;
+    const text = readFileSync(join(entry.parentPath, entry.name), "utf8");
+    for (const { pattern, label } of INJECTION_PATTERNS) {
+      const match = text.match(pattern);
+      if (match)
+        findings.push({
+          file: join(relative(dir, entry.parentPath), entry.name),
+          label,
+          excerpt: (match[0] ?? "").slice(0, 80),
+        });
     }
-  };
-  walk(dir);
+  }
   return findings;
 };
 

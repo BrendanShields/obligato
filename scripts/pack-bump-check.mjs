@@ -3,7 +3,7 @@
 // version bump must satisfy the required bump. Extracts the base version of
 // the pack to a temp dir and runs the same kernel diff the CLI uses.
 import { execSync } from 'node:child_process'
-import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { loadPack, requiredBump, bumpSatisfies } from '../packages/kernel/src/index.ts'

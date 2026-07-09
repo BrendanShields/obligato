@@ -5,8 +5,7 @@ import { paint, type Tone } from "./theme.js";
 // in the CLI lives in sink.ts (UX-9); everything here returns strings.
 
 const visibleWidth = (s: string): number =>
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: measuring rendered width requires stripping ANSI
-  s.replace(/\x1b\[[0-9;]*m/g, "").length;
+  Bun.stringWidth(s, { countAnsiEscapeCodes: false });
 
 const pad = (s: string, w: number): string =>
   s + " ".repeat(Math.max(0, w - visibleWidth(s)));

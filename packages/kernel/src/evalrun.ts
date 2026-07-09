@@ -150,7 +150,6 @@ export interface EvalRunOptions {
   seed?: number;
   repeats?: number;
   snapshotStoreDir?: string;
-  modelVersions?: Record<string, string>;
   // EVP-8: same override on both sides; recorded in the manifest; bars ledger.
   sessionModel?: { model: string; baseUrl?: string };
   // EVP-9: caller-supplied executors (the CLI injects the native "api"
@@ -237,7 +236,6 @@ export const runEval = async (
     executor: opts.executor,
     sandbox_profile: opts.profile,
     model_versions: {
-      ...opts.modelVersions,
       ...(routing
         ? {
             routing_policy: routing.hash,

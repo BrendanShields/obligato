@@ -1,9 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { type ExecutorFn, openDb } from "@kelson/kernel";
-import { AgentConfig } from "@kelson/schemas";
 import { buildSystemPrompt } from "./context.ts";
 import { resolveCredential } from "./llm/auth.ts";
+import { loadConfig } from "./llm/config.ts";
 import { loadRegistry, resolveEntry } from "./llm/registry.ts";
 import { instantiate } from "./llm/resolve.ts";
 import { runTurn } from "./loop.ts";
@@ -16,13 +14,8 @@ import { appendEvent, authKindOf, createAgentSession } from "./sessions.ts";
 export const apiExecutor: ExecutorFn = async (ctx) => {
   const registry = loadRegistry();
   // Model: the EVP-8 override env wins; else the snapshot repo's own config.
-  const configPath = join(ctx.workspace.dir, ".kelson", "config.json");
   const modelRef =
-    ctx.sideEnv.ANTHROPIC_MODEL ??
-    (existsSync(configPath)
-      ? AgentConfig.parse(JSON.parse(readFileSync(configPath, "utf8")))
-          .default_model
-      : null);
+    ctx.sideEnv.ANTHROPIC_MODEL ?? loadConfig(ctx.workspace.dir)?.default_model;
   if (!modelRef)
     throw new Error(
       `executor "api" needs a model: set --model or commit .kelson/config.json in the task snapshot (task ${ctx.task.id})`,

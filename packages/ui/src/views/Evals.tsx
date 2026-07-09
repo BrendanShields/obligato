@@ -35,6 +35,39 @@ function Whisker({
 const fmtDelta = (d: NonNullable<UiEvalRunRow["fpar_delta"]>, unit = "") =>
   `${d.mean >= 0 ? "+" : ""}${d.mean.toFixed(3)}${unit} [${d.ci95[0].toFixed(3)}, ${d.ci95[1].toFixed(3)}]`;
 
+function Deltas({
+  r,
+}: {
+  r: Pick<UiEvalRunRow, "fpar_delta" | "cost_delta_pct">;
+}) {
+  return (
+    <>
+      {r.fpar_delta && (
+        <div className="mt-3 flex items-center gap-4 flex-wrap">
+          <span className="w-24" style={{ color: "var(--text-muted)" }}>
+            fpar Δ
+          </span>
+          <Whisker delta={r.fpar_delta} />
+          <span className="mono" style={{ fontVariantNumeric: "tabular-nums" }}>
+            {fmtDelta(r.fpar_delta)}
+          </span>
+        </div>
+      )}
+      {r.cost_delta_pct && (
+        <div className="mt-1 flex items-center gap-4 flex-wrap">
+          <span className="w-24" style={{ color: "var(--text-muted)" }}>
+            cost Δ
+          </span>
+          <Whisker delta={r.cost_delta_pct} />
+          <span className="mono" style={{ fontVariantNumeric: "tabular-nums" }}>
+            {fmtDelta(r.cost_delta_pct, "%")}
+          </span>
+        </div>
+      )}
+    </>
+  );
+}
+
 // UX-25: per-run per-task agent matrix — pass/fail symbol + cost with units,
 // verdict with deltas and CIs (never a bare label).
 function BenchRuns() {
@@ -87,34 +120,7 @@ function BenchRuns() {
               </tbody>
             </table>
           )}
-          {r.fpar_delta && (
-            <div className="mt-3 flex items-center gap-4 flex-wrap">
-              <span className="w-24" style={{ color: "var(--text-muted)" }}>
-                fpar Δ
-              </span>
-              <Whisker delta={r.fpar_delta} />
-              <span
-                className="mono"
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {fmtDelta(r.fpar_delta)}
-              </span>
-            </div>
-          )}
-          {r.cost_delta_pct && (
-            <div className="mt-1 flex items-center gap-4 flex-wrap">
-              <span className="w-24" style={{ color: "var(--text-muted)" }}>
-                cost Δ
-              </span>
-              <Whisker delta={r.cost_delta_pct} />
-              <span
-                className="mono"
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {fmtDelta(r.cost_delta_pct, "%")}
-              </span>
-            </div>
-          )}
+          <Deltas r={r} />
         </div>
       ))}
     </div>
@@ -158,34 +164,7 @@ export default function Evals() {
                   {r.finished_at ? "" : " · running"}
                 </span>
               </div>
-              {r.fpar_delta && (
-                <div className="mt-3 flex items-center gap-4 flex-wrap">
-                  <span className="w-24" style={{ color: "var(--text-muted)" }}>
-                    fpar Δ
-                  </span>
-                  <Whisker delta={r.fpar_delta} />
-                  <span
-                    className="mono"
-                    style={{ fontVariantNumeric: "tabular-nums" }}
-                  >
-                    {fmtDelta(r.fpar_delta)}
-                  </span>
-                </div>
-              )}
-              {r.cost_delta_pct && (
-                <div className="mt-1 flex items-center gap-4 flex-wrap">
-                  <span className="w-24" style={{ color: "var(--text-muted)" }}>
-                    cost Δ
-                  </span>
-                  <Whisker delta={r.cost_delta_pct} />
-                  <span
-                    className="mono"
-                    style={{ fontVariantNumeric: "tabular-nums" }}
-                  >
-                    {fmtDelta(r.cost_delta_pct, "%")}
-                  </span>
-                </div>
-              )}
+              <Deltas r={r} />
             </div>
           ))}
         </div>

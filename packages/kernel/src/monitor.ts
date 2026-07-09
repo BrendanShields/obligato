@@ -123,6 +123,8 @@ export const openMonitor = (
   return record;
 };
 
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
 // LOOP-9: unpaired pooled-null bootstrap — resample both groups from the
 // pooled data at the original sizes; one-sided p; seeded so checks replay.
 export const pooledNullBootstrap = (
@@ -132,7 +134,6 @@ export const pooledNullBootstrap = (
   seed: number,
   resamples: number = MONITOR_DEFAULTS.resamples,
 ): { delta: number; p: number } => {
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const observed = mean(post) - mean(base);
   const pool = [...post, ...base];
   const rand = mulberry32(seed);
@@ -254,7 +255,6 @@ export const checkMonitor = (
       regression = { metric: "fpar", ...fparResult };
   }
   if (!regression && postT.length >= min && baseT.length >= min) {
-    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     tpacResult = pooledNullBootstrap(postT, baseT, "increase", seed + 1);
     const rel = mean(baseT) === 0 ? 0 : tpacResult.delta / mean(baseT);
     if (

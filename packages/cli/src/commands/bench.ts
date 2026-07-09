@@ -11,6 +11,7 @@ import {
   SandboxProfile,
 } from "@kelson/schemas";
 import { fail } from "../agent/common.js";
+import { parseArgs } from "../args.js";
 import { panel, renderVerdict, table } from "../components/render.js";
 import { write } from "../components/sink.js";
 import { emitJson } from "../output/json.js";
@@ -18,24 +19,6 @@ import { emitJson } from "../output/json.js";
 // UX-18 (F-085): the CLI dispatches to the exported kernel entry — this
 // re-export is the identity the obligation test checks against.
 export const BENCH_ENTRY = kernelRunBench;
-
-const parseArgs = (
-  argv: string[],
-): { positional: string[]; named: Record<string, string | true> } => {
-  const positional: string[] = [];
-  const named: Record<string, string | true> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i] as string;
-    if (a.startsWith("--")) {
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith("--")) {
-        named[a.slice(2)] = next;
-        i++;
-      } else named[a.slice(2)] = true;
-    } else positional.push(a);
-  }
-  return { positional, named };
-};
 
 // UX-18: `kelson bench --suite <dir> [--agents a,b] [--repeats n] [--seed s]
 // [--json]` — an EVP-11 cross-agent run through the kernel entry point.
