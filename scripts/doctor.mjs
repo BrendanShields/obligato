@@ -42,6 +42,24 @@ if (errs.length) {
 }
 console.log(`doctor: ok (bun ${bun}, ${process.platform}/${process.arch})`)
 
+// Post-commit findings auto-stamp (postmortem 2026-07-09: 25 rows shipped
+// fix_commit null). Install is idempotent and warn-only — a missing .git
+// (tarball checkout) must not fail the gate.
+try {
+  const { chmodSync, existsSync } = await import('node:fs')
+  const { resolve } = await import('node:path')
+  const hooksDir = resolve(root, execSync('git rev-parse --git-path hooks', { cwd: root }).toString().trim())
+  const hookPath = `${hooksDir}/post-commit`
+  const hook = '#!/bin/sh\n# installed by scripts/doctor.mjs — stamps fix_commit on findings added in HEAD\nbun scripts/board.mjs stamp-head || true\n'
+  if (!existsSync(hookPath) || readFileSync(hookPath, 'utf8') !== hook) {
+    writeFileSync(hookPath, hook)
+    chmodSync(hookPath, 0o755)
+    console.log('doctor: installed .git/hooks/post-commit (findings auto-stamp)')
+  }
+} catch {
+  console.warn('doctor: could not install post-commit stamp hook (no git?) — stamp findings manually')
+}
+
 // TLC (LOOP-5/DSL-5) runs in CI regardless; local java enables pre-push
 // model checking — warn-only, never a failure.
 try {

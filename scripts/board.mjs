@@ -6,6 +6,7 @@
 //   bun scripts/board.mjs task <id> <open|in_progress|completed> [--note "..."] [--clauses TEL-1,ART-2]
 //   bun scripts/board.mjs finding '<json>'     # id/status/fix_commit optional; id auto-numbers
 import { readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 const TASKS = ".kelson/tasks.json";
 const FINDINGS = ".kelson/findings.json";
@@ -107,6 +108,30 @@ if (mode === "task") {
     if (ids.includes(f.id) && f.fix_commit === null) f.fix_commit = sha;
   save(FINDINGS, d);
   console.log(`stamped ${ids.join(", ")} -> ${sha}`);
+} else if (mode === "stamp-head") {
+  // Post-commit auto-stamp (postmortem 2026-07-09: 25 rows shipped fix_commit
+  // null because the manual stamp step was always forgotten). Stamps rows
+  // ADDED in HEAD; the stamped file rides along in the next commit — never
+  // amends, so no hook recursion and no sha invalidation.
+  let sha;
+  let diff;
+  try {
+    sha = execSync("git rev-parse HEAD").toString().trim();
+    diff = execSync(`git diff HEAD~1 HEAD -- ${FINDINGS}`).toString();
+  } catch {
+    process.exit(0); // initial commit or no git — nothing to stamp
+  }
+  const added = [...diff.matchAll(/^\+\s*"id": "(F-\d+)"/gm)].map((m) => m[1]);
+  const d = load(FINDINGS);
+  const stamped = d.findings.filter(
+    (f) => added.includes(f.id) && f.fix_commit === null,
+  );
+  if (stamped.length === 0) process.exit(0);
+  for (const f of stamped) f.fix_commit = sha;
+  save(FINDINGS, d);
+  console.log(
+    `stamped ${stamped.map((f) => f.id).join(", ")} -> ${sha} (findings.json modified; include in next commit)`,
+  );
 } else {
-  die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs finding '<json>' | board.mjs stamp <sha> <F-ID...>");
+  die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs finding '<json>' | board.mjs stamp <sha> <F-ID...> | board.mjs stamp-head");
 }
