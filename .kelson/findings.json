@@ -2200,7 +2200,7 @@
       "fix": "Intentional: dual conflicting TS majors was the over-engineering finding; auditor force-compiled ui with root 5.9.3 clean; CI fresh-install path confirms post-push",
       "status": "fixed",
       "id": "F-156",
-      "fix_commit": null
+      "fix_commit": "850eaaa"
     },
     {
       "task": "PONYTAIL-AUDIT",
@@ -2214,7 +2214,7 @@
       "fix": "Accepted: scanner scope now exactly equals loadPack isFile() scope (packs.ts:57) so nothing loadable escapes the scan; SEC-5 obligation is order-independent; symlink fixture optional follow-up",
       "status": "fixed",
       "id": "F-157",
-      "fix_commit": null
+      "fix_commit": "850eaaa"
     }
   ]
 }
