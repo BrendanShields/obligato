@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -120,28 +120,38 @@ export const createWorkspace = (
     };
   };
 
-  const execAsync: Workspace["execAsync"] = async (command, execOpts = {}) => {
+  // node:child_process, not Bun.spawn: killing a Bun subprocess whose piped
+  // stdout is being read leaves the read pending forever on Linux
+  // (oven-sh/bun#1498), so the `timeout` option never surfaced — EVP-1's
+  // timeout case hung in CI while passing on macOS (F-166).
+  const execAsync: Workspace["execAsync"] = (command, execOpts = {}) => {
     const timeoutMs = execOpts.timeoutMs ?? 300_000;
     const plan = spawnPlan(command, execOpts.env);
-    const proc = Bun.spawn(plan.cmd, {
-      stdout: "pipe",
-      stderr: "pipe",
-      stdin: "ignore",
-      timeout: timeoutMs,
-      ...(plan.cwd !== undefined ? { cwd: plan.cwd } : {}),
-      ...(plan.env !== undefined ? { env: plan.env } : {}),
+    return new Promise((resolve) => {
+      execFile(
+        plan.cmd[0] as string,
+        plan.cmd.slice(1),
+        {
+          timeout: timeoutMs,
+          killSignal: "SIGTERM",
+          // Unbounded: node's 1MB default would kill long sessions with the
+          // same SIGTERM a timeout uses, misrecording them as timed out.
+          maxBuffer: Number.POSITIVE_INFINITY,
+          encoding: "utf8",
+          ...(plan.cwd !== undefined ? { cwd: plan.cwd } : {}),
+          ...(plan.env !== undefined ? { env: plan.env } : {}),
+        },
+        (err, stdout, stderr) => {
+          const e = err as (Error & { code?: number; signal?: string }) | null;
+          resolve({
+            exitCode: typeof e?.code === "number" ? e.code : e ? -1 : 0,
+            stdout,
+            stderr,
+            timedOut: e?.signal === "SIGTERM",
+          });
+        },
+      );
     });
-    const [stdout, stderr] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ]);
-    await proc.exited;
-    return {
-      exitCode: proc.exitCode ?? -1,
-      stdout,
-      stderr,
-      timedOut: proc.signalCode === "SIGTERM" && proc.exitCode === null,
-    };
   };
 
   return {

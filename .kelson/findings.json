@@ -2328,6 +2328,35 @@
       "status": "fixed",
       "id": "F-165",
       "fix_commit": "f32fb1c7551cee3a048c7e3147b57c97d89fbd91"
+    },
+    {
+      "task": "CI",
+      "source": "ci",
+      "severity": "violation",
+      "clauses": [
+        "EVP-1",
+        "EVP-12"
+      ],
+      "summary": "workspace.execAsync used Bun.spawn timeout; on Linux CI killing a subprocess whose piped stdout is being read leaves the read pending forever (oven-sh/bun#1498), so the EVP-1 timeout task never returned — green on macOS, hung in CI",
+      "root_cause": "env_skew",
+      "fix": "execAsync now uses node:child_process execFile with timeout/killSignal/maxBuffer; timedOut derives from err.signal",
+      "status": "fixed",
+      "id": "F-166",
+      "fix_commit": null
+    },
+    {
+      "task": "CI",
+      "source": "ci",
+      "severity": "violation",
+      "clauses": [
+        "AGT-14"
+      ],
+      "summary": "the exactly-200-line cap-boundary test ran through withRg, but CI runners have no ripgrep, so it fell to the grep fallback which also matches the .gitignore'd twin — 201 lines, cap notice fired, test red since it landed",
+      "root_cause": "env_skew",
+      "fix": "boundary test now runs on the fallback branch (present on every runner) with the fixture sized to 200 total matches; mutation-checked against a >= off-by-one",
+      "status": "fixed",
+      "id": "F-167",
+      "fix_commit": null
     }
   ]
 }

@@ -120,10 +120,12 @@ describe("AGT-14: ripgrep-preferred, gitignore-aware, capped search with preserv
     const dir = repo();
     writeFileSync(
       join(dir, "exact.txt"),
-      Array.from({ length: 199 }, (_, i) => `NEEDLE x${i}`).join("\n"),
+      Array.from({ length: 198 }, (_, i) => `NEEDLE x${i}`).join("\n"),
     );
-    // 199 matches in exact.txt + 1 in tracked.ts = exactly 200
-    const out = grep.run({ pattern: "NEEDLE" }, withRg(dir));
+    // The cap is branch-agnostic, so exercise it on the branch that exists on
+    // every runner: the fallback greps the ignored twin too, so
+    // 198 in exact.txt + tracked.ts + dist/ignored.ts = exactly 200.
+    const out = grep.run({ pattern: "NEEDLE" }, withoutRg(dir));
     expect(out.split("\n").filter((l) => l.includes("NEEDLE")).length).toBe(
       200,
     );
