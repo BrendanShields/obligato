@@ -177,6 +177,18 @@
       "fix": "restored C1-11 from HEAD into archive; --title now dies on any existing id, active or archived",
       "id": "F-168",
       "status": "fixed",
+      "fix_commit": "05bf151ab568335dc49e3a1c458dc891fbd33bf1"
+    },
+    {
+      "task": "C1-14",
+      "severity": "warning",
+      "clauses": [],
+      "root_cause": "design_bug",
+      "source": "session",
+      "summary": "stamp-head's added-line diff heuristic assumed an append-only findings.json; the archive rewrite repositioned old rows so open F-096 matched as newly-added and got a fix_commit while unfixed",
+      "fix": "reset F-096 fix_commit to null; stamp-head now stamps only status=fixed rows",
+      "id": "F-169",
+      "status": "fixed",
       "fix_commit": null
     }
   ]

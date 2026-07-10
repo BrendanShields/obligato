@@ -146,8 +146,12 @@ if (mode === "task") {
   }
   const added = [...diff.matchAll(/^\+\s*"id": "(F-\d+)"/gm)].map((m) => m[1]);
   const d = load(FINDINGS);
+  // status gate: a file rewrite (archive) repositions untouched rows, so the
+  // added-line heuristic can misread an old open row as new — F-096 got a
+  // fix_commit while unfixed. Only "fixed" rows are stampable.
   const stamped = d.findings.filter(
-    (f) => added.includes(f.id) && f.fix_commit === null,
+    (f) =>
+      added.includes(f.id) && f.fix_commit === null && f.status === "fixed",
   );
   if (stamped.length === 0) process.exit(0);
   for (const f of stamped) f.fix_commit = sha;
