@@ -59,6 +59,13 @@
       ],
       "completed_at": "2026-07-10T13:39:39Z",
       "notes": "edit-budget PROTECTED_TARGETS entry is a reserved sentinel: any future persisted budget surface must join the ACL and the LOOP-4/EVAL-6 matrix (auditor WARN, deferred)"
+    },
+    {
+      "id": "C1-17",
+      "title": "postmortem 2026-07-10: token/speed flow improvements — delta-scoped re-audits, typecheck-hook dedupe, gates run-once summary, investigator agent + routing thresholds (repo-local, portable .claude)",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-10T14:01:41Z"
     }
   ]
 }

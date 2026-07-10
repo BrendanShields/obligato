@@ -29,8 +29,13 @@ gate('test', () => {
 gate('ui-build', () => run('bun run --cwd packages/ui build'))
 
 let failed = 0
+const results = []
 for (const [name, fn] of gates) {
-  try { fn(); console.log(`gate ${name}: PASS`) }
-  catch { console.error(`gate ${name}: FAIL`); failed++ }
+  try { fn(); console.log(`gate ${name}: PASS`); results.push([name, true]) }
+  catch { console.error(`gate ${name}: FAIL`); results.push([name, false]); failed++ }
 }
+// Trailing summary so one `tail` answers everything — never re-run the suite
+// just to re-grep a verdict (postmortem 2026-07-10: three consecutive runs).
+console.log(`\n--- gates summary: ${gates.length - failed}/${gates.length} pass ---`)
+for (const [name, ok] of results) console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}`)
 process.exit(failed ? 1 : 0)

@@ -7,9 +7,10 @@
 // (~8 false-alarm blocks in one session). Each invocation stamps a token,
 // waits a beat, and yields to any newer edit's invocation — so a batch of N
 // dependent edits produces one tsc run against the settled tree.
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { execSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 
 const input = JSON.parse(readFileSync(0, 'utf8'))
 const edited = input.tool_input?.file_path ?? ''
@@ -30,6 +31,10 @@ try {
   // debounce is best-effort; fall through to the check
 }
 
+// Dedupe (postmortem 2026-07-10): a planned multi-edit batch re-reports the
+// same diagnostics after every edit (~2.5k tokens each, 5x in one session).
+// Repeat failures with identical output get a one-line note instead.
+const lastFailFile = join(tokenDir, 'typecheck-last-fail')
 try {
   // tsc writes diagnostics to STDOUT; stderr only carries bun's script echo
   // (postmortem: stderr-only capture produced empty block messages).
@@ -39,7 +44,24 @@ try {
     .filter(Boolean)
     .join('\n')
     .slice(0, 4000)
-  console.error(`typecheck failed after editing ${edited}:\n${detail || e.message}`)
+  const hash = createHash('sha256').update(detail).digest('hex')
+  let repeat = false
+  try {
+    repeat = existsSync(lastFailFile) && readFileSync(lastFailFile, 'utf8') === hash
+    writeFileSync(lastFailFile, hash)
+  } catch {
+    // dedupe is best-effort; fall through to the full report
+  }
+  if (repeat) {
+    console.error(
+      `typecheck still failing after editing ${edited} — identical diagnostics to the previous report (suppressed; run bunx tsc --noEmit for the full list)`,
+    )
+  } else {
+    console.error(`typecheck failed after editing ${edited}:\n${detail || e.message}`)
+  }
   process.exit(2)
 }
+try {
+  rmSync(lastFailFile, { force: true })
+} catch {}
 process.exit(0)
