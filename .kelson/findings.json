@@ -203,7 +203,7 @@
       "fix": "PROTECTED_TARGETS gained edit-budget; LOOP-4 matrix extended to 5 targets in the same change",
       "status": "fixed",
       "id": "F-170",
-      "fix_commit": null
+      "fix_commit": "acbb6dde6dac0c47f9f0c6c3bff72ece0734dc1c"
     },
     {
       "task": "C1-16",
@@ -217,7 +217,7 @@
       "fix": "schema field + migration 0011 + createProposal required arg + assembleRejectionHistory/emitProposalCycle + LOOP-10/LOOP-11 obligation tests + ERD field note in the same change",
       "status": "fixed",
       "id": "F-171",
-      "fix_commit": null
+      "fix_commit": "acbb6dde6dac0c47f9f0c6c3bff72ece0734dc1c"
     }
   ]
 }
