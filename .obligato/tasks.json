@@ -102,6 +102,16 @@
       "state": "open",
       "clauses": [],
       "completed_at": null
+    },
+    {
+      "id": "C1-23",
+      "title": "LSP code-intelligence: built-in dormant runtime subsystem gated by config-only efficiency pack (TS v1); symbol tools + post-edit diagnostics; ablatable via EVT-2 once a TS-edit bench suite exists",
+      "state": "in_progress",
+      "clauses": [
+        "AGT-17",
+        "AGT-18"
+      ],
+      "completed_at": null
     }
   ]
 }

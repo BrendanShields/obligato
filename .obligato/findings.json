@@ -379,6 +379,125 @@
       "fix": "execFileSync argv form for both for-each-ref and git show — no shell parses any refname; obligation arm creates a valid-but-shell-dangerous ref via update-ref and asserts no file appears (verified discriminating: old shell form injects, argv form safe)",
       "status": "fixed",
       "fix_commit": "c2bc1664e1542f6f20b3096b15d6538085363dd9"
+    },
+    {
+      "task": "C1-23",
+      "source": "divergence",
+      "severity": "warning",
+      "clauses": [
+        "AGT-18"
+      ],
+      "summary": "AGT-18 draft used undefined predicate fresh for demotion while injection keyed on any error; blind readers split done/continue on the pre-existing-error-on-touched-file probe",
+      "root_cause": "spec_gap",
+      "fix": "predicate deleted; existence semantics pinned in-clause (reader B), snapshot-novelty rejected as fragile (no stable LSP diagnostic identity)",
+      "status": "fixed",
+      "id": "F-183",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-18",
+        "AGT-7"
+      ],
+      "summary": "per-step touched-set done-gate recreated the done-dodge AGT-7s divergence pin closed: error introduced at step N settles done at N+1 by touching nothing",
+      "root_cause": "design_bug",
+      "fix": "accumulating uncleared set added; obligation arm (j) is the dodge fixture",
+      "status": "fixed",
+      "id": "F-184",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-18"
+      ],
+      "summary": "first accumulation fix was demotion-keyed: injected-but-never-demoted variant of the dodge stayed open and the reconstructibility claim was false (demoted and already-continue steps leave identical chain shapes)",
+      "root_cause": "design_bug",
+      "fix": "observation-keyed set (any file named in a diagnostics event joins); discriminating variant added to obligation arm (j)",
+      "status": "fixed",
+      "id": "F-185",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-17",
+        "KERN-1",
+        "EVT-2"
+      ],
+      "summary": "degraded LSP activation was unmarked: an LSP-on session silently running LSP-off pollutes the EVT-2 ablation arms the efficiency pack is gated on",
+      "root_cause": "spec_gap",
+      "fix": "lsp_status degraded session_meta at first degraded use; obligation (c) asserts exactly one marker",
+      "status": "fixed",
+      "id": "F-186",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-17",
+        "AGT-2"
+      ],
+      "summary": "divergence-skip residue, two edges: client lifecycle across pause/resume-in-fresh-process unpinned (respawn vs degraded-forever), and unsupported configured language unpinned (refuse vs ignore vs attempt-and-degrade)",
+      "root_cause": "spec_gap",
+      "fix": "lazy per-process (re)spawn pinned with resume obligation arm (e); ignore-with-lsp_status-note pinned with obligation arm (d)",
+      "status": "fixed",
+      "id": "F-187",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-16",
+        "AGT-18"
+      ],
+      "summary": "widened compaction exemption (AGT-18 demotion tails) had no discriminating obligation arm anywhere - dropping the exemption failed no fixture",
+      "root_cause": "test_blindspot",
+      "fix": "AGT-18 obligation arm (k): demoting step at/above AGT-16 threshold appends no compaction",
+      "status": "fixed",
+      "id": "F-188",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PACK-1",
+        "SEC-4"
+      ],
+      "summary": "AGT-17 widens what a context-assembly declaration grants (model-visible tools, PERM-1 default widening, subprocess spawn) but the pack-format capability enum text was untouched - SEC-4 approval surface under-informed",
+      "root_cause": "spec_gap",
+      "fix": "capability-enum note added to pack-format section 1 recording the ADR-0005 reach; dedicated code-intelligence enum value deferred to the second gated subsystem",
+      "status": "fixed",
+      "id": "F-189",
+      "fix_commit": null
+    },
+    {
+      "task": "C1-23",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "AGT-4",
+        "PERM-1"
+      ],
+      "summary": "sibling wording contradictions: AGT-4 exactly-seven-core-tools not amended while PERM-1 was, and PERM-1 ask-arm apposition double-claimed lsp_* after the amendment",
+      "root_cause": "spec_contradiction",
+      "fix": "AGT-4 conditional amendment mirroring the PERM-1 pattern; ask-arm reworded to outside the registered read-only set",
+      "status": "fixed",
+      "id": "F-190",
+      "fix_commit": null
     }
   ]
 }
