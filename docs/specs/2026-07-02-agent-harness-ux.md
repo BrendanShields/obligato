@@ -46,7 +46,7 @@
 - `obligato index rebuild` — regenerate the SQLite index from files (ERD §1).
 - `obligato ui` — serve the local read-only web UI (§8); `obligato` with no arguments — interactive launcher (UX-7).
 - `obligato chat` — interactive native-runtime session, OpenTUI chat surface (UX-14); `/model` switches the session model (UX-17).
-- `obligato run -p "<task>"` — headless native-runtime session, plain/`--json` output (UX-15).
+- `obligato run -p "<task>"` — headless native-runtime session, plain/`--json` output (UX-15); `--allow <tool[:argGlob]>` grants asks granularly, `--allow-asks` grants all (PERM-3, PERM-5).
 - `obligato auth login <provider>` — credential + default-model setup for the native runtime (UX-16, PROV-4); `anthropic`, `ollama`, or any `openai-compatible` endpoint (PROV-11).
 - `obligato bench --suite <dir>` — cross-agent head-to-head (EVP-11): native runtime vs Claude Code on the same tasks/seeds, statistically gated (UX-18).
 - `obligato doctor` — self-check: names each failing component and its fix (UX-19, §5.5).

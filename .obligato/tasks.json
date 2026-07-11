@@ -3,11 +3,12 @@
   "tasks": [
     {
       "id": "C1-9",
-      "title": "PERM-4 granular headless permission rules",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null,
-      "notes": "PERM-4 headless rules — next session"
+      "title": "PERM-5 granular headless permission allows (--allow tool[:argGlob])",
+      "state": "in_progress",
+      "clauses": [
+        "PERM-5"
+      ],
+      "completed_at": null
     },
     {
       "id": "C1-10",

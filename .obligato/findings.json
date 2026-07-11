@@ -324,6 +324,49 @@
       "fix": "substitution now folds message-bearing events only — covered session_meta bookkeeping survives in order (zero context cost: toMessages skips session_meta); the demotion tail and no-model-call resumed steps are exempt from the trigger (clause-pinned); digest counts folded message events and collapses newlines; obligation arms h/i added (discriminating override + demote-compact-done regression)",
       "status": "fixed",
       "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
+    },
+    {
+      "id": "F-179",
+      "task": "C1-9",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PERM-5"
+      ],
+      "summary": "board task C1-9 titled the work PERM-4 (a different live clause — ask provenance) while the clause landed as PERM-5, and clauses[] was empty — proto-LOOP-1 miners would attribute the diff to the wrong stable id; board.mjs cannot retitle (the F-168 guard reads --title as create-only), so the fix was a verified hand edit",
+      "root_cause": "process_gap",
+      "fix": "C1-9 retitled with clauses [PERM-5]; board.mjs retitle gap folded into C1-21 scope",
+      "status": "fixed",
+      "fix_commit": null
+    },
+    {
+      "id": "F-180",
+      "task": "C1-9",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PERM-5"
+      ],
+      "summary": "divergence-skip left one genuine two-reading edge: --allow write: (empty glob after the colon) — grant-all-writes vs match-only-empty-arg; the implemented reading fails closed but the clause did not pin it",
+      "root_cause": "spec_gap",
+      "fix": "clause parenthetical pins present-but-empty arg glob = matches only an empty primary argument, never glob-absent",
+      "status": "fixed",
+      "fix_commit": null
+    },
+    {
+      "id": "F-181",
+      "task": "C1-9",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PERM-5",
+        "PERM-3"
+      ],
+      "summary": "obligation arm (a) under-asserted its own text: denies-with-error-result-feedback was checked only as file-absence + exit 0; the error-result shape rode arm (e) alone",
+      "root_cause": "test_blindspot",
+      "fix": "arm (a) now asserts the stored tool_result pair [ok, is_error] from the session db",
+      "status": "fixed",
+      "fix_commit": null
     }
   ]
 }

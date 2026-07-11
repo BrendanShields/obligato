@@ -59,6 +59,10 @@ export interface StepDeps {
   // feedback to the model, not a crash), or to allow when the caller passed
   // the explicit allow flag. Undefined = interactive (pause on ask).
   headlessAsk?: "deny" | "allow";
+  // PERM-5: granular headless allows (--allow tool[:argGlob]) — consulted
+  // when resolution is `ask`, before the blanket headlessAsk. Entries always
+  // carry action "allow"; PERM-1 defaults never grant (real matches only).
+  headlessAllows?: PermissionRule[];
   // PROV-6/7: how the session authenticates — drives the 401 re-mint hint.
   authKind?: "subscription" | "api_key" | "none";
   // UX-17: lets a step honor a chain-recorded model switch at the next model
@@ -221,8 +225,18 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
     const verdict = evaluate(rules, call.name, arg);
     let action = verdict.action;
 
-    if (action === "ask" && deps.headlessAsk !== undefined)
-      action = deps.headlessAsk;
+    if (action === "ask" && deps.headlessAsk !== undefined) {
+      // PERM-5: a REAL granular match (rule !== null — evaluate's defaults
+      // must never grant) resolves the ask to allow; else the PERM-3 blanket.
+      const granular = deps.headlessAllows?.length
+        ? evaluate(deps.headlessAllows, call.name, arg)
+        : null;
+      const granted =
+        granular !== null &&
+        granular.rule !== null &&
+        granular.action === "allow";
+      action = granted ? "allow" : deps.headlessAsk;
+    }
     if (action === "ask") {
       const request = requests.find(
         (e) => String(e.payload.tool_call_id) === call.id,
