@@ -367,6 +367,18 @@
       "fix": "arm (a) now asserts the stored tool_result pair [ok, is_error] from the session db",
       "status": "fixed",
       "fix_commit": "6535a69f1b766d0b51b678297b236b4a4002b9b3"
+    },
+    {
+      "id": "F-182",
+      "task": "C1-21",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [],
+      "summary": "the new cross-branch id-numbering ref scan interpolated a git refname into an execSync shell string (git show ${ref}:${p}); git allows $ ( ) { } ; in refnames, so a hostile branch/remote ref like a$(touch${IFS}OWNED) fetched into refs/remotes executes on the next un-idded finding — a command-injection into the tool that owns the LOOP-1 evidence log. Auditor reproduced it end-to-end through the CLI",
+      "root_cause": "design_bug",
+      "fix": "execFileSync argv form for both for-each-ref and git show — no shell parses any refname; obligation arm creates a valid-but-shell-dangerous ref via update-ref and asserts no file appears (verified discriminating: old shell form injects, argv form safe)",
+      "status": "fixed",
+      "fix_commit": null
     }
   ]
 }

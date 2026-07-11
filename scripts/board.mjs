@@ -6,7 +6,7 @@
 //   bun scripts/board.mjs task <id> <open|in_progress|completed> [--note "..."] [--clauses TEL-1,ART-2]
 //   bun scripts/board.mjs finding '<json>'     # id/status/fix_commit optional; id auto-numbers
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 
 const TASKS = ".obligato/tasks.json";
 const FINDINGS = ".obligato/findings.json";
@@ -101,14 +101,53 @@ if (mode === "task") {
     die(`root_cause must be one of: ${taxonomy.join(", ")}`);
   if (!["violation", "warning"].includes(row.severity))
     die("severity must be violation|warning");
-  // numbering spans active + archive — archiving must never recycle an id
+  // numbering spans active + archive — archiving must never recycle an id —
+  // PLUS every local/remote ref tip: parallel branches otherwise allocate the
+  // same next id (F-177 collided with an open PR's F-173, C1-21). Ref scan is
+  // best-effort; a failure falls back to the local files.
   const archived = existsSync(FINDINGS_ARCHIVE)
     ? load(FINDINGS_ARCHIVE).findings
     : [];
+  const refIds = () => {
+    // argv form throughout — a fetched ref NAME is attacker-controllable and
+    // may contain $(...);| etc.; a shell string here executed it (F-182,
+    // audit-reproduced). No shell, ever, for anything carrying a refname.
+    // ponytail: O(refs) subprocess spawns; cap/single-pass if a many-remote
+    // repo ever makes this noticeable.
+    try {
+      const refs = execFileSync(
+        "git",
+        ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"],
+        { stdio: ["ignore", "pipe", "ignore"] },
+      )
+        .toString()
+        .trim()
+        .split("\n")
+        .filter(Boolean);
+      const out = [];
+      for (const ref of refs)
+        for (const p of [FINDINGS, FINDINGS_ARCHIVE])
+          try {
+            out.push(
+              ...JSON.parse(
+                execFileSync("git", ["show", `${ref}:${p}`], {
+                  stdio: ["ignore", "pipe", "ignore"],
+                }).toString(),
+              ).findings.map((f) => f.id),
+            );
+          } catch {}
+      return out;
+    } catch {
+      return [];
+    }
+  };
   const next =
     Math.max(
       0,
-      ...[...d.findings, ...archived].map((f) => Number(f.id.slice(2)) || 0),
+      ...[...d.findings, ...archived]
+        .map((f) => f.id)
+        .concat(row.id === undefined ? refIds() : [])
+        .map((id) => Number(id.slice(2)) || 0),
     ) + 1;
   row.id ??= `F-${String(next).padStart(3, "0")}`;
   row.status ??= "fixed";
@@ -147,21 +186,37 @@ if (mode === "task") {
 } else if (mode === "stamp-head") {
   // Post-commit auto-stamp (postmortem 2026-07-09: 25 rows shipped fix_commit
   // null because the manual stamp step was always forgotten). Stamps rows
-  // ADDED in HEAD; the stamped file rides along in the next commit — never
-  // amends, so no hook recursion and no sha invalidation.
+  // ADDED in HEAD, computed as an id SET DIFFERENCE between HEAD and HEAD~1 —
+  // never a diff-line heuristic: a rename or rewrite keeps the id set
+  // identical, so nothing reads as new (F-169 archive rewrite, F-174 rename
+  // both mis-stamped under the old added-line regex). The stamped file rides
+  // along in the next commit — never amends, so no hook recursion.
   let sha;
-  let diff;
+  let prevIds;
+  let headRows;
   try {
     sha = execSync("git rev-parse HEAD").toString().trim();
-    diff = execSync(`git diff HEAD~1 HEAD -- ${FINDINGS}`).toString();
+    headRows = JSON.parse(
+      execSync(`git show HEAD:${FINDINGS}`, {
+        stdio: ["ignore", "pipe", "ignore"],
+      }).toString(),
+    ).findings;
+    prevIds = new Set(
+      JSON.parse(
+        execSync(`git show HEAD~1:${FINDINGS}`, {
+          stdio: ["ignore", "pipe", "ignore"],
+        }).toString(),
+      ).findings.map((f) => f.id),
+    );
   } catch {
-    process.exit(0); // initial commit or no git — nothing to stamp
+    // Initial commit, no git, or the file lived at another path in HEAD~1
+    // (a rename commit): no reliable baseline — stamp nothing (fail-safe;
+    // an explicit `board.mjs stamp` remains the correction path).
+    process.exit(0);
   }
-  const added = [...diff.matchAll(/^\+\s*"id": "(F-\d+)"/gm)].map((m) => m[1]);
+  const added = headRows.map((f) => f.id).filter((id) => !prevIds.has(id));
   const d = load(FINDINGS);
-  // status gate: a file rewrite (archive) repositions untouched rows, so the
-  // added-line heuristic can misread an old open row as new — F-096 got a
-  // fix_commit while unfixed. Only "fixed" rows are stampable.
+  // status gate (F-096): only "fixed" rows are stampable, whatever "added" says.
   const stamped = d.findings.filter(
     (f) =>
       added.includes(f.id) && f.fix_commit === null && f.status === "fixed",
@@ -172,6 +227,25 @@ if (mode === "task") {
   console.log(
     `stamped ${stamped.map((f) => f.id).join(", ")} -> ${sha} (findings.json modified; include in next commit)`,
   );
+} else if (mode === "retitle") {
+  // Retitle/re-clause an ACTIVE task without the task-mode create guard
+  // (F-179: --title on an existing id is refused by design, so title fixes
+  // had no tool path and fell back to hand edits).
+  const [id, title] = rest;
+  if (!id || !title)
+    die('usage: board.mjs retitle <id> "<title>" [--clauses a,b]');
+  const d = load(TASKS);
+  const task = d.tasks.find((t) => t.id === id);
+  if (!task) die(`unknown active task ${id} — retitle edits active tasks only`);
+  const before = task.title;
+  task.title = title;
+  const clausesIdx = rest.indexOf("--clauses");
+  if (clausesIdx !== -1)
+    task.clauses = rest[clausesIdx + 1] ? rest[clausesIdx + 1].split(",") : [];
+  save(TASKS, d);
+  const check = load(TASKS).tasks.find((t) => t.id === id);
+  if (check?.title !== title) die("retitle did not land");
+  console.log(`${id}: "${before}" -> "${title}"`);
 } else if (mode === "archive") {
   // Closed rows dominate the active files (98% at 2026-07-10: ~30k tokens per
   // full read) — move them under .obligato/archive/. fixed-but-unstamped
@@ -209,5 +283,5 @@ if (mode === "task") {
     `archived ${doneTasks.length} tasks, ${closed.length} findings -> .obligato/archive/`,
   );
 } else {
-  die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs finding '<json>' | board.mjs stamp <sha> <F-ID...> | board.mjs stamp-head | board.mjs archive");
+  die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs retitle <id> \"<title>\" [--clauses a,b] | board.mjs finding '<json>' | board.mjs stamp <sha> <F-ID...> | board.mjs stamp-head | board.mjs archive");
 }
