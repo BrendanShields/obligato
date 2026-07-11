@@ -27,6 +27,9 @@ import {
 import {
   appendEvent,
   assertResumable,
+  autoCompactDue,
+  compactSession,
+  deterministicDigest,
   listEvents,
   pendingToolCalls,
   reconstruct,
@@ -56,6 +59,10 @@ export interface StepDeps {
   // feedback to the model, not a crash), or to allow when the caller passed
   // the explicit allow flag. Undefined = interactive (pause on ask).
   headlessAsk?: "deny" | "allow";
+  // PERM-5: granular headless allows (--allow tool[:argGlob]) — consulted
+  // when resolution is `ask`, before the blanket headlessAsk. Entries always
+  // carry action "allow"; PERM-1 defaults never grant (real matches only).
+  headlessAllows?: PermissionRule[];
   // PROV-6/7: how the session authenticates — drives the 401 re-mint hint.
   authKind?: "subscription" | "api_key" | "none";
   // UX-17: lets a step honor a chain-recorded model switch at the next model
@@ -80,6 +87,19 @@ export interface StepDeps {
   routing?: RoutingContext;
   // AGT-11: session-level BudgetMonitor holder (runTurn-owned, seeded once).
   budgetHolder?: { monitor: BudgetMonitor | null };
+  // AGT-16: auto-compaction seams. The summarizer replaces the built-in
+  // deterministic digest without changing the trigger; the override replaces
+  // the trigger's decision inputs ONLY (fixture determinism, F-126) —
+  // telemetry/cost still record real usage.
+  autoCompactSummarizer?: (chain: SessionEvent[]) => string;
+  autoCompactOverride?: {
+    usage: {
+      tokens_in: number;
+      tokens_cache_read: number;
+      tokens_cache_write: number;
+    };
+    contextWindow: number;
+  };
   onDelta?: (text: string) => void;
   onToolResult?: (name: string, ok: boolean) => void;
   onStepCost?: (costMicroUsd: number | null) => void;
@@ -205,8 +225,18 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
     const verdict = evaluate(rules, call.name, arg);
     let action = verdict.action;
 
-    if (action === "ask" && deps.headlessAsk !== undefined)
-      action = deps.headlessAsk;
+    if (action === "ask" && deps.headlessAsk !== undefined) {
+      // PERM-5: a REAL granular match (rule !== null — evaluate's defaults
+      // must never grant) resolves the ask to allow; else the PERM-3 blanket.
+      const granular = deps.headlessAllows?.length
+        ? evaluate(deps.headlessAllows, call.name, arg)
+        : null;
+      const granted =
+        granular !== null &&
+        granular.rule !== null &&
+        granular.action === "allow";
+      action = granted ? "allow" : deps.headlessAsk;
+    }
     if (action === "ask") {
       const request = requests.find(
         (e) => String(e.payload.tool_call_id) === call.id,
@@ -666,6 +696,9 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
         });
         // The escalation is a one-shot session_meta appended LAST so the next
         // step's routing block sees it as the chain tail (then routing resumes).
+        // AGT-16/F-178: the demotion tail is exempt from auto-compaction —
+        // the injected instruction and the escalation marker (which the next
+        // step reads at TAIL position) must reach the next call untouched.
         if (escModel !== null)
           appendEvent(deps.db, {
             session_id: deps.sessionId,
@@ -688,7 +721,28 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
     return { status: "done", text };
   }
   const chainWithAssistant = [...chain, assistant];
-  return resolveTools(deps, chainWithAssistant);
+  return finishStep(await resolveTools(deps, chainWithAssistant));
+
+  // AGT-16: the trigger runs once, at the step's tail after every event has
+  // appended, and only for a `continue` step — a paused step's pending
+  // assistant_message must stay reachable (compacting it bricks resume,
+  // divergence pin 2026-07-11), and a done step has no next call. The entry
+  // is the step-local UX-17-resolved one, so a mid-session switch compares
+  // against the switched-to window. The AGT-7 demotion exit above is exempt
+  // (F-178), and the resumed-pending-tools exit issues no model call so it
+  // reports no footprint — neither routes through here.
+  function finishStep(result: StepResult): StepResult {
+    if (result.status !== "continue") return result;
+    const u = deps.autoCompactOverride?.usage ?? usage;
+    const w = deps.autoCompactOverride?.contextWindow ?? entry.context_window;
+    if (autoCompactDue(u, w))
+      compactSession(
+        deps.db,
+        deps.sessionId,
+        deps.autoCompactSummarizer ?? deterministicDigest,
+      );
+    return result;
+  }
 };
 
 // The shared driver for chat, run -p, and the api executor. stepLimit is a

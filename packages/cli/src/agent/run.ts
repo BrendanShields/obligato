@@ -14,10 +14,15 @@ import { fail, setupAgent, systemPromptFor } from "./common.js";
 export const runCommand = async (argv: string[]): Promise<void> => {
   let prompt: string | undefined;
   const named: Record<string, string | true> = {};
+  // PERM-5: --allow is repeatable — collected, not last-wins.
+  const allows: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i] as string;
     if (a === "-p" || a === "--prompt") {
       prompt = argv[i + 1];
+      i++;
+    } else if (a === "--allow" && argv[i + 1] !== undefined) {
+      allows.push(argv[i + 1] as string);
       i++;
     } else if (a.startsWith("--")) {
       const next = argv[i + 1];
@@ -28,7 +33,21 @@ export const runCommand = async (argv: string[]): Promise<void> => {
     }
   }
   if (!prompt)
-    return fail('usage: obligato run -p "<task>" [--json] [--allow-asks]');
+    return fail(
+      'usage: obligato run -p "<task>" [--json] [--allow-asks] [--allow <tool[:argGlob]> ...]',
+    );
+  // PERM-5: split at the FIRST colon — tool glob, optional primary-arg glob.
+  const headlessAllows = allows.map((spec) => {
+    const idx = spec.indexOf(":");
+    const tool = idx === -1 ? spec : spec.slice(0, idx);
+    const arg = idx === -1 ? undefined : spec.slice(idx + 1);
+    if (!tool) return fail(`--allow needs a tool glob: "${spec}"`);
+    return {
+      tool,
+      ...(arg !== undefined ? { arg } : {}),
+      action: "allow" as const,
+    };
+  });
 
   const setup =
     typeof named.db === "string"
@@ -61,7 +80,9 @@ export const runCommand = async (argv: string[]): Promise<void> => {
     ...setup.deps,
     sessionId,
     // PERM-3: headless ask → deny; --allow-asks resolves asks to allow.
+    // PERM-5: granular --allow entries are consulted before the blanket.
     headlessAsk: named["allow-asks"] === true ? "allow" : "deny",
+    ...(headlessAllows.length > 0 ? { headlessAllows } : {}),
     ...(json ? {} : { onDelta: streamOut }),
   });
 

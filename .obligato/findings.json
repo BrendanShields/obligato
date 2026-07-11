@@ -292,6 +292,93 @@
       "status": "fixed",
       "id": "F-176",
       "fix_commit": "ba16c4e0e51ad33fbf0b711bfab1225e2f5bcde0"
+    },
+    {
+      "id": "F-177",
+      "task": "C1-10",
+      "source": "verify",
+      "severity": "warning",
+      "clauses": [
+        "SES-8",
+        "AGT-15",
+        "PROV-8"
+      ],
+      "summary": "post-compaction reconstruction dropped the session_meta root (substitution began the chain with the synthetic summary), so assembleContext threw session-has-no-session_meta-root on ANY step after a compact — manual session compact + continue was a guaranteed crash; SES-8s own obligation test had pinned the broken shape (asserted chain[0].payload.compacted) and nothing ever assembled context after compacting",
+      "root_cause": "test_blindspot",
+      "fix": "reconstructFrom keeps chain[0] (root) in front of the summary; compactSession records from = first real event AFTER the root and refuses a root-only chain (nothing to compact); SES-8 clause + obligation amended with root-survival pin and an assembleContext regression arm. Note: id assigned explicitly — branch-parallel auto-numbering had allocated F-173, already taken on the open PR #1 branch (C1-21)",
+      "status": "fixed",
+      "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
+    },
+    {
+      "id": "F-178",
+      "task": "C1-10",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "AGT-7",
+        "AGT-12",
+        "AGT-16"
+      ],
+      "summary": "auto-compaction at the done-gate demotion tail folded the gates chain-derived state: obligation_check session_meta events (failingClauses evidence) and the AGT-12 routing_escalation tail marker were substituted away with the transcript, so a failing session could pass the done-gate with an empty VerificationReport and an escalated retry silently ran on the normal model; the general case blinded any later done-gate to pre-compaction failures",
+      "root_cause": "design_bug",
+      "fix": "substitution now folds message-bearing events only — covered session_meta bookkeeping survives in order (zero context cost: toMessages skips session_meta); the demotion tail and no-model-call resumed steps are exempt from the trigger (clause-pinned); digest counts folded message events and collapses newlines; obligation arms h/i added (discriminating override + demote-compact-done regression)",
+      "status": "fixed",
+      "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
+    },
+    {
+      "id": "F-179",
+      "task": "C1-9",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PERM-5"
+      ],
+      "summary": "board task C1-9 titled the work PERM-4 (a different live clause — ask provenance) while the clause landed as PERM-5, and clauses[] was empty — proto-LOOP-1 miners would attribute the diff to the wrong stable id; board.mjs cannot retitle (the F-168 guard reads --title as create-only), so the fix was a verified hand edit",
+      "root_cause": "process_gap",
+      "fix": "C1-9 retitled with clauses [PERM-5]; board.mjs retitle gap folded into C1-21 scope",
+      "status": "fixed",
+      "fix_commit": "6535a69f1b766d0b51b678297b236b4a4002b9b3"
+    },
+    {
+      "id": "F-180",
+      "task": "C1-9",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PERM-5"
+      ],
+      "summary": "divergence-skip left one genuine two-reading edge: --allow write: (empty glob after the colon) — grant-all-writes vs match-only-empty-arg; the implemented reading fails closed but the clause did not pin it",
+      "root_cause": "spec_gap",
+      "fix": "clause parenthetical pins present-but-empty arg glob = matches only an empty primary argument, never glob-absent",
+      "status": "fixed",
+      "fix_commit": "6535a69f1b766d0b51b678297b236b4a4002b9b3"
+    },
+    {
+      "id": "F-181",
+      "task": "C1-9",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "PERM-5",
+        "PERM-3"
+      ],
+      "summary": "obligation arm (a) under-asserted its own text: denies-with-error-result-feedback was checked only as file-absence + exit 0; the error-result shape rode arm (e) alone",
+      "root_cause": "test_blindspot",
+      "fix": "arm (a) now asserts the stored tool_result pair [ok, is_error] from the session db",
+      "status": "fixed",
+      "fix_commit": "6535a69f1b766d0b51b678297b236b4a4002b9b3"
+    },
+    {
+      "id": "F-182",
+      "task": "C1-21",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [],
+      "summary": "the new cross-branch id-numbering ref scan interpolated a git refname into an execSync shell string (git show ${ref}:${p}); git allows $ ( ) { } ; in refnames, so a hostile branch/remote ref like a$(touch${IFS}OWNED) fetched into refs/remotes executes on the next un-idded finding — a command-injection into the tool that owns the LOOP-1 evidence log. Auditor reproduced it end-to-end through the CLI",
+      "root_cause": "design_bug",
+      "fix": "execFileSync argv form for both for-each-ref and git show — no shell parses any refname; obligation arm creates a valid-but-shell-dangerous ref via update-ref and asserts no file appears (verified discriminating: old shell form injects, argv form safe)",
+      "status": "fixed",
+      "fix_commit": "c2bc1664e1542f6f20b3096b15d6538085363dd9"
     }
   ]
 }
