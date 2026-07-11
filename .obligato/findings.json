@@ -307,7 +307,7 @@
       "root_cause": "test_blindspot",
       "fix": "reconstructFrom keeps chain[0] (root) in front of the summary; compactSession records from = first real event AFTER the root and refuses a root-only chain (nothing to compact); SES-8 clause + obligation amended with root-survival pin and an assembleContext regression arm. Note: id assigned explicitly — branch-parallel auto-numbering had allocated F-173, already taken on the open PR #1 branch (C1-21)",
       "status": "fixed",
-      "fix_commit": null
+      "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
     },
     {
       "id": "F-178",
@@ -323,7 +323,7 @@
       "root_cause": "design_bug",
       "fix": "substitution now folds message-bearing events only — covered session_meta bookkeeping survives in order (zero context cost: toMessages skips session_meta); the demotion tail and no-model-call resumed steps are exempt from the trigger (clause-pinned); digest counts folded message events and collapses newlines; obligation arms h/i added (discriminating override + demote-compact-done regression)",
       "status": "fixed",
-      "fix_commit": null
+      "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
     }
   ]
 }
