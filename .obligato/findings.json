@@ -277,6 +277,21 @@
       "status": "fixed",
       "id": "F-175",
       "fix_commit": "77059cba1832e1a7fc912a1ec6c8add4459826a2"
+    },
+    {
+      "task": "C1-19",
+      "source": "verify",
+      "severity": "warning",
+      "clauses": [
+        "PACK-3",
+        "PACK-5"
+      ],
+      "summary": "CI merge-base checks (pack version-bump lint, changelog append-only) were broken on their primary trigger: actions/checkout depth-1 has no common ancestor between a PR head and origin/main, so git merge-base printed nothing and the scripts died on usage — never seen before because the repo had never raised a PR (push-to-main degenerates merge-base to HEAD, vacuously passing)",
+      "root_cause": "test_blindspot",
+      "fix": "fetch-depth: 0 on the checks job checkout; surfaced and verified by PR #1, the repo first PR",
+      "status": "fixed",
+      "id": "F-176",
+      "fix_commit": null
     }
   ]
 }
