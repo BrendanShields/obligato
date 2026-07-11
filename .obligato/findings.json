@@ -392,7 +392,7 @@
       "fix": "predicate deleted; existence semantics pinned in-clause (reader B), snapshot-novelty rejected as fragile (no stable LSP diagnostic identity)",
       "status": "fixed",
       "id": "F-183",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -407,7 +407,7 @@
       "fix": "accumulating uncleared set added; obligation arm (j) is the dodge fixture",
       "status": "fixed",
       "id": "F-184",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -421,7 +421,7 @@
       "fix": "observation-keyed set (any file named in a diagnostics event joins); discriminating variant added to obligation arm (j)",
       "status": "fixed",
       "id": "F-185",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -437,7 +437,7 @@
       "fix": "lsp_status degraded session_meta at first degraded use; obligation (c) asserts exactly one marker",
       "status": "fixed",
       "id": "F-186",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -452,7 +452,7 @@
       "fix": "lazy per-process (re)spawn pinned with resume obligation arm (e); ignore-with-lsp_status-note pinned with obligation arm (d)",
       "status": "fixed",
       "id": "F-187",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -467,7 +467,7 @@
       "fix": "AGT-18 obligation arm (k): demoting step at/above AGT-16 threshold appends no compaction",
       "status": "fixed",
       "id": "F-188",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -482,7 +482,7 @@
       "fix": "capability-enum note added to pack-format section 1 recording the ADR-0005 reach; dedicated code-intelligence enum value deferred to the second gated subsystem",
       "status": "fixed",
       "id": "F-189",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     },
     {
       "task": "C1-23",
@@ -497,7 +497,7 @@
       "fix": "AGT-4 conditional amendment mirroring the PERM-1 pattern; ask-arm reworded to outside the registered read-only set",
       "status": "fixed",
       "id": "F-190",
-      "fix_commit": null
+      "fix_commit": "c6c9593b807029df33305a8ad404239a77c64ec5"
     }
   ]
 }
