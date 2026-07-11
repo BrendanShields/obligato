@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import fc from "fast-check";
 import { domainArbitrary } from "../../src/generators.ts";
-import { correctLimiterHarness, loadRateLimiter } from "../kelspec-helpers.ts";
+import { correctLimiterHarness, loadRateLimiter } from "../obspec-helpers.ts";
 
 describe("SPEC-2: obligations run against the spec's declared input domains, not ad-hoc examples", () => {
   it("generators derived from the compiled spec's domains produce only in-domain values", () => {

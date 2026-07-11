@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { budgetEvents } from "@kelson/kernel";
+import { budgetEvents } from "@obligato/kernel";
 import { runTurn } from "../../src/loop.ts";
 import { fixture, textResponse, toolCallResponse } from "../helpers.ts";
 import { mockResolveModel, testRoutingContext } from "../routing-helpers.ts";

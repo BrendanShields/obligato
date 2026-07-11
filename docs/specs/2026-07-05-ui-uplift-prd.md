@@ -10,7 +10,7 @@ so no ID is speculatively claimed (clause-ID stability rule).
 
 ## 1. Vision
 
-Kelson already has the *bones* of a great interface: a legibility spec (UX §7)
+Obligato already has the *bones* of a great interface: a legibility spec (UX §7)
 every surface obeys, machine output on every command (UX-1), statuses that name
 their verb (UX-5), and files as the review surface of record (UX-P6). What it lacks
 is *reach*: the store records far more than any surface shows, and several verbs
@@ -69,7 +69,7 @@ T1.9→UX-21, T1.1→UX-22, T1.6→UX-23, T1.3→UX-24, T1.8→UX-25, T1.4→UX-
 UX-22/UX-26 divergence-hardened, findings F-150/F-151. T1.2 signals starts its
 SIG-* work per the Phase A plan and lands in Phase B.)*
 
-**T1.1 `kelson drift list | promote`** — the J2 spine. `list` renders drift events
+**T1.1 `obligato drift list | promote`** — the J2 spine. `list` renders drift events
 grouped by module with survival counts, confidence, and evidence links; inferred
 clauses render visually distinct from confirmed (informational vs blocking, §5.4);
 above 10 items the view collapses to module counts (fatigue budget). `promote` is
@@ -78,75 +78,75 @@ enter-to-promote; promoted clauses then block per ART-4. Kernel already writes
 `drift_event` (`packages/kernel/src/artifacts.ts`) — this is purely a surface.
 Surface: CLI + OpenTUI select screen; launcher row. Data: `drift_event`,
 `artifact`, `trace_link`. Effort: M.
-*Draft clause (UX-draft/drift-list):* When `kelson drift list` runs, the system
+*Draft clause (UX-draft/drift-list):* When `obligato drift list` runs, the system
 shall render drift events grouped by module with survival counts and evidence
 links, collapsing to module counts when items exceed 10. *Obligation:* seeded store
 with 11 drift events across 2 modules renders module-count collapse; with 3 events
 renders full rows; `--json` validates against the drift view schema.
 
-**T1.2 `kelson signals inbox | triage`** — the PIPE-1 feedback stage. Untriaged
+**T1.2 `obligato signals inbox | triage`** — the PIPE-1 feedback stage. Untriaged
 signals (user feedback, TEL-7 accept/reject, postmortem observations) render as an
 inbox with per-signal evidence panel (UX-2); triage routes each to
 `now|next|later|dismissed` with an editable rationale. Requires kernel work first:
 no `signal` table exists — migration + Zod schema + SIG-* obligations land via
 feature-pipeline before the surface. Surface: CLI + TUI triage screen; web inbox
 later. Data: new `signal` table, `intervention_event`, `session`. Effort: L.
-*Draft clause (UX-draft/signals-inbox):* When `kelson signals inbox` runs, the
+*Draft clause (UX-draft/signals-inbox):* When `obligato signals inbox` runs, the
 system shall list untriaged signals with source evidence, and each row shall name
-`kelson signals triage` as its verb. *Obligation:* seeded signal rows render with
+`obligato signals triage` as its verb. *Obligation:* seeded signal rows render with
 evidence and verb; triaging one records the priority bucket and rationale and
 removes it from the inbox; empty inbox renders one line naming the producing verb.
 
-**T1.3 `kelson agents register <manifest> | list`** — custom-agent onboarding
+**T1.3 `obligato agents register <manifest> | list`** — custom-agent onboarding
 (RTR-4). `register` validates a manifest and adds it to the model-registry overlay
 so it appears immediately in `route explain` candidates and `bench --agents`;
 `list` shows endpoint ref, capabilities, prices, and routing win-rate so far.
 Surface: CLI; registry table reused by T3.6. Data: registry overlay
-(`~/.kelson/models.json`), `routing_weight`, `routing_outcome`. Effort: M.
-*Draft clause (UX-draft/agents-register):* When `kelson agents register` completes,
-the system shall include the agent in `kelson route explain` candidates and
-`kelson agents list` without restart. *Obligation:* register a fixture manifest,
+(`~/.obligato/models.json`), `routing_weight`, `routing_outcome`. Effort: M.
+*Draft clause (UX-draft/agents-register):* When `obligato agents register` completes,
+the system shall include the agent in `obligato route explain` candidates and
+`obligato agents list` without restart. *Obligation:* register a fixture manifest,
 assert the same process's `route explain --json` lists it as a candidate and
 `agents list --json` includes its capabilities.
 
-**T1.4 `kelson index rebuild`** — the ERD §1 guarantee behind UX-P6: regenerate
+**T1.4 `obligato index rebuild`** — the ERD §1 guarantee behind UX-P6: regenerate
 every derived SQLite table from the files of record, then render a reconciliation
 summary (rows rebuilt, orphans dropped, hash mismatches). Surface: CLI. Data:
-`.kelson/` files, specs, changelog, ledger → derived tables. Effort: M.
-*Draft clause (UX-draft/index-rebuild):* When `kelson index rebuild` completes,
+`.obligato/` files, specs, changelog, ledger → derived tables. Effort: M.
+*Draft clause (UX-draft/index-rebuild):* When `obligato index rebuild` completes,
 every derived table shall match a fresh scan of the files of record and the summary
 shall report any discrepancy count. *Obligation:* corrupt one derived row in a
 fixture store, rebuild, assert the row matches the file of record and the summary
 counted exactly one discrepancy.
 
-**T1.5 `kelson doctor`** — the resolution verb §5.5's `degraded: telemetry` badge
+**T1.5 `obligato doctor`** — the resolution verb §5.5's `degraded: telemetry` badge
 already names. Runs the self-check battery (store integrity, telemetry round-trip,
 sandbox/container availability, auth validity per PROV-7, OTel endpoint probe) and
 renders component → status → fix command. Surface: CLI. Effort: S–M.
-*Draft clause (UX-draft/doctor):* When `kelson doctor` runs, the system shall name
+*Draft clause (UX-draft/doctor):* When `obligato doctor` runs, the system shall name
 each failing component and the single command or action that fixes it.
 *Obligation:* with a fixture store missing its auth file, doctor's `--json` output
-names the auth component failing and `kelson auth login <provider>` as the fix;
+names the auth component failing and `obligato auth login <provider>` as the fix;
 never echoes credential contents.
 
-**T1.6 `kelson eval replay | report`** — the two missing eval verbs. `replay`
+**T1.6 `obligato eval replay | report`** — the two missing eval verbs. `replay`
 re-runs a recorded run or promoted session counterfactually under a different
 lockfile/config (kernel `replay.ts` + `replay_record` exist) and renders
 actual-vs-replay deltas with CIs; `report` re-renders any past run's EVT-1 verdict
 panel from the store without re-running. Surface: CLI. Data: `eval_run`,
 `eval_task_result`, `replay_record`, `verdict`, manifests. Effort: M.
-*Draft clause (UX-draft/eval-replay):* When `kelson eval replay <run> --config
+*Draft clause (UX-draft/eval-replay):* When `obligato eval replay <run> --config
 <lockfile>` completes, the system shall render actual-vs-replay deltas with CIs and
 record a `replay_record` linking both runs. *Obligation:* replay a fixture run
 under a toggled lockfile, assert a replay_record row links source and replay run
 ids and the rendered/`--json` deltas carry CI bounds.
 
-**T1.7 `kelson divergence list | show`** — the after-the-fact surface for
+**T1.7 `obligato divergence list | show`** — the after-the-fact surface for
 `divergence_report` rows. `show` renders the §5.2 view: the divergent probe input
 and both behaviors side-by-side (values, not code diffs) with the drafted resolving
 clauses; `list` shows unresolved reports first. Unresolved reports also feed T3.5.
 Surface: CLI (`sideBySideDiff`). Data: `divergence_report`. Effort: S.
-*Draft clause (UX-draft/divergence-show):* When `kelson divergence show <id>` runs,
+*Draft clause (UX-draft/divergence-show):* When `obligato divergence show <id>` runs,
 the system shall render the divergent probe input and both probe behaviors
 side-by-side with the drafted resolving clauses. *Obligation:* a fixture report
 renders both behaviors in one side-by-side block and its clause drafts; `list
@@ -162,21 +162,21 @@ Effort: S–M.
 run, it shall render the per-agent matrix and verdict with deltas and CIs,
 validating against the `BenchReport` schema. *Obligation:* the `/api/` bench route
 validates against `BenchReport` (500 on mismatch, UX-11 pattern); empty store
-returns the schema-valid empty state naming `kelson bench` (UX-12 pattern).
+returns the schema-valid empty state naming `obligato bench` (UX-12 pattern).
 
-**T1.9 `kelson pack new`** — the J5 scaffold: generate a pack skeleton with the
+**T1.9 `obligato pack new`** — the J5 scaffold: generate a pack skeleton with the
 required capability declarations (SEC-4) so a contributor's first `eval ablate
-./my-pack` works unedited. `kelson pack` currently accepts only `lint`. Surface:
+./my-pack` works unedited. `obligato pack` currently accepts only `lint`. Surface:
 CLI + launcher wizard. Data: pack-format templates. Effort: S.
-*Draft clause (UX-draft/pack-new):* When `kelson pack new <name>` completes, the
-scaffolded pack shall pass `kelson pack lint` and declare its capabilities
+*Draft clause (UX-draft/pack-new):* When `obligato pack new <name>` completes, the
+scaffolded pack shall pass `obligato pack lint` and declare its capabilities
 explicitly. *Obligation:* scaffold into a temp dir, run the real lint entry
 function on it (exit 0), and assert the manifest's capability field is present and
 non-implicit.
 
 ### Tier 2 — Daily driver
 
-**T2.1 Attention-first launcher home** — bare `kelson` currently opens a command
+**T2.1 Attention-first launcher home** — bare `obligato` currently opens a command
 menu; make the first screen a status panel: `3 proposals awaiting review`,
 `7 drift items`, `1 budget pause`, `2 unresolved divergences`, overhead sparkline —
 each row selectable, dispatching its verb's wizard through the same `COMMANDS`
@@ -190,7 +190,7 @@ test — seeded actionable states produce one row per state with count and verb;
 selection dispatches through the shared table; empty store yields the menu model.
 
 **T2.2 Chat transcript legibility pack** — three compounding upgrades to
-`kelson chat`: (a) tool results over N lines fold to a one-line summary naming the
+`obligato chat`: (a) tool results over N lines fold to a one-line summary naming the
 expand keybind; (b) edit/write tool calls render through `sideBySideDiff` instead
 of raw text; (c) reverse-search over the transcript, reconstructed from the session
 event chain so it spans `--continue`. All pure-reducer state (UX-14), headlessly
@@ -204,16 +204,16 @@ expanded state after the keybind event.
 **T2.3 In-chat evidence overlays `/route` and `/budget`** — `/route` shows the
 current step's routing decision (feature vector, chosen target, next candidates
 with cost deltas, any silent RTR-2 escalation with recorded regret) via the same
-exported function `kelson route explain` uses (F-085 rule); `/budget` shows spend
+exported function `obligato route explain` uses (F-085 rule); `/budget` shows spend
 vs budget with a per-step burn sparkline. Surface: TUI chat overlays. Data:
 `routing_decision`, `routing_outcome`, `budget_event`, `step_event`. Effort: S–M.
 *Draft clause (UX-draft/chat-route):* When `/route` is invoked in chat, the overlay
-shall render the same payload as `kelson route explain` for the session's latest
+shall render the same payload as `obligato route explain` for the session's latest
 step, produced by the same exported function. *Obligation:* identity test — the
 chat dispatch resolves to the same function reference as the CLI command's; overlay
 model equals the CLI `--json` payload for a fixture session.
 
-**T2.4 Session tree glyph view** — `/tree` in chat and `kelson session tree`:
+**T2.4 Session tree glyph view** — `/tree` in chat and `obligato session tree`:
 git-log-style indented glyph rendering of the `parent_id` DAG — branch heads,
 per-branch cost with units, outcome symbols, compaction markers; cursor + enter
 checks out a head in chat. Prerequisite visual for T3.1/T3.2. Surface: TUI chat +
@@ -288,7 +288,7 @@ renders no monitoring block.
 
 ### Tier 3 — Multiverse (the architectural dividend)
 
-**T3.1 Session race (fork-and-race)** — `kelson session race <head> --models
+**T3.1 Session race (fork-and-race)** — `obligato session race <head> --models
 a,b,c [--repeats n]` and `/race` in chat: fork the session N ways at an event
 boundary (forks are shared `parent_id` — free in the tree schema), run each branch
 headlessly through `runTurn` with a pinned model under existing sandbox profiles,
@@ -299,9 +299,9 @@ feeds the bandit (`routing_outcome`). Surface: CLI + chat; results visible in T3
 Data: `session_event` tree, `step_event`, `routing_outcome`. Effort: L
 (parallel-branch workspace isolation is the hard part; the data model needs
 nothing new).
-*Draft clause (UX-draft/session-race):* When `kelson session race` completes, the
+*Draft clause (UX-draft/session-race):* When `obligato session race` completes, the
 system shall render one row per branch with outcome, cost with units, and
-obligation results, and shall name `kelson session compare` for any pair.
+obligation results, and shall name `obligato session compare` for any pair.
 *Obligation:* race a fixture session across two mock models — assert two branch
 rows with distinct parent-shared fork points, costs with units, and the compare
 verb named; winner checkout appends `head_moved` without rewriting events.
@@ -314,7 +314,7 @@ clauses in force, active permission rules, the model id fixed at call issue
 (UX-17) — using the same reconstruction function the runtime uses (F-085 identity).
 A "why" sidebar shows the routing decision and budget state at that instant; fork
 points render as branches (React Flow, already in the dep budget); "fork from here"
-emits a copyable `kelson session fork <event-id>`. Surface: web primary; TUI lite
+emits a copyable `obligato session fork <event-id>`. Surface: web primary; TUI lite
 via `/tree` + step inspector. Data: `session_event`, `step_event`, `bundle_event`,
 `routing_decision`, `budget_event`. Effort: L.
 *Draft clause (UX-draft/scrubber):* When the scrubber selects an event, the context
@@ -326,7 +326,7 @@ output for that event id (identity-shared import, not a reimplementation).
 **T3.3 Live mission control** — watch a running eval suite, bench, or race live:
 per-task lanes (queued/running/✓/✗), streaming cost total, ETA from historical
 per-task durations, quarantine events as they happen. Ships TUI-first as
-`kelson eval ablate|compare --watch` / `bench --watch` (no pinned-decision
+`obligato eval ablate|compare --watch` / `bench --watch` (no pinned-decision
 conflict). The web variant uses SSE-over-GET — structurally read-only, UX-10's
 non-GET-405 obligation holds — but requires an explicit interface-design amendment
 (its out-of-scope list names websockets/live transport) via spec-sync before
@@ -344,7 +344,7 @@ run or promoted session, toggle lockfile dimensions (pack on/off, model, policy)
 and browse actual-vs-replay side by side — per-task outcome flips highlighted,
 verdict deltas with CIs, cost delta. Every cell is a real `replay_record`; the
 explorer browses evidence, it never simulates. "Run this cell" emits a copyable
-`kelson eval replay …`. Surface: web + `eval replay --matrix` for scripted grids.
+`obligato eval replay …`. Surface: web + `eval replay --matrix` for scripted grids.
 Data: `replay_record`, `eval_run`, `eval_task_result`, `verdict`, manifests,
 `benchmark_task`. Effort: M (given T1.6).
 *Draft clause (UX-draft/counterfactual):* When two runs share a replay link, the
@@ -353,16 +353,16 @@ shall never display an unexecuted configuration as a result. *Obligation:* fixtu
 pair renders flips and CI-carrying delta; a configuration with no replay_record
 renders as a proposed command, never as a result cell.
 
-**T3.5 Attention queue (`kelson inbox`)** — UX-P8 industrialized: one kernel view
+**T3.5 Attention queue (`obligato inbox`)** — UX-P8 industrialized: one kernel view
 function aggregating everything awaiting a human — proposals awaiting review,
 unresolved divergences, drift batches, budget pauses, auto-revert notices,
 quarantined flaky tasks, expired auth (PROV-7), untriaged signals (once T1.2
-lands). Each item: evidence summary, age, exactly one verb. `kelson inbox` renders
+lands). Each item: evidence summary, age, exactly one verb. `obligato inbox` renders
 it; the launcher home (T2.1) is its TUI face; a web view its ambient face; `--json`
 makes "is anything blocked on me" scriptable. Surface: CLI + TUI + web, one data
 spine. Data: `proposal`, `divergence_report`, `drift_event`, `budget_event`,
 `loop_event`, `monitor_record`, quarantine, `signal`. Effort: M.
-*Draft clause (UX-draft/inbox):* When `kelson inbox` runs, every actionable item
+*Draft clause (UX-draft/inbox):* When `obligato inbox` runs, every actionable item
 shall carry its evidence summary and exactly one verb, and an empty inbox shall say
 so in one line. *Obligation:* seeded store with one item of each kind renders each
 with evidence + single verb and validates the inbox schema; empty store renders one
@@ -374,7 +374,7 @@ stream with chosen-vs-runner-up cost deltas, RTR-2 escalations with recorded
 regret, and a cumulative-regret sparkline over the local store's rows. Scoped to
 current state + recent local history — long-horizon time-series stays OTel→Grafana
 (ADR-0001); this is an observatory, not a metrics warehouse. Surface: web view +
-`kelson route observe`. Data: `routing_weight`, `routing_decision`,
+`obligato route observe`. Data: `routing_weight`, `routing_decision`,
 `routing_outcome`, `budget_event`. Effort: M.
 *Draft clause (UX-draft/observatory):* When the observatory loads, it shall render
 current weights and the recent decision stream with regret, sourcing only the local
@@ -382,7 +382,7 @@ store. *Obligation:* fixture weights/decisions render the grid and stream with
 regret values; the view function takes only a store handle (no network), asserted
 structurally.
 
-**T3.7 `kelson ask` — natural-language store queries** — "which pack regressed
+**T3.7 `obligato ask` — natural-language store queries** — "which pack regressed
 FPAR last month?", "why did step 4 escalate?" — answered by the native runtime
 itself equipped with exactly one tool: a read-only SQL executor over the store
 (connection opened read-only; schema + table docs injected as context). Not RAG:
@@ -394,7 +394,7 @@ improving its own query skill). Any future semantic-search variant ships only as
 eval-gated pack per the ADR's escape hatch. Surface: CLI + `/ask` in chat. Data:
 whole store via read-only connection; model via the normal routing path.
 Effort: M.
-*Draft clause (UX-draft/ask):* When `kelson ask` answers, it shall display every
+*Draft clause (UX-draft/ask):* When `obligato ask` answers, it shall display every
 SQL statement executed alongside its result, and the store connection shall reject
 writes structurally. *Obligation:* fixture-driven run (recorded stream, no live
 endpoint) shows each SQL + result block; an INSERT attempted through the tool fails
@@ -404,7 +404,7 @@ at the connection layer, asserted by the error the tool returns.
 family, obligation pass rate, last-verified age, downstream drift pressure, and
 divergence history — the "is my spec suite load-bearing" view. Node color stays
 drift status (already specced); add family rollup bars and a stalest-clause callout
-naming `kelson drift list`. Surface: web (trace view v2) + `kelson spec health`
+naming `obligato drift list`. Surface: web (trace view v2) + `obligato spec health`
 panel. Data: `trace_link`, `artifact`, `verification_report`, `drift_event`,
 `divergence_report`. Effort: M.
 *Draft clause (UX-draft/spec-health):* When the traceability view renders, each
@@ -413,7 +413,7 @@ item naming its verb. *Obligation:* fixture store renders per-family pass rates 
 ages; the stalest item's payload carries the drift verb; composite view schema
 validates.
 
-**T3.9 Harvest queue (`kelson promote --suggest`)** — EVP-10 promotion is manual;
+**T3.9 Harvest queue (`obligato promote --suggest`)** — EVP-10 promotion is manual;
 the store already knows which sessions make good benchmark tasks: human
 interventions, fail-then-succeed step patterns, budget escalations, accepted
 outcomes on risky clauses. `--suggest` ranks candidates with the qualifying signal
@@ -430,11 +430,11 @@ against the promote entry function.
 
 **T3.10 Shootout scheduler** — where bandit uncertainty is highest (wide weight
 variance for a feature bucket, or a newly registered agent with no outcomes),
-propose — never auto-run — the targeted `kelson bench` invocation that would shrink
+propose — never auto-run — the targeted `obligato bench` invocation that would shrink
 it fastest, with a cost estimate up front (SEC-3 discipline). Surfaces as an
-attention-queue item: "routing is guessing on `refactor/T1` → `kelson bench …`
+attention-queue item: "routing is guessing on `refactor/T1` → `obligato bench …`
 (~$1.20) would resolve it." Turns exploration spend into a deliberate,
-evidence-priced decision. Surface: `kelson route observe --gaps` + inbox item.
+evidence-priced decision. Surface: `obligato route observe --gaps` + inbox item.
 Data: `routing_weight` variance, `routing_outcome` counts, `benchmark_task`,
 registry prices. Effort: M–L.
 *Draft clause (UX-draft/shootout):* When routing uncertainty for a feature bucket
@@ -528,7 +528,7 @@ Every feature in this PRD, without restatement per item:
   exist — `agents`, `doctor`, `drift`, `index`, `signals` are absent — and within
   existing families `eval replay|report` and `pack new` are also missing).
 - **Blocked-on-me latency:** time to answer "is anything awaiting me" — one command
-  (`kelson inbox`, scriptable via `--json`) by end of Phase B.
+  (`obligato inbox`, scriptable via `--json`) by end of Phase B.
 - **Surface coverage:** every event-table family (drift, divergence, budget,
   routing weights/outcomes, bundle, bench, session tree, provenance) has at least
   one view by end of Phase C — target 100% (today: ~40%).

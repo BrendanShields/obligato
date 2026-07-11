@@ -1,6 +1,6 @@
 import { realpathSync } from "node:fs";
-import { DEFAULT_DB_PATH, openDb, rebuildIndex } from "@kelson/kernel";
-import { IndexRebuildResult } from "@kelson/schemas";
+import { DEFAULT_DB_PATH, openDb, rebuildIndex } from "@obligato/kernel";
+import { IndexRebuildResult } from "@obligato/schemas";
 import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { kvGrid, panel } from "../components/render.js";

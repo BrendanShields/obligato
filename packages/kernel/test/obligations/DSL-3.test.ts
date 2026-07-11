@@ -5,7 +5,7 @@ import {
   correctLimiterHarness,
   loadRateLimiter,
   mutatedLimiterHarness,
-} from "../kelspec-helpers.ts";
+} from "../obspec-helpers.ts";
 
 const decl = {
   inputs: ["rate", "count"],

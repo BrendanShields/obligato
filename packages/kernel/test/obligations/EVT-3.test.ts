@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
-import { LedgerEntry } from "@kelson/schemas";
+import { LedgerEntry } from "@obligato/schemas";
 import { verifyLedgerEntry, writeLedgerEntry } from "../../src/evalrun.ts";
 import { openDb } from "../../src/storage.ts";
 import { seedClaudeRun, tmpDir } from "../eval-helpers.ts";

@@ -30,7 +30,7 @@ describe("ART-5: drift is evaluated against link-frozen hashes; open events dedu
       db,
       "r",
       hashes({
-        "docs/kelspec/w.spec.md#W-1": hashContent("clause-v2"),
+        "docs/obspec/w.spec.md#W-1": hashContent("clause-v2"),
         "src/w.ts": hashContent("code-v2"),
       }),
     );

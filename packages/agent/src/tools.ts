@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import type { ExecResult } from "@kelson/kernel";
+import type { ExecResult } from "@obligato/kernel";
 import { z } from "zod";
 
 // AGT-4: all filesystem/process access flows through the caller-supplied

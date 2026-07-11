@@ -1,10 +1,10 @@
-import type { KelspecDomain } from "@kelson/schemas";
+import type { ObspecDomain } from "@obligato/schemas";
 import fc from "fast-check";
 
 // SPEC-2 / DSL-2: every constraint on a domain block is generator-facing —
 // the arbitrary is derived from exactly the declared fields, nothing else.
 export const domainArbitrary = (
-  domains: ReadonlyMap<string, KelspecDomain>,
+  domains: ReadonlyMap<string, ObspecDomain>,
   ref: string,
   seen: readonly string[] = [],
 ): fc.Arbitrary<unknown> => {

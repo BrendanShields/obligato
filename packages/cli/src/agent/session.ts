@@ -3,8 +3,8 @@ import {
   compareBranches,
   forkSession,
   promoteSession,
-} from "@kelson/agent";
-import { DEFAULT_DB_PATH, openDb } from "@kelson/kernel";
+} from "@obligato/agent";
+import { DEFAULT_DB_PATH, openDb } from "@obligato/kernel";
 import { parseArgs } from "../args.js";
 import { write } from "../components/sink.js";
 import { fail } from "./common.js";
@@ -12,7 +12,7 @@ import { fail } from "./common.js";
 const openStore = (dbPath?: string) =>
   openDb(typeof dbPath === "string" ? dbPath : DEFAULT_DB_PATH);
 
-// SES-6/7/8: `kelson session fork|compare|compact`.
+// SES-6/7/8: `obligato session fork|compare|compact`.
 export const sessionCommand = (argv: string[]): void => {
   const [sub, ...rest] = argv;
   const { positional, named } = parseArgs(rest);
@@ -20,7 +20,8 @@ export const sessionCommand = (argv: string[]): void => {
 
   if (sub === "fork") {
     const sid =
-      positional[0] ?? fail("usage: kelson session fork <session> [event-id]");
+      positional[0] ??
+      fail("usage: obligato session fork <session> [event-id]");
     const { forkHead, originalHead } = forkSession(
       db,
       sid as string,
@@ -37,7 +38,7 @@ export const sessionCommand = (argv: string[]): void => {
     const headA = positional[1];
     const headB = positional[2];
     if (!sid || !headA || !headB)
-      fail("usage: kelson session compare <session> <headA> <headB>");
+      fail("usage: obligato session compare <session> <headA> <headB>");
     const cmp = compareBranches(
       db,
       sid as string,
@@ -57,7 +58,7 @@ export const sessionCommand = (argv: string[]): void => {
 
   if (sub === "compact") {
     const sid =
-      positional[0] ?? fail("usage: kelson session compact <session>");
+      positional[0] ?? fail("usage: obligato session compact <session>");
     // A single-line naive summarizer; the loop uses a cheap routed model.
     const range = compactSession(
       db,
@@ -74,15 +75,15 @@ export const sessionCommand = (argv: string[]): void => {
   );
 };
 
-// EVP-10: `kelson promote <session> --suite <staging-dir>`.
+// EVP-10: `obligato promote <session> --suite <staging-dir>`.
 export const promoteCommand = (argv: string[]): void => {
   const { positional, named } = parseArgs(argv);
   const sid =
     positional[0] ??
-    fail("usage: kelson promote <session> --suite <staging-dir>");
+    fail("usage: obligato promote <session> --suite <staging-dir>");
   const suite =
     (named.suite as string) ??
-    fail("usage: kelson promote <session> --suite <staging-dir>");
+    fail("usage: obligato promote <session> --suite <staging-dir>");
   const db = openStore(named.db as string | undefined);
   const task = promoteSession(db, sid as string, suite);
   write(`promoted ${sid} → ${task.id}`);
@@ -90,5 +91,7 @@ export const promoteCommand = (argv: string[]): void => {
   write(`  snapshot:  ${task.snapshot}`);
   write(`  budget:    ${task.budget_ceiling_musd} µUSD`);
   write(`  checks:    ${task.checks.map((c) => c.kind).join(", ")}`);
-  write(`  → replay with: kelson eval ablate --suite ${suite} --executor api`);
+  write(
+    `  → replay with: obligato eval ablate --suite ${suite} --executor api`,
+  );
 };

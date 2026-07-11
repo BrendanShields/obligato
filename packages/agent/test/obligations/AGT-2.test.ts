@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
+import { openDb } from "@obligato/kernel";
 import { answerPermission, resume, runTurn } from "../../src/loop.ts";
 import { listEvents, reconstruct } from "../../src/sessions.ts";
 import { CORE_TOOLS, localExec } from "../../src/tools.ts";
@@ -29,7 +29,7 @@ describe("AGT-2: step outcomes are continue|done|paused; paused state survives a
   });
 
   it("permission ask pauses; a fresh db handle resumes without re-executing completed work", async () => {
-    const dbPath = join(mkdtempSync(join(tmpdir(), "kelson-db-")), "k.db");
+    const dbPath = join(mkdtempSync(join(tmpdir(), "obligato-db-")), "k.db");
     // One batch: ls (default allow, executes) + write (default ask, pauses).
     const f = fixture(
       [

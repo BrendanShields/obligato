@@ -1,4 +1,4 @@
-# Design: Kelson Interface — TUI Launcher + Local Web UI
+# Design: Obligato Interface — TUI Launcher + Local Web UI
 
 Status: approved design (brainstorm output, 2026-07-03). Formal UX-* clauses land via
 spec-sync when implementation starts; this document records the decisions and scope.
@@ -21,7 +21,7 @@ SPA architecture (approach A).
 ## Architecture
 
 ```
-SQLite + .kelson files
+SQLite + .obligato files
         │
    kernel query fns (existing)
         │
@@ -44,7 +44,7 @@ directly; the API validates every response against the same schemas the CLI's
 - **§7 component layer:** panel, key-value grid, aligned table, sparkline,
   side-by-side diff, select-list. All command output routes through it; no ad-hoc
   `console.log` outside the component layer.
-- **Launcher:** bare `kelson` in a TTY opens an interactive menu (init wizard, eval,
+- **Launcher:** bare `obligato` in a TTY opens an interactive menu (init wizard, eval,
   loop review, drift, pack, ui). Non-TTY invocation prints plain help and exits 0 —
   CI and scripts never hang.
 - **Wizards are argument collectors only.** A wizard's terminal action executes the
@@ -53,10 +53,10 @@ directly; the API validates every response against the same schemas the CLI's
 - **Accessibility:** `NO_COLOR`/plain fallback; color is never the only signal
   (symbols `✓ ✗ ~ ?` accompany), per §7.
 
-## Web UI (`packages/ui` + `kelson ui`)
+## Web UI (`packages/ui` + `obligato ui`)
 
 Vite + React + Tailwind. Assets built at publish time, shipped in the package.
-`kelson ui` starts `Bun.serve` on `127.0.0.1` (default port, `--port` flag):
+`obligato ui` starts `Bun.serve` on `127.0.0.1` (default port, `--port` flag):
 static assets + read-only `GET /api/*` endpoints. The server implements GET only —
 read-only enforced structurally. Freshness by polling refetch.
 <!-- ponytail: polling; websockets if someone watches a live eval run -->
@@ -92,7 +92,7 @@ registry at implementation time, never from memory.
 
 - **Degraded, never blocking (KERN-1 / UX-P1):** missing or empty SQLite → designed
   empty states naming the CLI verb that produces data ("no eval runs yet →
-  `kelson eval suite`"). Never an error wall.
+  `obligato eval suite`"). Never an error wall.
 - **Server:** localhost-only bind; non-GET → 405; port taken → clear message with
   `--port` hint. An API response failing its Zod schema returns 500 loudly —
   never render wrong data quietly.

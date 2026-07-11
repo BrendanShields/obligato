@@ -8,7 +8,7 @@ import {
   reconstruct,
   runTurn,
   sessionModelOf,
-} from "@kelson/agent";
+} from "@obligato/agent";
 import {
   type CliRenderer,
   createCliRenderer,

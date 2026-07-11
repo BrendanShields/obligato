@@ -9,7 +9,7 @@ import { localExec } from "../../src/tools.ts";
 const IDENTITY = "You are a test agent with rules.";
 
 const workspace = (opts: { git?: boolean } = {}): string => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-prompt-")));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-prompt-")));
   if (opts.git !== false) {
     spawnSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
     writeFileSync(join(dir, "seed.txt"), "s\n");
@@ -68,6 +68,6 @@ describe("AGT-15: one system-prompt builder — identity + environment + convent
       join(import.meta.dir, "..", "..", "src", "executor.ts"),
     ).text();
     expect(src).toContain("buildSystemPrompt({");
-    expect(src).not.toContain('system:\n      "You are Kelson');
+    expect(src).not.toContain('system:\n      "You are Obligato');
   });
 });

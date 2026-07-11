@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { loadRegistry } from "@kelson/kernel";
-import { AgentRegistryEntry, AgentsListResult } from "@kelson/schemas";
+import { loadRegistry } from "@obligato/kernel";
+import { AgentRegistryEntry, AgentsListResult } from "@obligato/schemas";
 import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { table } from "../components/render.js";
@@ -9,7 +9,7 @@ import { write } from "../components/sink.js";
 import { emitJson } from "../output/json.js";
 
 export const repoRegistryDir = (root: string): string =>
-  join(root, ".kelson", "routing", "agents");
+  join(root, ".obligato", "routing", "agents");
 
 // UX-24: repo-registered agents union with the resolved registry, repo
 // entries winning by id — shared by `agents list` and `route explain`.
@@ -34,7 +34,7 @@ export const agentsCommand = (argv: string[]): void => {
 
   if (sub === "register") {
     const manifestPath =
-      positional[0] ?? fail("usage: kelson agents register <manifest.yaml>");
+      positional[0] ?? fail("usage: obligato agents register <manifest.yaml>");
     let raw: string;
     try {
       raw = readFileSync(manifestPath, "utf8");
@@ -56,7 +56,7 @@ export const agentsCommand = (argv: string[]): void => {
     write(
       `registered ${parsed.data.id} (${basename(manifestPath)} -> ${dest})`,
     );
-    write("verify as a candidate: kelson route explain --step build");
+    write("verify as a candidate: obligato route explain --step build");
     return;
   }
 
@@ -79,7 +79,7 @@ export const agentsCommand = (argv: string[]): void => {
     }
     if (agents.length === 0) {
       write(
-        "no agents registered — add one: kelson agents register <manifest.yaml>",
+        "no agents registered — add one: obligato agents register <manifest.yaml>",
       );
       return;
     }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
-import { DivergenceListResult } from "@kelson/schemas";
+import { openDb } from "@obligato/kernel";
+import { DivergenceListResult } from "@obligato/schemas";
 import { makeTestRepo, runCli } from "../agent-helpers.ts";
 
 const seed = (dbPath: string): void => {
@@ -41,7 +41,7 @@ const seed = (dbPath: string): void => {
 describe("UX-20: divergence show renders probe input and both behaviors side-by-side; list orders unresolved first", () => {
   it("show renders the probe input, both outcomes, and the clause ids", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     seed(dbPath);
     const r = await runCli(t, [
       "divergence",
@@ -59,7 +59,7 @@ describe("UX-20: divergence show renders probe input and both behaviors side-by-
 
   it("list --json orders unresolved before resolved and parses with the registered schema", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     seed(dbPath);
     const r = await runCli(t, ["divergence", "list", "--db", dbPath, "--json"]);
     expect(r.exitCode).toBe(0);

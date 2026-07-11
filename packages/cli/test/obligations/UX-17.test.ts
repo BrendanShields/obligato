@@ -11,8 +11,8 @@ import {
   resume,
   runTurn,
   sessionModelOf,
-} from "@kelson/agent";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+} from "@obligato/agent";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import {
   fixture,
   mockModel,
@@ -97,7 +97,7 @@ describe("UX-17: /model lists via the registry function and switches at the next
     const t = makeTestRepo({ baseUrl: serverA.url, configured: true });
     // Overlay carries both models, pointing at different endpoints.
     writeFileSync(
-      join(t.home, ".kelson", "models.json"),
+      join(t.home, ".obligato", "models.json"),
       JSON.stringify(
         (["mock-m", "mock-m2"] as const).map((id, i) => ({
           id,
@@ -110,8 +110,8 @@ describe("UX-17: /model lists via the registry function and switches at the next
         })),
       ),
     );
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
-    const configPath = join(t.repo, ".kelson", "config.json");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
+    const configPath = join(t.repo, ".obligato", "config.json");
     const configBefore = await Bun.file(configPath).text();
 
     const first = await runCli(t, [
@@ -126,7 +126,7 @@ describe("UX-17: /model lists via the registry function and switches at the next
     const sessionId = JSON.parse(first.stdout).session_id as string;
 
     // A chat-recorded switch, then continue headlessly.
-    const { openDb } = await import("@kelson/kernel");
+    const { openDb } = await import("@obligato/kernel");
     const db = openDb(dbPath);
     appendModelSwitch(db, sessionId, "mock-m", "mock-m2");
     db.close();

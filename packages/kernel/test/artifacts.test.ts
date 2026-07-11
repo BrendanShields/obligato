@@ -13,7 +13,7 @@ describe("P0-4 verification: index rebuild from disk (ERD §1) and ULID shape", 
   it("rehash is idempotent and picks up file edits", () => {
     const dir = join(
       "/tmp",
-      `kelson-art-${Math.random().toString(36).slice(2)}`,
+      `obligato-art-${Math.random().toString(36).slice(2)}`,
     );
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "spec.md"), "v1");

@@ -1,5 +1,5 @@
 {
-  "name": "kelson",
+  "name": "obligato",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,13 +7,13 @@
     ".": "./src/index.ts"
   },
   "bin": {
-    "kelson": "./src/index.ts"
+    "obligato": "./src/index.ts"
   },
   "dependencies": {
-    "@kelson/kernel": "workspace:*",
-    "@kelson/schemas": "workspace:*",
+    "@obligato/kernel": "workspace:*",
+    "@obligato/schemas": "workspace:*",
     "@opentui/core": "^0.4.2",
-    "@kelson/agent": "workspace:*",
+    "@obligato/agent": "workspace:*",
     "zod": "^4.4.3"
   },
   "description": "Self-improving, token-efficient engineering harness: executable specs, evidence-gated config, statistical evals",

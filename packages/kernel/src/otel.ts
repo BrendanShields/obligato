@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { Session, type SharedStepEvent, StepEvent } from "@kelson/schemas";
+import { Session, type SharedStepEvent, StepEvent } from "@obligato/schemas";
 import { stripStepEvent } from "./privacy.ts";
 
 // TEL-6: OFF by default — this module performs network IO only when the
@@ -25,19 +25,19 @@ const attr = (key: string, value: string | number) => ({
 });
 
 const stepAttributes = (shared: SharedStepEvent) => [
-  attr("kelson.sdlc_step", shared.sdlc_step),
-  attr("kelson.model", shared.model),
-  attr("kelson.effort", shared.effort),
-  attr("kelson.tokens_in", shared.tokens_in),
-  attr("kelson.tokens_out", shared.tokens_out),
-  attr("kelson.tokens_cache_read", shared.tokens_cache_read),
-  attr("kelson.tokens_cache_write", shared.tokens_cache_write),
+  attr("obligato.sdlc_step", shared.sdlc_step),
+  attr("obligato.model", shared.model),
+  attr("obligato.effort", shared.effort),
+  attr("obligato.tokens_in", shared.tokens_in),
+  attr("obligato.tokens_out", shared.tokens_out),
+  attr("obligato.tokens_cache_read", shared.tokens_cache_read),
+  attr("obligato.tokens_cache_write", shared.tokens_cache_write),
   // Unknown cost (PROV-3 null) is an absent attribute, not a fake zero.
   ...(shared.cost_micro_usd === null
     ? []
-    : [attr("kelson.cost_micro_usd", shared.cost_micro_usd)]),
-  attr("kelson.budget_tokens", shared.budget_tokens),
-  attr("kelson.overrun", shared.overrun),
+    : [attr("obligato.cost_micro_usd", shared.cost_micro_usd)]),
+  attr("obligato.budget_tokens", shared.budget_tokens),
+  attr("obligato.overrun", shared.overrun),
 ];
 
 export interface OtelExportResult {
@@ -72,25 +72,25 @@ export const exportSessionOtel = async (
       {
         resource: {
           attributes: [
-            attr("service.name", "kelson"),
-            attr("kelson.session_status", session.status),
+            attr("service.name", "obligato"),
+            attr("obligato.session_status", session.status),
           ],
         },
         scopeSpans: [
           {
-            scope: { name: "kelson" },
+            scope: { name: "obligato" },
             spans: steps.map((step, i) => {
               const shared = stripStepEvent(step);
               return {
                 traceId,
                 spanId: hexId(step.id, 8),
-                name: `kelson.step.${shared.sdlc_step}`,
+                name: `obligato.step.${shared.sdlc_step}`,
                 kind: 1,
                 startTimeUnixNano: startNs,
                 endTimeUnixNano: endNs,
                 attributes: [
                   ...stepAttributes(shared),
-                  attr("kelson.step_index", i),
+                  attr("obligato.step_index", i),
                 ],
               };
             }),

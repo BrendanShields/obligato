@@ -1,4 +1,4 @@
-import type { UiBenchView, UiEvalRunRow, UiEvalView } from "@kelson/schemas";
+import type { UiBenchView, UiEvalRunRow, UiEvalView } from "@obligato/schemas";
 import { fmtMicroUsd, usePoll } from "../api";
 import { Empty, Section, Status } from "../components";
 

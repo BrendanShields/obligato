@@ -1,6 +1,6 @@
 # The Safety & Self-Improvement Model
 
-Kelson changes its own configuration. This page is the operator's contract for how that stays safe (PRD §9).
+Obligato changes its own configuration. This page is the operator's contract for how that stays safe (PRD §9).
 
 ## One mechanism for all self-change
 
@@ -10,7 +10,7 @@ Everything the system can change about itself is a versioned, evaluable, reverti
 propose (evidence-linked) → gate (statistics) → apply (revertible) → monitor → stable | auto-revert → quarantine
 ```
 
-The proposal state machine is specified in TLA+ (`specs/tla/KelsonLoop.tla`) and model-checked in CI for: gate soundness (nothing applies without approval, I1), bounded monitoring concurrency (I2, so regressions stay attributable), and revert liveness (I3). The implementation's transition table is conformance-tested against the model (LOOP-5).
+The proposal state machine is specified in TLA+ (`specs/tla/ObligatoLoop.tla`) and model-checked in CI for: gate soundness (nothing applies without approval, I1), bounded monitoring concurrency (I2, so regressions stay attributable), and revert liveness (I3). The implementation's transition table is conformance-tested against the model (LOOP-5).
 
 ## What the loop can never touch (LOOP-4)
 
@@ -26,7 +26,7 @@ Every applied diff opens a monitoring window (14 days or 30 sessions, whichever 
 
 ## The audit trail is monotone (I5, PACK-5)
 
-Every apply and revert appends to `.kelson/changelog.jsonl` — the writer refuses anything but `seq = last + 1`, and CI fails any history rewrite against the merge base. Every state transition, evidence check, and monitor decision is an append-only event row. Sessions pin their lockfile hash at start (LOOP-7), so every telemetry event attributes to exactly one configuration.
+Every apply and revert appends to `.obligato/changelog.jsonl` — the writer refuses anything but `seq = last + 1`, and CI fails any history rewrite against the merge base. Every state transition, evidence check, and monitor decision is an append-only event row. Sessions pin their lockfile hash at start (LOOP-7), so every telemetry event attributes to exactly one configuration.
 
 ## The human's two jobs
 

@@ -16,7 +16,7 @@ import {
   type SandboxProfile,
   type Verdict,
   type VerdictDecision,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import { BudgetMonitor } from "./budget.ts";
 import { EXECUTORS, type ExecutorFn, runTask } from "./evaltask.ts";
@@ -64,7 +64,7 @@ export const loadSuite = (suiteDir: string): LoadedSuite => {
 };
 
 // seed_i = H(run_seed, task_id, side, i) — deterministic from the manifest
-// (EVP §2), surfaced to the session via KELSON_SEED.
+// (EVP §2), surfaced to the session via OBLIGATO_SEED.
 export const taskSeed = (
   runSeed: number,
   taskId: string,
@@ -80,7 +80,7 @@ export interface Lockfileish {
   entries: { name: string; enabled: boolean }[];
 }
 
-// Side materialization: command sessions read KELSON_* env; claude sessions
+// Side materialization: command sessions read OBLIGATO_* env; claude sessions
 // read workspace .claude/settings.json plugin toggles.
 const sideEnvFor = (
   side: "A" | "B",
@@ -88,9 +88,9 @@ const sideEnvFor = (
   seed: number,
   sessionModel?: { model: string; baseUrl?: string },
 ): Record<string, string> => ({
-  KELSON_SIDE: side,
-  KELSON_SEED: String(seed),
-  KELSON_ENABLED_PACKS: lockfile.entries
+  OBLIGATO_SIDE: side,
+  OBLIGATO_SEED: String(seed),
+  OBLIGATO_ENABLED_PACKS: lockfile.entries
     .filter((e) => e.enabled)
     .map((e) => e.name)
     .join(","),
@@ -102,7 +102,7 @@ const sideEnvFor = (
         ...(sessionModel.baseUrl
           ? {
               ANTHROPIC_BASE_URL: sessionModel.baseUrl,
-              ANTHROPIC_API_KEY: "kelson-local",
+              ANTHROPIC_API_KEY: "obligato-local",
             }
           : {}),
       }

@@ -11,8 +11,8 @@ describe("OSS-1: one-command install — non-destructive layering over existing 
   it("init on a clean dir creates the store, lockfile, and hooks", () => {
     const dir = tmpDir();
     execSync(`bun ${CLI} init --dir ${dir}`, { stdio: "pipe" });
-    expect(existsSync(join(dir, ".kelson", "kelson.db"))).toBe(true);
-    expect(existsSync(join(dir, "kelson.lock"))).toBe(true);
+    expect(existsSync(join(dir, ".obligato", "obligato.db"))).toBe(true);
+    expect(existsSync(join(dir, "obligato.lock"))).toBe(true);
     const settings = JSON.parse(
       readFileSync(join(dir, ".claude", "settings.json"), "utf8"),
     ) as { hooks: Record<string, unknown[]> };
@@ -35,10 +35,10 @@ describe("OSS-1: one-command install — non-destructive layering over existing 
       JSON.stringify(existing),
     );
     writeFileSync(
-      join(dir, "kelson.lock"),
+      join(dir, "obligato.lock"),
       '{"schema_version":1,"parent_hash":null,"entries":[]}',
     );
-    const lockBefore = readFileSync(join(dir, "kelson.lock"), "utf8");
+    const lockBefore = readFileSync(join(dir, "obligato.lock"), "utf8");
     execSync(`bun ${CLI} init --dir ${dir}`, { stdio: "pipe" });
     execSync(`bun ${CLI} init --dir ${dir}`, { stdio: "pipe" }); // idempotent
     const settings = JSON.parse(
@@ -53,6 +53,6 @@ describe("OSS-1: one-command install — non-destructive layering over existing 
     );
     expect(commands).toContain("echo my-precious-hook");
     expect(commands.filter((c) => c.includes("session-start")).length).toBe(1);
-    expect(readFileSync(join(dir, "kelson.lock"), "utf8")).toBe(lockBefore);
+    expect(readFileSync(join(dir, "obligato.lock"), "utf8")).toBe(lockBefore);
   });
 });

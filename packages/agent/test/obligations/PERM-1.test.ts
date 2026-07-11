@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { PermissionRule } from "@kelson/schemas";
+import type { PermissionRule } from "@obligato/schemas";
 import { decide } from "../../src/permissions.ts";
 
 // Expected outcomes enumerated by hand, straight from the divergence probes

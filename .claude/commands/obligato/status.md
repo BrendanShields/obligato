@@ -1,5 +1,5 @@
 ---
-description: Kelson status — current task, stage, budget state, pinned lockfile (UX §3)
+description: Obligato status — current task, stage, budget state, pinned lockfile (UX §3)
 allowed-tools: Bash(bun packages/cc-plugin/src/status.ts)
 ---
 

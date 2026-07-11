@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
-import type { KelspecClause, KelspecDomain } from "@kelson/schemas";
+import type { ObspecClause, ObspecDomain } from "@obligato/schemas";
 import fc from "fast-check";
 import { hashContent } from "./artifacts.ts";
 import { domainArbitrary } from "./generators.ts";
-import type { CompiledSpec, ObservationHarness } from "./kelspec.ts";
+import type { CompiledSpec, ObservationHarness } from "./obspec.ts";
 import { ulid } from "./ulid.ts";
 
 // DSL-7: an implementation is one observation harness per clause — the same
@@ -15,7 +15,7 @@ export interface ProbeSet {
   probes: Record<string, Record<string, unknown>[]>;
 }
 
-const boundaryValues = (domain: KelspecDomain): unknown[] => {
+const boundaryValues = (domain: ObspecDomain): unknown[] => {
   switch (domain.type) {
     case "int":
       return [domain.min, domain.max, 0, domain.min + 1, domain.max - 1].filter(
@@ -39,7 +39,7 @@ const boundaryValues = (domain: KelspecDomain): unknown[] => {
 export const buildProbes = (
   spec: CompiledSpec,
   specSource: string,
-  clauses: KelspecClause[],
+  clauses: ObspecClause[],
   perClause = 256,
 ): ProbeSet => {
   const seed = Number.parseInt(hashContent(specSource).slice(7, 15), 16);
@@ -47,8 +47,7 @@ export const buildProbes = (
   for (const clause of clauses) {
     const inputNames = Object.keys(clause.inputs);
     const domains = inputNames.map(
-      (name) =>
-        spec.domains.get(clause.inputs[name] as string) as KelspecDomain,
+      (name) => spec.domains.get(clause.inputs[name] as string) as ObspecDomain,
     );
     const boundary: Record<string, unknown>[] = [];
     // Cross the first input's boundaries with the others' first boundary.
@@ -168,7 +167,7 @@ export interface DivergenceResult {
 export const probeImplementations = (
   spec: CompiledSpec,
   specSource: string,
-  clauses: KelspecClause[],
+  clauses: ObspecClause[],
   implA: Implementation,
   implB: Implementation,
 ): DivergenceResult => {
@@ -179,7 +178,7 @@ export const probeImplementations = (
 
 const collectEntries = (
   probes: Record<string, Record<string, unknown>[]>,
-  clauses: KelspecClause[],
+  clauses: ObspecClause[],
   implA: Implementation,
   implB: Implementation,
 ): DivergenceEntry[] => {
@@ -237,7 +236,7 @@ const collectEntries = (
 export const runDivergence = (
   spec: CompiledSpec,
   specSource: string,
-  clauses: KelspecClause[],
+  clauses: ObspecClause[],
   implA: Implementation,
   implB: Implementation,
 ): DivergenceResult => {

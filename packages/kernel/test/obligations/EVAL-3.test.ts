@@ -51,7 +51,7 @@ describe("EVAL-3: a flaky task is quarantined, excluded from gating, and sticky 
     const after = await runEval(db, { ...opts, seed: 99 });
     expect(after.verdict.quarantined_tasks).toContain("flaky");
 
-    // Human re-admission (kelson eval suite promote) clears it.
+    // Human re-admission (obligato eval suite promote) clears it.
     promoteTask(db, "fixture-suite", "1", "flaky");
     const readmitted = await runEval(db, { ...opts, seed: 100 });
     // The task may re-quarantine from its live window this same run — EVP-5

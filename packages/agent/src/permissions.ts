@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type PermissionAction, PermissionRule } from "@kelson/schemas";
+import { type PermissionAction, PermissionRule } from "@obligato/schemas";
 import { z } from "zod";
 
 const READ_ONLY = new Set(["read", "grep", "find", "ls"]);
 
 // ponytail: JSON, not YAML — no YAML dependency for a rules list.
 export const loadRules = (repoRoot: string): PermissionRule[] => {
-  const path = join(repoRoot, ".kelson", "permissions.json");
+  const path = join(repoRoot, ".obligato", "permissions.json");
   if (!existsSync(path)) return [];
   return z.array(PermissionRule).parse(JSON.parse(readFileSync(path, "utf8")));
 };

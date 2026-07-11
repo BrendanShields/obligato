@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { buildGate, hashContent, runVerify } from "@kelson/kernel";
-import type { SessionEvent, VerificationReport } from "@kelson/schemas";
+import { buildGate, hashContent, runVerify } from "@obligato/kernel";
+import type { SessionEvent, VerificationReport } from "@obligato/schemas";
 
 // AGT-7/8: the loop's view of which files a spec clause governs and where its
 // obligation test lives. Built once per session from the kernel artifact

@@ -1,4 +1,4 @@
-import type { Delta, VerdictDecision } from "@kelson/schemas";
+import type { Delta, VerdictDecision } from "@obligato/schemas";
 
 // EVP §5: paired bootstrap, B = 10,000, two-sided alpha = 0.05.
 // Non-inferiority margins: FPAR lower CI bound >= -2pp; cost upper bound <= +5%.

@@ -3,7 +3,7 @@ import { exportSessionOtel } from "../../src/otel.ts";
 import { openDb } from "../../src/storage.ts";
 import { ulid } from "../../src/ulid.ts";
 
-const MARKER = "XKELSON_SECRET_MARKERX";
+const MARKER = "XOBLIGATO_SECRET_MARKERX";
 
 const seedSessionWithSteps = (db: ReturnType<typeof openDb>): string => {
   const sessionId = ulid();
@@ -70,8 +70,8 @@ describe("TEL-6: opt-in OTel projection — one trace per session, one span per 
     expect(traceIds.size).toBe(1);
     for (const span of spans) {
       const keys = span.attributes.map((a) => a.key);
-      expect(keys).toContain("kelson.tokens_in");
-      expect(keys).toContain("kelson.cost_micro_usd");
+      expect(keys).toContain("obligato.tokens_in");
+      expect(keys).toContain("obligato.cost_micro_usd");
     }
     db.close();
   });

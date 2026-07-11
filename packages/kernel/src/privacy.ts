@@ -1,5 +1,5 @@
-import type { Session, StepEvent } from "@kelson/schemas";
-import { SharedSessionEvent, SharedStepEvent } from "@kelson/schemas";
+import type { Session, StepEvent } from "@obligato/schemas";
+import { SharedSessionEvent, SharedStepEvent } from "@obligato/schemas";
 
 // TEL-3/OSS-2: sharing is a WHITELIST projection into the published shared
 // schema — code content, file paths, prompt text, and every other free-text

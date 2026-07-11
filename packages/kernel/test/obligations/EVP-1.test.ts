@@ -11,21 +11,21 @@ import {
 
 const store = tmpDir();
 const plainSnapshot = makeSnapshot({ "README.md": "fixture\n" }, store);
-const kelspecGood = makeSnapshot(
+const obspecGood = makeSnapshot(
   {
-    "docs/kelspec/w.spec.md": `\`\`\`kelspec
+    "docs/obspec/w.spec.md": `\`\`\`obspec
 {"kind": "component", "id": "widget", "tier": "T0", "authority": "authored", "events": ["poked"]}
 \`\`\`
 `,
   },
   store,
 );
-const kelspecVague = makeSnapshot(
+const obspecVague = makeSnapshot(
   {
-    "docs/kelspec/w.spec.md": `\`\`\`kelspec
+    "docs/obspec/w.spec.md": `\`\`\`obspec
 {"kind": "component", "id": "widget", "tier": "T0", "authority": "authored", "events": ["poked"]}
 \`\`\`
-\`\`\`kelspec
+\`\`\`obspec
 {"kind": "clause", "id": "WID-1", "ears": "ubiquitous", "text": "should be fast"}
 \`\`\`
 `,
@@ -81,19 +81,19 @@ describe("EVP-1: each check kind, each failure class, budget breach, and timeout
     expect(missing.check_results[0]?.detail).toContain("nope.md");
   });
 
-  it("obligations check: compiling kelspec passes, vague kelspec fails", async () => {
+  it("obligations check: compiling obspec passes, vague obspec fails", async () => {
     expect(
       (
         await run({
           id: "t",
-          snapshot: kelspecGood,
+          snapshot: obspecGood,
           checks: [{ kind: "obligations" }],
         })
       ).fpar_pass,
     ).toBe(true);
     const vague = await run({
       id: "t",
-      snapshot: kelspecVague,
+      snapshot: obspecVague,
       checks: [{ kind: "obligations" }],
     });
     expect(vague.fpar_pass).toBe(false);

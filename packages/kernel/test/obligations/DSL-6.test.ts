@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { registerArtifact, staleDownstream } from "../../src/artifacts.ts";
-import { ingestManifest } from "../../src/kelspec.ts";
+import { ingestManifest } from "../../src/obspec.ts";
 import { openDb } from "../../src/storage.ts";
 import {
   compileRateLimiter,
   loadRateLimiter,
   RATE_LIMITER_FILE,
   rateLimiterMarkdown,
-} from "../kelspec-helpers.ts";
+} from "../obspec-helpers.ts";
 
 describe("DSL-6: the manifest maps each clause ID to block hash, obligation target, and tier; editing one block changes exactly that clause", () => {
   it("manifest carries one entry per clause/invariant with target and tier", () => {

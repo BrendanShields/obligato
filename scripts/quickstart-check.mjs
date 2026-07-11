@@ -13,7 +13,7 @@ if (!readme.includes('quickstart-ci')) {
   process.exit(1)
 }
 
-const dir = mkdtempSync(join(tmpdir(), 'kelson-quickstart-'))
+const dir = mkdtempSync(join(tmpdir(), 'obligato-quickstart-'))
 const repo = process.cwd()
 const run = (cmd) => {
   console.log(`$ ${cmd}`)
@@ -22,7 +22,7 @@ const run = (cmd) => {
 run(`bun packages/cli/src/index.ts init --dir ${dir}`)
 run(`bun packages/cli/src/index.ts init --dir ${dir}`) // idempotent, non-destructive
 run('bun packages/cli/src/index.ts route explain --step build --tier T0 --task-type mechanical')
-run(`bun packages/cli/src/index.ts loop status --db ${join(dir, '.kelson', 'kelson.db')}`)
+run(`bun packages/cli/src/index.ts loop status --db ${join(dir, '.obligato', 'obligato.db')}`)
 // Publish-READY, never published: pack the tarball dry.
 run('cd packages/cli && bun pm pack --dry-run')
 console.log('quickstart-check: README quickstart executed end-to-end')

@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// Owns .kelson/tasks.json and .kelson/findings.json edits: validates shape,
+// Owns .obligato/tasks.json and .obligato/findings.json edits: validates shape,
 // stamps timestamps, auto-numbers finding IDs. Hand-editing these files is
 // how keys drift (postmortem lesson: 6 ad-hoc heredocs in one session).
 //
@@ -8,10 +8,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
-const TASKS = ".kelson/tasks.json";
-const FINDINGS = ".kelson/findings.json";
-const TASKS_ARCHIVE = ".kelson/archive/tasks.json";
-const FINDINGS_ARCHIVE = ".kelson/archive/findings.json";
+const TASKS = ".obligato/tasks.json";
+const FINDINGS = ".obligato/findings.json";
+const TASKS_ARCHIVE = ".obligato/archive/tasks.json";
+const FINDINGS_ARCHIVE = ".obligato/archive/findings.json";
 const TASK_STATES = ["open", "in_progress", "completed"];
 const FINDING_KEYS = [
   "id",
@@ -161,10 +161,10 @@ if (mode === "task") {
   );
 } else if (mode === "archive") {
   // Closed rows dominate the active files (98% at 2026-07-10: ~30k tokens per
-  // full read) — move them under .kelson/archive/. fixed-but-unstamped
+  // full read) — move them under .obligato/archive/. fixed-but-unstamped
   // findings stay active (stamp/stamp-head only see the active file);
   // open/deferred stay by definition. Miners read both files.
-  mkdirSync(".kelson/archive", { recursive: true });
+  mkdirSync(".obligato/archive", { recursive: true });
   const loadOr = (p, empty) => (existsSync(p) ? load(p) : empty);
 
   const t = load(TASKS);
@@ -193,7 +193,7 @@ if (mode === "task") {
   save(FINDINGS_ARCHIVE, fa);
   save(FINDINGS, f);
   console.log(
-    `archived ${doneTasks.length} tasks, ${closed.length} findings -> .kelson/archive/`,
+    `archived ${doneTasks.length} tasks, ${closed.length} findings -> .obligato/archive/`,
   );
 } else {
   die("usage: board.mjs task <id> <state> [--note ...] [--clauses a,b] | board.mjs finding '<json>' | board.mjs stamp <sha> <F-ID...> | board.mjs stamp-head | board.mjs archive");

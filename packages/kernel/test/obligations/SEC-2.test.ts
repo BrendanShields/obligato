@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { SandboxProfile } from "@kelson/schemas";
+import type { SandboxProfile } from "@obligato/schemas";
 import {
   containerRuntime,
   createWorkspace,

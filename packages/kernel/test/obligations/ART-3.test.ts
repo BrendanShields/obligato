@@ -11,7 +11,7 @@ import { openDb } from "../../src/storage.ts";
 export const specCodePair = (db: Database) => {
   registerArtifact(db, {
     repo: "r",
-    logical_id: "docs/kelspec/w.spec.md#W-1",
+    logical_id: "docs/obspec/w.spec.md#W-1",
     type: "spec",
     content: "clause-v1",
   });
@@ -20,7 +20,7 @@ export const specCodePair = (db: Database) => {
     logical_id: "src/w.ts",
     type: "code_region",
     content: "code-v1",
-    upstream: ["docs/kelspec/w.spec.md#W-1"],
+    upstream: ["docs/obspec/w.spec.md#W-1"],
   });
 };
 
@@ -28,7 +28,7 @@ export const hashes = (
   overrides: Record<string, string | null>,
 ): HashSource => {
   const base: Record<string, string | null> = {
-    "docs/kelspec/w.spec.md#W-1": hashContent("clause-v1"),
+    "docs/obspec/w.spec.md#W-1": hashContent("clause-v1"),
     "src/w.ts": hashContent("code-v1"),
     ...overrides,
   };
@@ -66,7 +66,7 @@ describe("ART-3: spec-code drift is detected in both directions as distinct drif
     const found = detectDrift(
       db,
       "r",
-      hashes({ "docs/kelspec/w.spec.md#W-1": hashContent("clause-v2") }),
+      hashes({ "docs/obspec/w.spec.md#W-1": hashContent("clause-v2") }),
     );
     expect(found).toEqual([
       { artifact_id: "src/w.ts", direction: "spec_over_code" },

@@ -1,6 +1,6 @@
 # Brownfield Adoption Guide
 
-Adopting Kelson on an existing codebase (UC4/P2). Greenfield gets specs from day one; brownfield earns them incrementally.
+Adopting Obligato on an existing codebase (UC4/P2). Greenfield gets specs from day one; brownfield earns them incrementally.
 
 ## Day 0: install without changing behavior
 
@@ -8,7 +8,7 @@ Adopting Kelson on an existing codebase (UC4/P2). Greenfield gets specs from day
 bun packages/cli/src/index.ts init
 ```
 
-`init` is non-destructive: existing `.claude/settings.json` hooks are preserved, an existing `kelson.lock` is left untouched. From the first session, telemetry accrues locally (TEL-2) — nothing else changes.
+`init` is non-destructive: existing `.claude/settings.json` hooks are preserved, an existing `obligato.lock` is left untouched. From the first session, telemetry accrues locally (TEL-2) — nothing else changes.
 
 ## Week 1: excavate inferred specs (SPEC-7)
 
@@ -16,8 +16,8 @@ Run excavation on the modules you touch most. Inferred clauses land with `author
 
 ## Ongoing: promotion by survival (SPEC-8)
 
-An inferred clause that survives 20 sessions without violation or human edit queues for one-click batched promotion (`promotionQueue`/`promoteInferred` in the kernel; review with `kelson drift list`, promote with `kelson drift promote <logical-id ...>` — UX-22). Promoted clauses become `confirmed` and start gating. Drift alerts arrive batched at session end — never mid-flow — grouped by module, with inferred violations visually distinct from confirmed ones.
+An inferred clause that survives 20 sessions without violation or human edit queues for one-click batched promotion (`promotionQueue`/`promoteInferred` in the kernel; review with `obligato drift list`, promote with `obligato drift promote <logical-id ...>` — UX-22). Promoted clauses become `confirmed` and start gating. Drift alerts arrive batched at session end — never mid-flow — grouped by module, with inferred violations visually distinct from confirmed ones.
 
-## When to write your first authored kelspec
+## When to write your first authored obspec
 
 The first time a change matters enough to argue about: write the clause, give it a `check` predicate, and let the compiler hold the line. T1+ components additionally require a formal model file for their invariants (DSL-5). New specs at T1+ get divergence-tested by default (SPEC-4) — two independent implementations probe the spec for ambiguity before you build on it.

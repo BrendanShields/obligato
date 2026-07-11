@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { BudgetEvent, type OverrunAttribution } from "@kelson/schemas";
+import { BudgetEvent, type OverrunAttribution } from "@obligato/schemas";
 import { ulid } from "./ulid.ts";
 
 const write = (db: Database, event: BudgetEvent): void => {

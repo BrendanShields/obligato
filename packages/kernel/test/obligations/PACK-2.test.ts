@@ -18,7 +18,7 @@ const FILES: Record<string, string> = {
 };
 
 const writePack = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(tmpdir(), "kelson-tamper-"));
+  const dir = mkdtempSync(join(tmpdir(), "obligato-tamper-"));
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), content);

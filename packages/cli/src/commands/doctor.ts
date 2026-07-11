@@ -1,7 +1,11 @@
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DEFAULT_DB_PATH, openDb } from "@kelson/kernel";
-import { type DoctorComponent, DoctorReport, Lockfile } from "@kelson/schemas";
+import { DEFAULT_DB_PATH, openDb } from "@obligato/kernel";
+import {
+  type DoctorComponent,
+  DoctorReport,
+  Lockfile,
+} from "@obligato/schemas";
 import { parseArgs } from "../args.js";
 import { kvGrid, panel } from "../components/render.js";
 import { write } from "../components/sink.js";
@@ -17,7 +21,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
   const lockfilePath =
     typeof named.lockfile === "string"
       ? named.lockfile
-      : join(root, "kelson.lock");
+      : join(root, "obligato.lock");
   const components: DoctorComponent[] = [];
 
   // A diagnostic must not mutate (UX-19 audit pin): a missing store fails
@@ -27,7 +31,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
       name: "store",
       status: "fail",
       detail: `${dbPath} does not exist`,
-      fix: "kelson init",
+      fix: "obligato init",
     });
   } else {
     try {
@@ -43,7 +47,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
         name: "store",
         status: "fail",
         detail: `${dbPath}: ${(e as Error).message}`,
-        fix: "kelson init",
+        fix: "obligato init",
       });
     }
   }
@@ -53,7 +57,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
       name: "lockfile",
       status: "fail",
       detail: `${lockfilePath} does not exist`,
-      fix: "kelson init",
+      fix: "obligato init",
     });
   } else {
     try {
@@ -69,13 +73,13 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
         name: "lockfile",
         status: "fail",
         detail: `${lockfilePath}: ${(e as Error).message}`,
-        fix: "kelson init",
+        fix: "obligato init",
       });
     }
   }
 
   try {
-    const { defaultAuthPath, loadAuth } = await import("@kelson/agent");
+    const { defaultAuthPath, loadAuth } = await import("@obligato/agent");
     const auth = loadAuth(defaultAuthPath());
     const providers = Object.keys(auth);
     if (providers.length === 0) {
@@ -83,7 +87,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
         name: "auth",
         status: "fail",
         detail: "no credential configured for any provider",
-        fix: "kelson auth login <provider>",
+        fix: "obligato auth login <provider>",
       });
     } else {
       const now = new Date().toISOString();
@@ -96,7 +100,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
           name: "auth",
           status: "fail",
           detail: `oauth credential expired: ${expired.join(", ")}`,
-          fix: `kelson auth login ${expired[0]}`,
+          fix: `obligato auth login ${expired[0]}`,
         });
       else
         components.push({
@@ -111,17 +115,17 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
       name: "auth",
       status: "fail",
       detail: `auth file unreadable: ${(e as Error).message}`,
-      fix: "kelson auth login <provider>",
+      fix: "obligato auth login <provider>",
     });
   }
 
-  const telemetryDir = join(root, ".kelson", "telemetry");
+  const telemetryDir = join(root, ".obligato", "telemetry");
   if (!existsSync(telemetryDir)) {
     components.push({
       name: "telemetry",
       status: "fail",
       detail: `${telemetryDir} does not exist`,
-      fix: "kelson init",
+      fix: "obligato init",
     });
   } else {
     try {
@@ -151,7 +155,7 @@ export const doctorCommand = async (argv: string[]): Promise<void> => {
   else
     write(
       panel(
-        "kelson doctor",
+        "obligato doctor",
         kvGrid(
           report.components.map((c) => [
             `${c.status === "pass" ? SYM.pass : c.status === "warn" ? SYM.warn : SYM.fail} ${c.name}`,

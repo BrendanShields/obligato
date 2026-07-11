@@ -3,7 +3,7 @@ import {
   type CheckStatus,
   type FailureClass,
   VerificationReport,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { detectDrift, detectStaleness, type HashSource } from "./artifacts.ts";
 import { ulid } from "./ulid.ts";
 

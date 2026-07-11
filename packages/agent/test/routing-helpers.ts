@@ -1,9 +1,9 @@
-import { policyHash } from "@kelson/kernel";
+import { policyHash } from "@obligato/kernel";
 import type {
   AgentRegistryEntry,
   ModelRegistryEntry,
   RoutingPolicy,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import type { LanguageModel } from "ai";
 import type { RoutingContext } from "../src/routing.ts";
 import { mockModel } from "./helpers.ts";

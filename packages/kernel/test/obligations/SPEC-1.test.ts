@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compileSpec } from "../../src/kelspec.ts";
-import { FIXTURES } from "../kelspec-helpers.ts";
+import { compileSpec } from "../../src/obspec.ts";
+import { FIXTURES } from "../obspec-helpers.ts";
 
 const corpus = (dir: string) =>
   readdirSync(join(FIXTURES, "SPEC-1", dir)).map((f) => ({

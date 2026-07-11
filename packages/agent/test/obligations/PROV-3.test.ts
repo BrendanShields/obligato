@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import { costOf } from "../../src/llm/registry.ts";
 
 const PRICED: ModelRegistryEntry = {

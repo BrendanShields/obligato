@@ -3,7 +3,7 @@ import {
   type BundleEvent,
   type BundleManifestEntry,
   BundleMissEvent,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { encode } from "gpt-tokenizer/encoding/o200k_base";
 import { hashContent } from "./artifacts.ts";
 import { ulid } from "./ulid.ts";

@@ -4,7 +4,7 @@ import {
   Session as SessionSchema,
   StepEvent,
   Task as TaskSchema,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { ulid } from "./ulid.ts";
 
 // TEL-2 note: this module (and this package) has no network path at all — the

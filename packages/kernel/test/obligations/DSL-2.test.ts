@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import type { KelspecDomain } from "@kelson/schemas";
+import type { ObspecDomain } from "@obligato/schemas";
 import fc from "fast-check";
 import { domainArbitrary } from "../../src/generators.ts";
-import { compileSpec } from "../../src/kelspec.ts";
+import { compileSpec } from "../../src/obspec.ts";
 
-const D = (block: object): KelspecDomain => block as KelspecDomain;
-const domains = new Map<string, KelspecDomain>([
+const D = (block: object): ObspecDomain => block as ObspecDomain;
+const domains = new Map<string, ObspecDomain>([
   [
     "Rate",
     D({
@@ -122,7 +122,7 @@ describe("DSL-2: derived generators produce only values satisfying declared doma
   });
 
   it("a boundless numeric domain is rejected at compile", () => {
-    const md = `\`\`\`kelspec
+    const md = `\`\`\`obspec
 kind: component
 id: widget
 tier: T0
@@ -130,7 +130,7 @@ authority: authored
 events: [poked]
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 kind: domain
 id: Unbounded
 type: int
@@ -144,7 +144,7 @@ min: 0
   });
 
   it("a unitless numeric domain is rejected at compile", () => {
-    const md = `\`\`\`kelspec
+    const md = `\`\`\`obspec
 kind: component
 id: widget
 tier: T0
@@ -152,7 +152,7 @@ authority: authored
 events: [poked]
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 kind: domain
 id: NoUnit
 type: int

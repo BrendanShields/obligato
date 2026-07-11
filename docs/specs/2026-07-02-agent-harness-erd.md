@@ -1,4 +1,4 @@
-# ERD: Kelson Data Model
+# ERD: Obligato Data Model
 
 - **Status:** Draft for review
 - **Date:** 2026-07-02
@@ -11,11 +11,11 @@ Three tiers, one rule each:
 
 | Tier | Holds | Rule |
 |---|---|---|
-| **Git-tracked files** (in the target repo and in pack repos) | Specs/PRDs/ERDs/ADRs, spec clauses, packs (manifests, rules, routing policy structure, agent registry), lockfile, changelog, eval ledger | Anything a human reviews, a PR carries, or that must survive Kelson's removal is a file |
-| **Local SQLite** (WAL mode; store resolved repo-first per UX-13 — `./.kelson/kelson.db` when that file exists in the working directory, else the per-operator `~/.kelson/kelson.db`) | Sessions, tasks, step events, interventions, routing decisions, bundle/budget events, verification reports, eval runs/results/verdicts, replay records, drift events, routing weights, the artifact index | Anything measured, high-volume, or queried statistically lives in SQLite |
+| **Git-tracked files** (in the target repo and in pack repos) | Specs/PRDs/ERDs/ADRs, spec clauses, packs (manifests, rules, routing policy structure, agent registry), lockfile, changelog, eval ledger | Anything a human reviews, a PR carries, or that must survive Obligato's removal is a file |
+| **Local SQLite** (WAL mode; store resolved repo-first per UX-13 — `./.obligato/obligato.db` when that file exists in the working directory, else the per-operator `~/.obligato/obligato.db`) | Sessions, tasks, step events, interventions, routing decisions, bundle/budget events, verification reports, eval runs/results/verdicts, replay records, drift events, routing weights, the artifact index | Anything measured, high-volume, or queried statistically lives in SQLite |
 | **OTel projection** (optional, off by default; PRD TEL-6) | Traces/spans/metrics derived from SQLite-bound events at emit time | A projection, never a source of truth; content-stripped per TEL-3 |
 
-The **artifact index** (hashes, trace links, staleness) is derived from files and rebuildable at any time (`kelson index rebuild`) — SQLite is disposable without losing anything a human authored.
+The **artifact index** (hashes, trace links, staleness) is derived from files and rebuildable at any time (`obligato index rebuild`) — SQLite is disposable without losing anything a human authored.
 
 ## 2. Conventions
 
@@ -52,7 +52,7 @@ erDiagram
         string clause_id PK "spec logical_id + clause key (e.g. TEL-3)"
         string spec_id FK
         string ears_type "ubiquitous|event|state|unwanted|optional"
-        string kind "requirement|invariant|domain_def (pre/postconditions are fields on requirement clauses, Kelspec DSL 2.3)"
+        string kind "requirement|invariant|domain_def (pre/postconditions are fields on requirement clauses, Obspec DSL 2.3)"
         string compile_status "compiled|failed|unverifiable_signed"
         string tier
         string authority
@@ -491,12 +491,12 @@ The RTR-5 write-surface rule is structural here: the bandit's entire write acces
 
 ## 8. OTel Projection (TEL-6)
 
-| Kelson entity | OTel mapping |
+| Obligato entity | OTel mapping |
 |---|---|
 | `SESSION` | Trace (`trace_id` stored on the row) |
-| `STEP_EVENT` | Span — attributes: `kelson.sdlc_step`, `kelson.model`, `kelson.effort`, `kelson.agent`, token counts, `kelson.cost_micro_usd`, `kelson.budget.overrun` |
+| `STEP_EVENT` | Span — attributes: `obligato.sdlc_step`, `obligato.model`, `obligato.effort`, `obligato.agent`, token counts, `obligato.cost_micro_usd`, `obligato.budget.overrun` |
 | `INTERVENTION_EVENT`, `DRIFT_EVENT`, routing escalations | Span events on the enclosing step span |
-| Metrics | `kelson.fpar`, `kelson.tpac`, `kelson.overhead_ratio`, `kelson.routing.regret`, counters: `kelson.drift.count`, `kelson.interventions.count`, `kelson.eval.gate.{pass,reject}` |
+| Metrics | `obligato.fpar`, `obligato.tpac`, `obligato.overhead_ratio`, `obligato.routing.regret`, counters: `obligato.drift.count`, `obligato.interventions.count`, `obligato.eval.gate.{pass,reject}` |
 
 Exporter is OTLP, disabled unless an endpoint is configured; all attributes pass the TEL-3 content-stripping rules (numeric/categorical only — no prompts, paths, or code).
 
@@ -507,12 +507,12 @@ Exporter is OTLP, disabled unless an endpoint is configured; all attributes pass
   - `packages/schemas` — Zod schemas for every entity above + generated JSON Schema (signal contract, OTel conventions). No dependencies on other packages; everything depends on it.
   - `packages/kernel` — telemetry, eval harness, router, artifact store as internal modules behind one public API; owns SQLite (`bun:sqlite`) and migrations. Never imports `agent` — the api executor is injected via `runEval`'s `extraExecutors` (ADR-0004).
   - `packages/agent` — the native runtime (Phase 6+): AI SDK provider layer (auth, model registry, cost), step loop, core tools, permission engine, session-event store. Depends on kernel + schemas.
-  - `packages/cli` — `kelson` command: eval runner, replay engine, index rebuild, agents/loop/route subcommands, chat/run surfaces. Sandboxing lives here (worktree + container drivers). Composition root: wires `apiExecutor` into `runEval`.
+  - `packages/cli` — `obligato` command: eval runner, replay engine, index rebuild, agents/loop/route subcommands, chat/run surfaces. Sandboxing lives here (worktree + container drivers). Composition root: wires `apiExecutor` into `runEval`.
   - `packages/cc-plugin` — the Claude Code plugin (skills, hooks, subagents) — the only Claude Code-coupled package (PRD §5.4 migration criteria depend on this boundary).
-- **Testing:** `bun test`; fast-check for Kelson's own PBT obligations (the PRD's *Obligation* lines compile into this suite); TLA+ models under `specs/tla/` checked in CI (TLC via container).
+- **Testing:** `bun test`; fast-check for Obligato's own PBT obligations (the PRD's *Obligation* lines compile into this suite); TLA+ models under `specs/tla/` checked in CI (TLC via container).
 - **No ORM:** `bun:sqlite` with hand-written SQL and Zod validation at the boundary; migrations are numbered SQL files applied forward-only (OSS-6).
 
 ## 10. Open Questions
 
-1. ~~Repo snapshot mechanism for `snapshot_ref`~~ — resolved: git bundles stored content-addressed under `~/.kelson/snapshots/` ([Eval procedure spec](./2026-07-02-eval-procedure.md) §4).
+1. ~~Repo snapshot mechanism for `snapshot_ref`~~ — resolved: git bundles stored content-addressed under `~/.obligato/snapshots/` ([Eval procedure spec](./2026-07-02-eval-procedure.md) §4).
 2. Whether `ROUTING_WEIGHT` needs per-repo partitioning (same policy, different repos) — defer until telemetry shows repo-level divergence.

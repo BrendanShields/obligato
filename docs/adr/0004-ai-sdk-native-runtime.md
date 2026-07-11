@@ -6,7 +6,7 @@
 
 ## Context
 
-Phases 6–10 give Kelson its own agent loop (`packages/agent`) instead of mediating
+Phases 6–10 give Obligato its own agent loop (`packages/agent`) instead of mediating
 every session through the `claude` CLI. The loop needs an LLM client: streaming,
 tool calling, multi-provider (Anthropic, Ollama, any OpenAI-compatible endpoint),
 usage reporting. Hand-rolling this layer (Pi's approach) was designed and rejected
@@ -18,10 +18,10 @@ anyway there is no point rebuilding it." OpenCode ships on the same foundation.
 | Concern | Choice | Why |
 |---|---|---|
 | LLM client | **Vercel AI SDK** (`ai` + `@ai-sdk/anthropic` + `@ai-sdk/openai-compatible`) | Streaming, provider adapters, Zod-schema tools, usage (incl. cache token classes), abort/retry — all maintained upstream; the differentiators live above the wire |
-| Loop control | **One `streamText` call per step; SDK multi-step (`stopWhen`/`maxSteps`) banned** (AGT-1) | Per-step routing, budget pauses, and permission asks require the loop to be Kelson's |
-| Tool execution | **Kelson's registry + permission engine, never SDK auto-execute** | PERM-* rules and `ToolContext` sandbox composition are the product |
+| Loop control | **One `streamText` call per step; SDK multi-step (`stopWhen`/`maxSteps`) banned** (AGT-1) | Per-step routing, budget pauses, and permission asks require the loop to be Obligato's |
+| Tool execution | **Obligato's registry + permission engine, never SDK auto-execute** | PERM-* rules and `ToolContext` sandbox composition are the product |
 | Auth | **Hand-built** (`auth.ts`: key store, later OAuth) | Not an SDK concern; subscription OAuth is deliberately isolated (design doc decision 5) |
-| Pricing/cost | **Hand-built registry** (micro-USD ints, PROV-3) | SDK reports usage, not cost; Kelson's economics require exact integer math |
+| Pricing/cost | **Hand-built registry** (micro-USD ints, PROV-3) | SDK reports usage, not cost; Obligato's economics require exact integer math |
 | API shapes | **Read from installed `.d.ts`/docs at edit time, never memory** | The SDK has renamed stream parts across majors (registry-before-versions rule, CLAUDE.md) |
 
 ## Consequences

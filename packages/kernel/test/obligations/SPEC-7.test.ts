@@ -6,11 +6,11 @@ import {
   registerArtifact,
 } from "../../src/artifacts.ts";
 import { inferredSpecMarkdown } from "../../src/excavate.ts";
-import { compileSpec, ingestManifest } from "../../src/kelspec.ts";
+import { compileSpec, ingestManifest } from "../../src/obspec.ts";
 import { openDb } from "../../src/storage.ts";
 
 describe("SPEC-7: excavation emits authority:inferred clauses linked to code evidence — drift detectors, never build blockers", () => {
-  it("emitted inferred kelspec compiles, carries evidence links, and ingests with authority inferred", () => {
+  it("emitted inferred obspec compiles, carries evidence links, and ingests with authority inferred", () => {
     const markdown = inferredSpecMarkdown({
       componentId: "legacy-parser",
       events: ["line_received"],
@@ -29,7 +29,7 @@ describe("SPEC-7: excavation emits authority:inferred clauses linked to code evi
     });
     expect(markdown).toContain("src/parser.ts:42");
     const res = compileSpec(markdown, {
-      file: "docs/kelspec/legacy-parser.spec.md",
+      file: "docs/obspec/legacy-parser.spec.md",
     });
     expect(res.ok).toBe(true);
     if (!res.ok || res.spec === null) throw new Error("unreachable");
@@ -39,7 +39,7 @@ describe("SPEC-7: excavation emits authority:inferred clauses linked to code evi
     ingestManifest(db, "r", res.spec.manifest, "inferred");
     const row = db
       .query(
-        "SELECT authority FROM artifact WHERE repo = 'r' AND logical_id = 'docs/kelspec/legacy-parser.spec.md#LP-1'",
+        "SELECT authority FROM artifact WHERE repo = 'r' AND logical_id = 'docs/obspec/legacy-parser.spec.md#LP-1'",
       )
       .get() as { authority: string };
     expect(row.authority).toBe("inferred");

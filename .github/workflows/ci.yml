@@ -13,7 +13,7 @@ jobs:
         with:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
-      - name: gates (doctor, spec-lint, kelspec-lint, typecheck, biome, test)
+      - name: gates (doctor, spec-lint, obspec-lint, typecheck, biome, test)
         run: bun run gates
       - name: contribution gate (OSS-4)
         run: node scripts/contribution-check.mjs
@@ -48,7 +48,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: model-check KelsonLoop (I1, I2, I3, TypeOK)
+      - name: model-check ObligatoLoop (I1, I2, I3, TypeOK)
         run: |
           curl -sL -o /tmp/tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
-          java -cp /tmp/tla2tools.jar tlc2.TLC -deadlock -workers auto specs/tla/KelsonLoop.tla -config specs/tla/KelsonLoop.cfg
+          java -cp /tmp/tla2tools.jar tlc2.TLC -deadlock -workers auto specs/tla/ObligatoLoop.tla -config specs/tla/ObligatoLoop.cfg

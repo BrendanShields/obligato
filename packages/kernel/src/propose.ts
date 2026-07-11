@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { EvidenceLink, Lockfile, ProposalDiff } from "@kelson/schemas";
-import { LedgerEntry } from "@kelson/schemas";
+import type { EvidenceLink, Lockfile, ProposalDiff } from "@obligato/schemas";
+import { LedgerEntry } from "@obligato/schemas";
 
 import type { CycleDraft } from "./loop.ts";
 

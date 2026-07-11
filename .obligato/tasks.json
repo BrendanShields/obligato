@@ -66,6 +66,20 @@
       "state": "completed",
       "clauses": [],
       "completed_at": "2026-07-10T14:01:41Z"
+    },
+    {
+      "id": "C1-18",
+      "title": "rename: Kelson -> Obligato, kelspec -> obspec — full technical rename (packages, CLI, env vars, data dir, spec clause pins) via spec-sync",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "C1-19",
+      "title": "feat: generic openai-compatible endpoint login (PROV-11) — auth login openai-compatible, /v1/models probe, overlay entry + per-entry credential",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }

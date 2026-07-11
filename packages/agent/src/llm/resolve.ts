@@ -1,6 +1,6 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { Credential, ModelRegistryEntry } from "@kelson/schemas";
+import type { Credential, ModelRegistryEntry } from "@obligato/schemas";
 import type { LanguageModel } from "ai";
 
 // PROV-1: registry entry + credential -> configured AI SDK model instance.
@@ -30,7 +30,7 @@ export const instantiate = (
     // exactly one auth header — apiKey set means no Authorization).
     if (entry.base_url) {
       const provider = createAnthropic({
-        apiKey: "kelson-local",
+        apiKey: "obligato-local",
         baseURL: entry.base_url,
         ...(opts.fetch ? { fetch: opts.fetch as typeof globalThis.fetch } : {}),
       });

@@ -41,11 +41,11 @@ describe("EVP-11: cross-agent bench — own tables, shared seeds, structural led
     const db = openDb(":memory:");
     const capDir = tmpDir();
     const capFile = join(capDir, "seeds.txt");
-    // The command side branches on KELSON_BENCH_AGENT (the obligation's
+    // The command side branches on OBLIGATO_BENCH_AGENT (the obligation's
     // fixture shape) and records the env line the session saw. Every baseline
     // session exits 1 — a failed session is a scored repeat, and the run
     // still completes to a verdict (divergence pin).
-    const sessionCommand = `printf '%s %s %s\\n' "$KELSON_BENCH_AGENT" "$KELSON_BENCH_REPEAT" "$KELSON_SEED" >> '${capFile}'; case "$KELSON_BENCH_AGENT" in command) printf 200 > "$KELSON_COST_FILE"; exit 1;; *) exit 0;; esac`;
+    const sessionCommand = `printf '%s %s %s\\n' "$OBLIGATO_BENCH_AGENT" "$OBLIGATO_BENCH_REPEAT" "$OBLIGATO_SEED" >> '${capFile}'; case "$OBLIGATO_BENCH_AGENT" in command) printf 200 > "$OBLIGATO_COST_FILE"; exit 1;; *) exit 0;; esac`;
     const suiteDir = makeSuite([
       baseTask({ id: "t-a", snapshot, session_command: sessionCommand }),
       baseTask({ id: "t-b", snapshot, session_command: sessionCommand }),
@@ -107,8 +107,8 @@ describe("EVP-11: cross-agent bench — own tables, shared seeds, structural led
     for (const [agent] of lines) expect(agent).toBe("command");
     const stubSeed = new Map(
       api.seen.map((s) => [
-        `${s.taskId}:${s.env.KELSON_BENCH_REPEAT}`,
-        s.env.KELSON_SEED,
+        `${s.taskId}:${s.env.OBLIGATO_BENCH_REPEAT}`,
+        s.env.OBLIGATO_SEED,
       ]),
     );
     const cmdSeeds = new Map<string, string[]>();
@@ -122,7 +122,7 @@ describe("EVP-11: cross-agent bench — own tables, shared seeds, structural led
       ]);
     }
     for (const [, seeds] of cmdSeeds) expect(seeds[0]).not.toBe(seeds[1]);
-    for (const s of api.seen) expect(s.env.KELSON_BENCH_AGENT).toBe("api");
+    for (const s of api.seen) expect(s.env.OBLIGATO_BENCH_AGENT).toBe("api");
 
     // Own tables only: eval_run/eval_task_result untouched (flaky windows
     // cannot see bench data); 12 append-only bench rows + 1 finalized run.
@@ -286,7 +286,7 @@ describe("EVP-11: cross-agent bench — own tables, shared seeds, structural led
       baseTask({
         id: "tie",
         snapshot,
-        session_command: '[ "$KELSON_BENCH_REPEAT" = "0" ]',
+        session_command: '[ "$OBLIGATO_BENCH_REPEAT" = "0" ]',
       }),
     ]);
     const api = stubAgent(100, true);

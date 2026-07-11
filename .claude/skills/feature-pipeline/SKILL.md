@@ -1,11 +1,11 @@
 ---
 name: feature-pipeline
-description: Run a feature through Kelson's SDLC stage discipline inside Claude Code — the manual emulation of /kelson:feature (UX J1). Use when starting any new feature or behavior change in this repo, when the user says "feature pipeline", "run the pipeline", or "/feature", or when work is about to jump straight to code without a spec stage. Explicit stages, ambient enforcement: announce each stage transition in one line.
+description: Run a feature through Obligato's SDLC stage discipline inside Claude Code — the manual emulation of /obligato:feature (UX J1). Use when starting any new feature or behavior change in this repo, when the user says "feature pipeline", "run the pipeline", or "/feature", or when work is about to jump straight to code without a spec stage. Explicit stages, ambient enforcement: announce each stage transition in one line.
 ---
 
 # Feature Pipeline (manual emulation of UX J1)
 
-Kelson's pipeline is ideation → planning → spec → build → verify, with the user always knowing which stage they're in. Run the same discipline manually; each stage has an exit condition — don't advance past a failed one.
+Obligato's pipeline is ideation → planning → spec → build → verify, with the user always knowing which stage they're in. Run the same discipline manually; each stage has an exit condition — don't advance past a failed one.
 
 ## Stages
 
@@ -20,4 +20,4 @@ State transitions out loud, one line each: `stage: planning → spec (2 clauses 
 
 ## Task tracking
 
-At pipeline start, add the feature's stages/tasks to `.kelson/tasks.json` (the CLAUDE.md JSON-task convention); set each `in_progress` on entry and `completed` with a timestamp on exit. The JSON file is the tracker of record — no markdown checklists.
+At pipeline start, add the feature's stages/tasks to `.obligato/tasks.json` (the CLAUDE.md JSON-task convention); set each `in_progress` on entry and `completed` with a timestamp on exit. The JSON file is the tracker of record — no markdown checklists.

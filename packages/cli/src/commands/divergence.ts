@@ -1,10 +1,10 @@
 import type { Database } from "bun:sqlite";
-import { DEFAULT_DB_PATH, openDb } from "@kelson/kernel";
+import { DEFAULT_DB_PATH, openDb } from "@obligato/kernel";
 import {
   DivergenceListResult,
   type DivergenceOutcome,
   type DivergenceReportRow,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { panel, sideBySideDiff, table } from "../components/render.js";
@@ -79,7 +79,7 @@ export const divergenceCommand = (argv: string[]): void => {
     }
 
     if (sub === "show") {
-      const id = positional[0] ?? fail("usage: kelson divergence show <id>");
+      const id = positional[0] ?? fail("usage: obligato divergence show <id>");
       const report = loadReports(db).find((r) => r.id === id);
       if (!report) return fail(`no divergence report ${id}`);
       if (named.json === true) {

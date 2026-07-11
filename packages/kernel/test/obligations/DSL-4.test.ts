@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { compileSpec } from "../../src/kelspec.ts";
+import { compileSpec } from "../../src/obspec.ts";
 
-const md = (clauseBody: string) => `\`\`\`kelspec
+const md = (clauseBody: string) => `\`\`\`obspec
 kind: component
 id: widget
 tier: T0
@@ -9,7 +9,7 @@ authority: authored
 events: [poked]
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 kind: clause
 id: WID-1
 ears: event

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
-import type { Lockfile } from "@kelson/schemas";
+import type { Lockfile } from "@obligato/schemas";
 import {
   applyProposal,
   enterGate,

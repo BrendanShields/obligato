@@ -31,7 +31,7 @@ import {
   transition,
   validatePolicyTargets,
   writeLedgerEntry,
-} from "@kelson/kernel";
+} from "@obligato/kernel";
 import {
   type Delta,
   EvalReportResult,
@@ -44,7 +44,7 @@ import {
   ReplayResult,
   SandboxProfile,
   type Verdict,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { parseArgs } from "./args.js";
 import { loadRepoRegistry, unionRegistries } from "./commands/agents.js";
 import { kvGrid, panel, renderVerdict, table } from "./components/render.js";
@@ -55,7 +55,7 @@ import { uiCommand } from "./ui/server.js";
 import type { DispatchTable } from "./wizards.js";
 
 const die = (msg: string): never => {
-  console.error(`kelson: ${msg}`);
+  console.error(`obligato: ${msg}`);
   process.exit(1);
 };
 
@@ -108,15 +108,16 @@ const evalCommand = async (argv: string[]): Promise<void> => {
     let lockfileB: Lockfile;
     if (sub === "ablate") {
       const pack =
-        positional[0] ?? die("usage: kelson eval ablate <pack> --suite <dir>");
+        positional[0] ??
+        die("usage: obligato eval ablate <pack> --suite <dir>");
       lockfileA = loadLockfile(
-        str(named.lockfile, join(process.cwd(), "kelson.lock")),
+        str(named.lockfile, join(process.cwd(), "obligato.lock")),
       );
       lockfileB = togglePack(lockfileA, pack as string);
     } else {
       const [a, b] = positional;
       if (!a || !b)
-        die("usage: kelson eval compare <lockA> <lockB> --suite <dir>");
+        die("usage: obligato eval compare <lockA> <lockB> --suite <dir>");
       lockfileA = loadLockfile(a as string);
       lockfileB = loadLockfile(b as string);
     }
@@ -124,7 +125,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
     try {
       // EVP-9: the composition root injects the native executor — kernel
       // never imports agent.
-      const { apiExecutor } = await import("@kelson/agent");
+      const { apiExecutor } = await import("@obligato/agent");
       const result = await runEval(db, {
         kind: sub,
         suiteDir,
@@ -199,7 +200,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
     const suiteDir =
       typeof n.suite === "string" ? n.suite : die("--suite <dir> is required");
     const taskId =
-      p[0] ?? die("usage: kelson eval suite promote <task-id> --suite <dir>");
+      p[0] ?? die("usage: obligato eval suite promote <task-id> --suite <dir>");
     const { suite } = loadSuite(suiteDir);
     const db = openDb(str(n.db, DEFAULT_DB_PATH));
     promoteTask(db, suite.id, suite.version, taskId as string);
@@ -212,7 +213,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
     const [runId, pack, version] = positional;
     if (!runId || !pack || !version)
       die(
-        "usage: kelson eval publish <run-id> <pack> <version> [--ledger <dir>]",
+        "usage: obligato eval publish <run-id> <pack> <version> [--ledger <dir>]",
       );
     const db = openDb(dbPath);
     try {
@@ -243,7 +244,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
       }
       if (runs.length === 0) {
         write(
-          "no stored verdicts — run one: kelson eval ablate <pack> --suite <dir>",
+          "no stored verdicts — run one: obligato eval ablate <pack> --suite <dir>",
         );
         return;
       }
@@ -284,7 +285,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
       typeof named.session === "string"
         ? named.session
         : die(
-            "usage: kelson eval replay --session <id> --suite <staging-dir> --config <lockfile>",
+            "usage: obligato eval replay --session <id> --suite <staging-dir> --config <lockfile>",
           );
     const suiteDir =
       typeof named.suite === "string"
@@ -312,7 +313,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
     const lockfile = loadLockfile(configPath);
     const db = openDb(dbPath);
     try {
-      const { apiExecutor } = await import("@kelson/agent");
+      const { apiExecutor } = await import("@obligato/agent");
       const record = await runReplay(db, {
         sessionId,
         suiteDir,
@@ -362,7 +363,7 @@ const evalCommand = async (argv: string[]): Promise<void> => {
   );
 };
 
-// UX §3: kelson route explain <task> — read-only routing transparency.
+// UX §3: obligato route explain <task> — read-only routing transparency.
 const routeCommand = (argv: string[]): void => {
   if (argv[0] !== "explain")
     die(`unknown route subcommand: ${argv[0] ?? "(none)"} (have: explain)`);
@@ -376,7 +377,7 @@ const routeCommand = (argv: string[]): void => {
   const baseRegistry = loadRegistry(
     str(named.registry, join(process.cwd(), "packs/routing-default/agents")),
   );
-  // UX-24: repo-registered agents (`kelson agents register`) union in as
+  // UX-24: repo-registered agents (`obligato agents register`) union in as
   // candidates, repo entries winning by id; an explicit --registry opts out.
   const registry =
     typeof named.registry === "string"
@@ -430,16 +431,16 @@ const routeCommand = (argv: string[]): void => {
     );
 };
 
-// UX §3: kelson loop status|review|release|revert (+ propose/approve/apply).
+// UX §3: obligato loop status|review|release|revert (+ propose/approve/apply).
 const loopCommand = (argv: string[]): void => {
   const sub = argv[0];
   const { positional, named } = parseArgs(argv.slice(1));
   const db = openDb(str(named.db, DEFAULT_DB_PATH));
   const ctx = {
-    lockfilePath: str(named.lockfile, join(process.cwd(), "kelson.lock")),
+    lockfilePath: str(named.lockfile, join(process.cwd(), "obligato.lock")),
     changelogPath: str(
       named.changelog,
-      join(process.cwd(), ".kelson", "changelog.jsonl"),
+      join(process.cwd(), ".obligato", "changelog.jsonl"),
     ),
   };
   const repoRoot = process.cwd();
@@ -474,7 +475,7 @@ const loopCommand = (argv: string[]): void => {
           "SELECT id, target_pack, state, created_by, rationale FROM proposal ORDER BY rowid",
         )
         .all() as Record<string, string>[];
-      if (!rows.length) write("no proposals — kelson loop propose");
+      if (!rows.length) write("no proposals — obligato loop propose");
       else
         write(
           table(
@@ -498,7 +499,8 @@ const loopCommand = (argv: string[]): void => {
     }
     if (sub === "review") {
       const id =
-        positional[0] ?? die("usage: kelson loop review <id> [--run <run-id>]");
+        positional[0] ??
+        die("usage: obligato loop review <id> [--run <run-id>]");
       const proposal = getProposal(db, id as string);
       emitJson(proposal);
       if (typeof named.run === "string") {
@@ -524,14 +526,14 @@ const loopCommand = (argv: string[]): void => {
       return;
     }
     if (sub === "gate") {
-      const id = positional[0] ?? die("usage: kelson loop gate <id>");
+      const id = positional[0] ?? die("usage: obligato loop gate <id>");
       const proposal = enterGate(db, id as string, repoRoot);
       write(`${id} -> ${proposal.state}`);
       return;
     }
     if (sub === "approve" || sub === "reject") {
       const id =
-        positional[0] ?? die(`usage: kelson loop ${sub} <id> --reason "..."`);
+        positional[0] ?? die(`usage: obligato loop ${sub} <id> --reason "..."`);
       // LOOP-2: a human approval names what it overrides — no boilerplate
       // default; the operator must state the reason.
       if (sub === "approve" && typeof named.reason !== "string")
@@ -551,7 +553,7 @@ const loopCommand = (argv: string[]): void => {
       return;
     }
     if (sub === "apply") {
-      const id = positional[0] ?? die("usage: kelson loop apply <id>");
+      const id = positional[0] ?? die("usage: obligato loop apply <id>");
       const { lockfileAfter } = applyProposal(db, id as string, ctx);
       const monitor = openMonitor(db, id as string, {
         appliedAt: new Date().toISOString(),
@@ -564,7 +566,7 @@ const loopCommand = (argv: string[]): void => {
       return;
     }
     if (sub === "revert") {
-      const id = positional[0] ?? die("usage: kelson loop revert <id>");
+      const id = positional[0] ?? die("usage: obligato loop revert <id>");
       const { lockfileAfter } = revertProposal(db, id as string, ctx, {
         actor: "human",
         reason: str(named.reason, "human revert"),
@@ -573,7 +575,7 @@ const loopCommand = (argv: string[]): void => {
       return;
     }
     if (sub === "release") {
-      const id = positional[0] ?? die("usage: kelson loop release <id>");
+      const id = positional[0] ?? die("usage: obligato loop release <id>");
       releaseQuarantined(db, id as string, "human");
       write(`released ${id} -> proposed (must re-pass the gate)`);
       return;
@@ -586,7 +588,7 @@ const loopCommand = (argv: string[]): void => {
   }
 };
 
-// OSS-1: one-command install — creates .kelson, a starter lockfile, and
+// OSS-1: one-command install — creates .obligato, a starter lockfile, and
 // layers hooks into .claude/settings.json non-destructively (existing hooks
 // and settings are preserved; ours append only if absent).
 const initCommand = (argv: string[]): void => {
@@ -597,10 +599,10 @@ const initCommand = (argv: string[]): void => {
   };
   const root = str(named.dir, process.cwd());
 
-  mkdirSync(join(root, ".kelson", "telemetry"), { recursive: true });
+  mkdirSync(join(root, ".obligato", "telemetry"), { recursive: true });
   mkdirSync(join(root, ".claude", "hooks"), { recursive: true });
 
-  const lockPath = join(root, "kelson.lock");
+  const lockPath = join(root, "obligato.lock");
   let lockfile: InitResult["lockfile"];
   if (!existsSync(lockPath)) {
     writeFileSync(
@@ -608,10 +610,10 @@ const initCommand = (argv: string[]): void => {
       `${JSON.stringify({ schema_version: 1, parent_hash: null, entries: [] }, null, 2)}\n`,
     );
     lockfile = "created";
-    say("created kelson.lock");
+    say("created obligato.lock");
   } else {
     lockfile = "existing";
-    say("kelson.lock exists — left untouched");
+    say("obligato.lock exists — left untouched");
   }
 
   const settingsPath = join(root, ".claude", "settings.json");
@@ -637,15 +639,15 @@ const initCommand = (argv: string[]): void => {
   };
   ensure(
     "SessionStart",
-    'bun "$CLAUDE_PROJECT_DIR/node_modules/kelson/../cc-plugin/hooks/session-start.ts"',
+    'bun "$CLAUDE_PROJECT_DIR/node_modules/obligato/../cc-plugin/hooks/session-start.ts"',
   );
   ensure(
     "SessionEnd",
-    'bun "$CLAUDE_PROJECT_DIR/node_modules/kelson/../cc-plugin/hooks/session-end.ts"',
+    'bun "$CLAUDE_PROJECT_DIR/node_modules/obligato/../cc-plugin/hooks/session-end.ts"',
   );
   settings.hooks = hooks;
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
-  const storePath = join(root, ".kelson", "kelson.db");
+  const storePath = join(root, ".obligato", "obligato.db");
   const db = openDb(storePath);
   db.close();
   if (asJson)
@@ -657,11 +659,11 @@ const initCommand = (argv: string[]): void => {
     } satisfies InitResult);
   else
     write(
-      "kelson initialized: .kelson store ready, hooks layered, lockfile pinned",
+      "obligato initialized: .obligato store ready, hooks layered, lockfile pinned",
     );
 };
 
-// UX-21: kelson pack new — scaffold a pack whose manifest carries every
+// UX-21: obligato pack new — scaffold a pack whose manifest carries every
 // required field with explicit capability declarations (SEC-4) consistent
 // with the scaffolded content, self-lintable (`pack lint <dir> --prev <dir>`
 // against itself requires bump "none").
@@ -669,7 +671,7 @@ const packNew = (argv: string[]): void => {
   const { positional, named } = parseArgs(argv);
   const name =
     positional[0] ??
-    die("usage: kelson pack new <name> [--kind <kind>] [--dir <parent>]");
+    die("usage: obligato pack new <name> [--kind <kind>] [--dir <parent>]");
   const kind = str(named.kind, "efficiency");
   const description = `TODO: what ${name} improves, in one sentence`;
   // Validate before any write — an invalid name/kind scaffolds nothing.
@@ -714,7 +716,7 @@ const packNew = (argv: string[]): void => {
   );
   writeFileSync(
     join(dir, "README.md"),
-    `# ${name}\n\nMeasure it before shipping it: \`kelson eval ablate ./${name} --suite <dir>\` (J5).\n`,
+    `# ${name}\n\nMeasure it before shipping it: \`obligato eval ablate ./${name} --suite <dir>\` (J5).\n`,
   );
   // Verified through the real loader — a scaffold the loader refuses is a bug.
   loadPack(dir);
@@ -724,10 +726,10 @@ const packNew = (argv: string[]): void => {
     return;
   }
   write(`scaffolded ${dir} (${files.join(", ")})`);
-  write(`lint it: kelson pack lint ${dir} --prev ${dir}`);
+  write(`lint it: obligato pack lint ${dir} --prev ${dir}`);
 };
 
-// PACK-3: kelson pack lint — required bump from diffing against the
+// PACK-3: obligato pack lint — required bump from diffing against the
 // previous version's directory; declared bump below required exits 1.
 const packCommand = (argv: string[]): void => {
   const { positional, named } = parseArgs(argv);
@@ -739,7 +741,7 @@ const packCommand = (argv: string[]): void => {
   if (sub !== "lint")
     die(`unknown pack subcommand: ${sub ?? "(none)"} (have: lint, new)`);
   const dir =
-    positional[1] ?? die("usage: kelson pack lint <dir> --prev <dir>");
+    positional[1] ?? die("usage: obligato pack lint <dir> --prev <dir>");
   const prevDir =
     typeof named.prev === "string" ? named.prev : die("--prev <dir> required");
   const next = loadPack(dir as string);
@@ -778,10 +780,10 @@ export const COMMANDS: DispatchTable = {
   ui: uiCommand,
   auth: async (argv) => (await import("./agent/auth.js")).authCommand(argv),
   run: async (argv) => (await import("./agent/run.js")).runCommand(argv),
-  // UX-14: chat is TTY-only; non-TTY invocations are directed to `kelson run`.
+  // UX-14: chat is TTY-only; non-TTY invocations are directed to `obligato run`.
   chat: async (argv) => {
     if (process.stdin.isTTY !== true || process.stdout.isTTY !== true)
-      die('chat needs a terminal — use `kelson run -p "<task>"` instead');
+      die('chat needs a terminal — use `obligato run -p "<task>"` instead');
     await (await import("./chat/app.js")).chatCommand(argv, COMMANDS);
   },
   session: async (argv) =>
@@ -806,9 +808,9 @@ export const COMMANDS: DispatchTable = {
 const help = (): void => {
   write(
     panel(
-      "kelson",
+      "obligato",
       kvGrid([
-        ["init", "install kelson into this repo"],
+        ["init", "install obligato into this repo"],
         [
           "eval",
           "ablate | compare | replay | report | suite promote | publish",

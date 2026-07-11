@@ -2,8 +2,8 @@ import { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
 import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
-import { DbBackupResult, DbStatsResult } from "@kelson/schemas";
+import { openDb } from "@obligato/kernel";
+import { DbBackupResult, DbStatsResult } from "@obligato/schemas";
 import { makeTestRepo, runCli } from "../agent-helpers.ts";
 
 const hashFile = (p: string): string =>
@@ -45,7 +45,7 @@ const countsOf = (path: string): Map<string, number> => {
 describe("UX-27: db stats is read-only with exact per-table counts; db backup is a consistent VACUUM INTO snapshot refusing an existing dest", () => {
   it("db stats reports path, size, and the exact seeded per-table counts; store bytes unchanged; --json validates", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     seedStore(dbPath);
     const before = hashFile(dbPath);
     const r = await runCli(t, ["db", "stats", "--db", dbPath, "--json"]);
@@ -65,7 +65,7 @@ describe("UX-27: db stats is read-only with exact per-table counts; db backup is
 
   it("db backup writes an openable snapshot whose per-table counts equal the source; source unchanged; --json validates", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     seedStore(dbPath);
     const before = hashFile(dbPath);
     const dest = join(t.repo, "backup.db");
@@ -86,7 +86,7 @@ describe("UX-27: db stats is read-only with exact per-table counts; db backup is
 
   it("backup onto an existing dest exits non-zero leaving both files byte-identical", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     seedStore(dbPath);
     const dest = join(t.repo, "occupied.db");
     writeFileSync(dest, "precious bytes, not a database");
@@ -98,12 +98,12 @@ describe("UX-27: db stats is read-only with exact per-table counts; db backup is
     expect(hashFile(dest)).toBe(beforeDest);
   }, 30_000);
 
-  it("a missing store fails naming kelson init without creating it", async () => {
+  it("a missing store fails naming obligato init without creating it", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const r = await runCli(t, ["db", "stats", "--db", dbPath]);
     expect(r.exitCode).not.toBe(0);
-    expect(r.stderr).toContain("kelson init");
+    expect(r.stderr).toContain("obligato init");
     expect(() => statSync(dbPath)).toThrow();
   }, 30_000);
 });

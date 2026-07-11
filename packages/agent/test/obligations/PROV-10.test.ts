@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import { instantiate } from "../../src/llm/resolve.ts";
 import { runTurn } from "../../src/loop.ts";
 import {
@@ -100,7 +100,7 @@ const one = (seen: Record<string, string>[]): Record<string, string> => {
 };
 
 const assertWithheld = (h: Record<string, string>): void => {
-  expect(h["x-api-key"]).toBe("kelson-local");
+  expect(h["x-api-key"]).toBe("obligato-local");
   expect(h.authorization).toBeUndefined();
   expect(h["anthropic-beta"] ?? "").not.toContain("oauth-2025-04-20");
 };
@@ -117,7 +117,7 @@ describe("PROV-10: override endpoints never see operator credentials", () => {
     else process.env.ANTHROPIC_API_KEY = ENV_BEFORE;
   });
 
-  it("(a) a session started against an override base URL sends kelson-local and no bearer", async () => {
+  it("(a) a session started against an override base URL sends obligato-local and no bearer", async () => {
     const srv = captureServer(anthropicSse("ok"));
     try {
       const entry = overrideEntry("claude-opus-4-8", srv.url);

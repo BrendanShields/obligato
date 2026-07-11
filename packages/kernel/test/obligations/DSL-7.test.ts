@@ -1,27 +1,27 @@
 import { describe, expect, it } from "bun:test";
-import type { KelspecClause } from "@kelson/schemas";
+import type { ObspecClause } from "@obligato/schemas";
 import {
   buildProbes,
   type Implementation,
   probeImplementations,
   runDivergence,
 } from "../../src/divergence.ts";
-import { compileSpec } from "../../src/kelspec.ts";
+import { compileSpec } from "../../src/obspec.ts";
 
-const SOURCE = `\`\`\`kelspec
+const SOURCE = `\`\`\`obspec
 {"kind": "component", "id": "quantizer", "tier": "T0", "authority": "authored", "events": ["quantize_requested"]}
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 {"kind": "domain", "id": "Qty", "type": "int", "unit": "units", "min": 0, "max": 1000}
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 {"kind": "clause", "id": "QZ-1", "ears": "event", "trigger": "quantize_requested", "text": "When quantization is requested, the quantizer shall report the quantity unchanged.", "inputs": {"qty": "Qty"}, "observe": ["out", "computed_at"], "check": "(ctx) => ctx.expect(ctx.out === ctx.qty)", "nondeterministic": ["computed_at"]}
 \`\`\`
 `;
 
-const CLAUSE: KelspecClause = {
+const CLAUSE: ObspecClause = {
   kind: "clause",
   id: "QZ-1",
   ears: "event",

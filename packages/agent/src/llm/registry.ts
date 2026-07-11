@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { ModelRegistryEntry } from "@kelson/schemas";
+import { ModelRegistryEntry } from "@obligato/schemas";
 import { z } from "zod";
 import { SHIPPED_MODELS } from "./models.ts";
 
@@ -12,10 +12,10 @@ export interface Usage {
   tokens_cache_write: number;
 }
 
-// PROV-1: shipped registry overlaid by ~/.kelson/models.json; overlay wins
+// PROV-1: shipped registry overlaid by ~/.obligato/models.json; overlay wins
 // on id collision.
 export const loadRegistry = (
-  overlayPath = join(homedir(), ".kelson", "models.json"),
+  overlayPath = join(homedir(), ".obligato", "models.json"),
 ): ModelRegistryEntry[] => {
   const byId = new Map(SHIPPED_MODELS.map((m) => [m.id, m]));
   if (existsSync(overlayPath)) {

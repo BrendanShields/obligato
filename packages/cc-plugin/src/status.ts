@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
+import { openDb } from "@obligato/kernel";
 import { pinnedLockfileHash } from "./session.ts";
 
 const countBy = (db: Database, sql: string): Record<string, number> =>
@@ -13,7 +13,7 @@ const summarize = (counts: Record<string, number>): string =>
     .map(([k, n]) => `${n} ${k}`)
     .join(" · ") || "none";
 
-// UX §3: /kelson:status — current task, stage, budget state, pinned lockfile.
+// UX §3: /obligato:status — current task, stage, budget state, pinned lockfile.
 export const renderStatus = (db: Database, root: string): string => {
   const latest = db
     .query(
@@ -31,7 +31,7 @@ export const renderStatus = (db: Database, root: string): string => {
       .get() as { n: number }
   ).n;
   return [
-    "kelson · status",
+    "obligato · status",
     "  stage     build (stage tracking lands Phase 3)",
     "  budget    — (budgets land Phase 3)",
     `  lockfile  ${pinnedLockfileHash(root)}`,
@@ -47,7 +47,7 @@ export const renderStatus = (db: Database, root: string): string => {
 
 if (import.meta.main) {
   const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-  const db = openDb(join(root, ".kelson", "kelson.db"));
+  const db = openDb(join(root, ".obligato", "obligato.db"));
   console.log(renderStatus(db, root));
   db.close();
 }

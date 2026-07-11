@@ -1,6 +1,6 @@
 # Well-formed corpus: counter
 
-```kelspec
+```obspec
 kind: component
 id: counter
 tier: T0
@@ -11,7 +11,7 @@ state:
 events: [incremented]
 ```
 
-```kelspec
+```obspec
 kind: domain
 id: Step
 type: int
@@ -20,7 +20,7 @@ min: 1
 max: 1000
 ```
 
-```kelspec
+```obspec
 kind: clause
 id: CNT-1
 ears: event

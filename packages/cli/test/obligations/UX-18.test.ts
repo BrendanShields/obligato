@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { runBench } from "@kelson/kernel";
-import { BenchReport } from "@kelson/schemas";
+import { runBench } from "@obligato/kernel";
+import { BenchReport } from "@obligato/schemas";
 import {
   baseTask,
   makeSnapshot,
@@ -15,12 +15,12 @@ import { makeTestRepo, mockOpenAiServer, runCli } from "../agent-helpers.ts";
 const setupBenchRepo = (baseUrl: string) => {
   const t = makeTestRepo({ baseUrl, configured: false });
   const store = tmpDir();
-  // The task snapshot commits its own .kelson/config.json — the api
+  // The task snapshot commits its own .obligato/config.json — the api
   // executor's model source inside the sandbox (EVP-9 pattern).
   const snapshot = makeSnapshot(
     {
       "README.md": "fixture\n",
-      ".kelson/config.json": JSON.stringify({
+      ".obligato/config.json": JSON.stringify({
         default_model: "mock-m",
         schema_version: 1,
       }),
@@ -37,7 +37,7 @@ const setupBenchRepo = (baseUrl: string) => {
       session_command: "exit 1",
     }),
   ]);
-  const dbPath = join(t.repo, ".kelson", "kelson.db");
+  const dbPath = join(t.repo, ".obligato", "obligato.db");
   return { t, suiteDir, dbPath, store };
 };
 
@@ -59,7 +59,7 @@ const TURNS = [
   { kind: "text" as const, text: "created" },
 ];
 
-describe("UX-18: kelson bench renders the matrix + full verdict; --json validates BenchReport", () => {
+describe("UX-18: obligato bench renders the matrix + full verdict; --json validates BenchReport", () => {
   it("dispatches to the exported kernel entry (F-085 identity)", () => {
     expect(BENCH_ENTRY).toBe(runBench);
   });
@@ -103,7 +103,7 @@ describe("UX-18: kelson bench renders the matrix + full verdict; --json validate
     server.stop();
   }, 30_000);
 
-  it("a pre-flight refusal exits non-zero with a kelson: diagnostic, not a raw stack", async () => {
+  it("a pre-flight refusal exits non-zero with a obligato: diagnostic, not a raw stack", async () => {
     const t = makeTestRepo({ configured: false });
     const r = await runCli(t, [
       "bench",
@@ -112,10 +112,10 @@ describe("UX-18: kelson bench renders the matrix + full verdict; --json validate
       "--agents",
       "command,command",
       "--db",
-      join(t.repo, ".kelson", "kelson.db"),
+      join(t.repo, ".obligato", "obligato.db"),
     ]);
     expect(r.exitCode).not.toBe(0);
-    expect(r.stderr).toContain("kelson:");
+    expect(r.stderr).toContain("obligato:");
     expect(r.stderr).not.toContain("    at "); // no stack frames
   }, 20_000);
 

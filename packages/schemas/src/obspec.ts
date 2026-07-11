@@ -11,17 +11,17 @@ const DottedPath = z
   .regex(/^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$/);
 const DomainRef = z.string().min(1);
 
-export const KelspecStateVar = z.strictObject({
+export const ObspecStateVar = z.strictObject({
   name: Identifier,
   mutated_by: z.array(EventName),
 });
 
-export const KelspecComponent = z.strictObject({
+export const ObspecComponent = z.strictObject({
   kind: z.literal("component"),
   id: KebabName,
   tier: Tier,
   authority: Authority,
-  state: z.array(KelspecStateVar).default([]),
+  state: z.array(ObspecStateVar).default([]),
   events: z.array(EventName).default([]),
   domains_of_concern: z.array(z.string().min(1)).default([]),
 });
@@ -32,7 +32,7 @@ const numericDomain = {
   id: DomainRef,
   unit: z.string().min(1),
 };
-export const KelspecDomain = z.discriminatedUnion("type", [
+export const ObspecDomain = z.discriminatedUnion("type", [
   z.strictObject({
     kind: z.literal("domain"),
     type: z.literal("int"),
@@ -96,7 +96,7 @@ export const Unverifiable = z.strictObject({
   reason: z.string().min(1),
 });
 
-export const KelspecClause = z
+export const ObspecClause = z
   .strictObject({
     kind: z.literal("clause"),
     id: ClauseId,
@@ -123,7 +123,7 @@ export const KelspecClause = z
       });
   });
 
-export const KelspecInvariant = z.strictObject({
+export const ObspecInvariant = z.strictObject({
   kind: z.literal("invariant"),
   id: InvariantId,
   text: z.string().min(1),
@@ -132,11 +132,11 @@ export const KelspecInvariant = z.strictObject({
   model: z.string().min(1).nullable().default(null),
 });
 
-export const KelspecBlock = z.discriminatedUnion("kind", [
-  KelspecComponent,
-  KelspecDomain,
-  KelspecClause,
-  KelspecInvariant,
+export const ObspecBlock = z.discriminatedUnion("kind", [
+  ObspecComponent,
+  ObspecDomain,
+  ObspecClause,
+  ObspecInvariant,
 ]);
 
 // DSL-6: one entry per clause/invariant block; block hashes are independent of
@@ -149,7 +149,7 @@ export const ManifestEntry = z.strictObject({
   tier: Tier,
 });
 
-export const KelspecManifest = z.strictObject({
+export const ObspecManifest = z.strictObject({
   spec_path: z.string().min(1),
   component: KebabName,
   spec_hash: Sha256,
@@ -157,16 +157,16 @@ export const KelspecManifest = z.strictObject({
   unverifiable_ratio: z.number().min(0).max(1),
 });
 
-export type KelspecStateVar = z.infer<typeof KelspecStateVar>;
-export type KelspecComponent = z.infer<typeof KelspecComponent>;
-export type KelspecDomain = z.infer<typeof KelspecDomain>;
+export type ObspecStateVar = z.infer<typeof ObspecStateVar>;
+export type ObspecComponent = z.infer<typeof ObspecComponent>;
+export type ObspecDomain = z.infer<typeof ObspecDomain>;
 export type EarsForm = z.infer<typeof EarsForm>;
 export type Unverifiable = z.infer<typeof Unverifiable>;
-export type KelspecClause = z.infer<typeof KelspecClause>;
-export type KelspecInvariant = z.infer<typeof KelspecInvariant>;
-export type KelspecBlock = z.infer<typeof KelspecBlock>;
+export type ObspecClause = z.infer<typeof ObspecClause>;
+export type ObspecInvariant = z.infer<typeof ObspecInvariant>;
+export type ObspecBlock = z.infer<typeof ObspecBlock>;
 export type ManifestEntry = z.infer<typeof ManifestEntry>;
-export type KelspecManifest = z.infer<typeof KelspecManifest>;
+export type ObspecManifest = z.infer<typeof ObspecManifest>;
 export type EventName = z.infer<typeof EventName>;
 export type ClauseId = z.infer<typeof ClauseId>;
 export type InvariantId = z.infer<typeof InvariantId>;

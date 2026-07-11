@@ -11,7 +11,7 @@ import {
   type RuleMatch,
   type TaskSize,
   type Tier,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import { canonicalJson } from "./packs.ts";
 import { ulid } from "./ulid.ts";

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ProposalState } from "@kelson/schemas";
+import type { ProposalState } from "@obligato/schemas";
 import fc from "fast-check";
 import { getProposal, TRANSITIONS, transition } from "../../src/loop.ts";
 import { openMonitor } from "../../src/monitor.ts";
 import { openDb } from "../../src/storage.ts";
 import { draftProposal, loopCtx } from "../loop-helpers.ts";
 
-// The model's transition relation, transcribed from specs/tla/KelsonLoop.tla
+// The model's transition relation, transcribed from specs/tla/ObligatoLoop.tla
 // action definitions — independently of src/loop.ts's TRANSITIONS table.
 const MODEL: Record<string, string[]> = {
   proposed: ["gated"], // Gate
@@ -28,7 +28,7 @@ describe("LOOP-5: conformance checks link the TLA+ model's actions to the implem
   it("the implementation's transition table equals the model's, and the model file declares each action", () => {
     expect(TRANSITIONS).toEqual(MODEL as typeof TRANSITIONS);
     const tla = readFileSync(
-      join(import.meta.dir, "../../../../specs/tla/KelsonLoop.tla"),
+      join(import.meta.dir, "../../../../specs/tla/ObligatoLoop.tla"),
       "utf8",
     );
     for (const action of [

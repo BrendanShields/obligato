@@ -6,7 +6,7 @@ import { WIZARDS } from "../../src/wizards.ts";
 
 const CLI = join(import.meta.dir, "..", "..", "src", "index.ts");
 
-describe("UX-7: bare kelson on a TTY opens the launcher; non-TTY prints plain help and exits 0 without prompting", () => {
+describe("UX-7: bare obligato on a TTY opens the launcher; non-TTY prints plain help and exits 0 without prompting", () => {
   it("piped stdio: help on stdout, exit 0, no prompt escapes, terminates with no input", async () => {
     const proc = Bun.spawn(["bun", CLI], {
       stdin: "ignore",
@@ -20,11 +20,13 @@ describe("UX-7: bare kelson on a TTY opens the launcher; non-TTY prints plain he
     ]);
     if (exited === "timeout") {
       proc.kill();
-      throw new Error("kelson with piped stdio did not terminate (prompted?)");
+      throw new Error(
+        "obligato with piped stdio did not terminate (prompted?)",
+      );
     }
     const out = await new Response(proc.stdout).text();
     expect(proc.exitCode).toBe(0);
-    expect(out).toContain("kelson");
+    expect(out).toContain("obligato");
     expect(out).toContain("init");
     expect(out).toContain("eval");
     // no interactive prompting: no cursor-control or alt-screen sequences

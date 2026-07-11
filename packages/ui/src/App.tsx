@@ -40,7 +40,7 @@ export default function App() {
           className="mono font-bold"
           style={{ color: "var(--text-primary)" }}
         >
-          kelson<span style={{ color: "var(--series-1)" }}>▮</span>
+          obligato<span style={{ color: "var(--series-1)" }}>▮</span>
         </span>
         <nav className="flex gap-4">
           {(Object.keys(VIEWS) as Route[]).map((r) => (

@@ -1,26 +1,26 @@
-import type { UiLoopView } from "@kelson/schemas";
+import type { UiLoopView } from "@obligato/schemas";
 import { usePoll } from "../api";
 import { Empty, Section } from "../components";
 
 // columns mirror the LOOP state machine; every state names its verb (UX-P5)
 const COLUMNS: { states: string[]; title: string; verb: string }[] = [
-  { states: ["proposed"], title: "proposed", verb: "kelson loop gate <id>" },
+  { states: ["proposed"], title: "proposed", verb: "obligato loop gate <id>" },
   {
     states: ["gated"],
     title: "gated",
-    verb: "kelson loop approve <id> --reason ...",
+    verb: "obligato loop approve <id> --reason ...",
   },
-  { states: ["approved"], title: "approved", verb: "kelson loop apply <id>" },
+  { states: ["approved"], title: "approved", verb: "obligato loop apply <id>" },
   {
     states: ["applied", "monitoring"],
     title: "applied",
-    verb: "kelson loop status",
+    verb: "obligato loop status",
   },
   { states: ["stable"], title: "stable", verb: "—" },
   {
     states: ["rejected", "reverted", "quarantined"],
     title: "closed",
-    verb: "kelson loop release <id>",
+    verb: "obligato loop release <id>",
   },
 ];
 

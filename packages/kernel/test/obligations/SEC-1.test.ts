@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { SandboxProfile } from "@kelson/schemas";
+import type { SandboxProfile } from "@obligato/schemas";
 import {
   CLAUDE_AUTH_PASSTHROUGH,
   claudeSessionEnv,

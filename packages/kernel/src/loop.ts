@@ -15,14 +15,14 @@ import {
   Proposal,
   type ProposalDiff,
   type ProposalState,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import { canonicalJson, hashLockfile } from "./packs.ts";
 import { aggregateReplays } from "./replay.ts";
 import { gate } from "./stats.ts";
 import { ulid } from "./ulid.ts";
 
-// The single transition relation — the TLA+ model (specs/tla/KelsonLoop.tla)
+// The single transition relation — the TLA+ model (specs/tla/ObligatoLoop.tla)
 // and the LOOP-5 conformance test both transcribe exactly this table.
 export const TRANSITIONS: Record<ProposalState, ProposalState[]> = {
   proposed: ["gated"],

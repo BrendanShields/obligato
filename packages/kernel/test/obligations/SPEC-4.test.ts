@@ -1,23 +1,23 @@
 import { describe, expect, it } from "bun:test";
-import type { KelspecClause } from "@kelson/schemas";
+import type { ObspecClause } from "@obligato/schemas";
 import { type Implementation, runDivergence } from "../../src/divergence.ts";
-import { compileSpec } from "../../src/kelspec.ts";
+import { compileSpec } from "../../src/obspec.ts";
 
 // The obligation's fixture: fee = amount * rate_bp / 10000, ROUNDING
 // UNSPECIFIED in the ambiguous version, pinned in the tightened one.
-const spec = (text: string, checkExpr: string) => `\`\`\`kelspec
+const spec = (text: string, checkExpr: string) => `\`\`\`obspec
 {"kind": "component", "id": "fee-calculator", "tier": "T0", "authority": "authored", "events": ["fee_requested"]}
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 {"kind": "domain", "id": "Amount", "type": "int", "unit": "micro_usd", "min": 0, "max": 1000000}
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 {"kind": "domain", "id": "RateBp", "type": "int", "unit": "basis_points", "min": 0, "max": 10000}
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 {"kind": "clause", "id": "FEE-1", "ears": "event", "trigger": "fee_requested", "text": ${JSON.stringify(text)}, "inputs": {"amount": "Amount", "rate_bp": "RateBp"}, "observe": ["fee"], "check": ${JSON.stringify(checkExpr)}}
 \`\`\`
 `;
@@ -53,7 +53,7 @@ const compile = (source: string) => {
   return res.spec;
 };
 
-const CLAUSES = (source: string): KelspecClause[] => {
+const CLAUSES = (source: string): ObspecClause[] => {
   // Re-parse clause blocks for the probe builder's input declarations.
   return [
     {

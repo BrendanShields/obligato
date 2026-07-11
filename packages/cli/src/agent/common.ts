@@ -14,12 +14,12 @@ import {
   resolveCredential,
   resolveEntry,
   type StepDeps,
-} from "@kelson/agent";
-import { DEFAULT_DB_PATH, hashLockfile, openDb } from "@kelson/kernel";
-import type { AgentConfig, ModelRegistryEntry } from "@kelson/schemas";
+} from "@obligato/agent";
+import { DEFAULT_DB_PATH, hashLockfile, openDb } from "@obligato/kernel";
+import type { AgentConfig, ModelRegistryEntry } from "@obligato/schemas";
 
 export const fail = (msg: string): never => {
-  console.error(`kelson: ${msg}`);
+  console.error(`obligato: ${msg}`);
   process.exit(1);
 };
 
@@ -29,7 +29,7 @@ export const fail = (msg: string): never => {
 // builder — PROMPT_BUILDER is the identity the obligation test checks.
 export const PROMPT_BUILDER = buildSystemPrompt;
 const IDENTITY =
-  "You are Kelson, a coding agent working in the current repository. " +
+  "You are Obligato, a coding agent working in the current repository. " +
   "Use the tools to read, search, and modify files and to run commands. " +
   "Prefer edit over rewriting whole files; search before modifying; verify " +
   "with the project's tests when available. " +
@@ -55,11 +55,11 @@ export const setupAgent = (
   const config = loadConfig(root);
   if (!config)
     return fail(
-      "no agent configured — run `kelson auth login <provider>` first",
+      "no agent configured — run `obligato auth login <provider>` first",
     );
-  const lockPath = join(root, "kelson.lock");
+  const lockPath = join(root, "obligato.lock");
   if (!existsSync(lockPath))
-    return fail("no kelson.lock — run `kelson init` first");
+    return fail("no obligato.lock — run `obligato init` first");
   const lockfileHash = hashLockfile(JSON.parse(readFileSync(lockPath, "utf8")));
 
   const entry = resolveEntry(loadModelRegistry(), config.default_model);
@@ -71,7 +71,7 @@ export const setupAgent = (
   // (local ollama) legitimately run keyless.
   if (entry.provider === "anthropic" && credential === null)
     return fail(
-      "no anthropic credential — run `kelson auth login anthropic` first",
+      "no anthropic credential — run `obligato auth login anthropic` first",
     );
   const model = instantiate(entry, credential);
   const authKind = authKindOf(credential);
@@ -85,7 +85,7 @@ export const setupAgent = (
     );
     if (nextEntry.provider === "anthropic" && nextCredential === null)
       return fail(
-        "no anthropic credential — run `kelson auth login anthropic` first",
+        "no anthropic credential — run `obligato auth login anthropic` first",
       );
     return { entry: nextEntry, model: instantiate(nextEntry, nextCredential) };
   };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { RunResult } from "@kelson/schemas";
+import { RunResult } from "@obligato/schemas";
 import { makeTestRepo, mockOpenAiServer, runCli } from "../agent-helpers.ts";
 
 describe("UX-15: run streams plain text, --json validates against RunResult, exit 0 only on done", () => {

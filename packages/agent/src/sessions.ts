@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import { openTask, startSession, storeSnapshot, ulid } from "@kelson/kernel";
-import { SessionEvent, type SessionEventKind } from "@kelson/schemas";
+import { openTask, startSession, storeSnapshot, ulid } from "@obligato/kernel";
+import { SessionEvent, type SessionEventKind } from "@obligato/schemas";
 
 export class SessionNotPausedError extends Error {
   constructor(actual: string) {

@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { API_PATHS, createUiServer } from "../../src/ui/server.ts";
 
-const dir = mkdtempSync(join(tmpdir(), "kelson-ux10-"));
+const dir = mkdtempSync(join(tmpdir(), "obligato-ux10-"));
 const server = createUiServer({ dbPath: join(dir, "k.db"), port: 0 });
 afterAll(() => server.stop(true));
 
-describe("UX-10: the kelson ui server binds loopback only and responds 405 to every non-GET", () => {
+describe("UX-10: the obligato ui server binds loopback only and responds 405 to every non-GET", () => {
   it("reports a loopback bind address", () => {
     expect(server.hostname).toBe("127.0.0.1");
   });

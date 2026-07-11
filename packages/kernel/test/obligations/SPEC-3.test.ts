@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compileSpec } from "../../src/kelspec.ts";
-import { FIXTURES } from "../kelspec-helpers.ts";
+import { compileSpec } from "../../src/obspec.ts";
+import { FIXTURES } from "../obspec-helpers.ts";
 
 describe("SPEC-3: an oracle-free clause needs a signed unverifiable annotation; the unverifiable ratio is reported per spec", () => {
   it("an unannotated uncompilable clause blocks the spec", () => {

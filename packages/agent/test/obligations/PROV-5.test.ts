@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import { resolveCredential, saveCredential } from "../../src/llm/auth.ts";
 import { instantiate } from "../../src/llm/resolve.ts";
 import { runTurn } from "../../src/loop.ts";
@@ -11,7 +11,10 @@ import { fixture } from "../helpers.ts";
 
 describe("PROV-5: subscription token precedence and Bearer wiring", () => {
   it("resolves stored > ANTHROPIC_API_KEY > CLAUDE_CODE_OAUTH_TOKEN", () => {
-    const path = join(mkdtempSync(join(tmpdir(), "kelson-auth-")), "auth.json");
+    const path = join(
+      mkdtempSync(join(tmpdir(), "obligato-auth-")),
+      "auth.json",
+    );
     const both = {
       ANTHROPIC_API_KEY: "sk-env",
       CLAUDE_CODE_OAUTH_TOKEN: "tok-env",

@@ -5,7 +5,7 @@ import type { LoadedPack } from "./packs.ts";
 import { hashPackContent } from "./packs.ts";
 
 // PACK-2 / SEC-5: Ed25519 over the pack content hash. The private key never
-// enters the repo (keys live under .kelson/keys/, gitignored); the public
+// enters the repo (keys live under .obligato/keys/, gitignored); the public
 // key is committed/registry-published.
 export const generatePackKeys = (): {
   publicKeyPem: string;
@@ -54,7 +54,7 @@ const INJECTION_PATTERNS: { pattern: RegExp; label: string }[] = [
   },
   {
     pattern:
-      /(modify|edit|rewrite|overwrite)\s+(the\s+)?(lockfile|kelson\.lock|other\s+packs?|kernel)/i,
+      /(modify|edit|rewrite|overwrite)\s+(the\s+)?(lockfile|obligato\.lock|other\s+packs?|kernel)/i,
     label: "write-escalation",
   },
   {

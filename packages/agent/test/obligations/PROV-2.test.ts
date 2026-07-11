@@ -10,7 +10,10 @@ import {
 
 describe("PROV-2: credentials at 0600, written atomically, stored wins over env", () => {
   it("round-trips a credential with file mode 0600 and no temp residue", () => {
-    const path = join(mkdtempSync(join(tmpdir(), "kelson-auth-")), "auth.json");
+    const path = join(
+      mkdtempSync(join(tmpdir(), "obligato-auth-")),
+      "auth.json",
+    );
     saveCredential("anthropic", { type: "api_key", key: "sk-test-1" }, path);
     expect(statSync(path).mode & 0o777).toBe(0o600);
     // Atomicity proxy (named): the write goes through <path>.tmp + rename —
@@ -23,7 +26,10 @@ describe("PROV-2: credentials at 0600, written atomically, stored wins over env"
   });
 
   it("stored credential wins over the env fallback; env applies only when nothing is stored", () => {
-    const path = join(mkdtempSync(join(tmpdir(), "kelson-auth-")), "auth.json");
+    const path = join(
+      mkdtempSync(join(tmpdir(), "obligato-auth-")),
+      "auth.json",
+    );
     const env = { ANTHROPIC_API_KEY: "sk-env" };
     expect(resolveCredential("anthropic", path, env)).toEqual({
       type: "api_key",

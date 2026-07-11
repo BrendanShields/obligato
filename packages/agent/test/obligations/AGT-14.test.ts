@@ -15,7 +15,7 @@ const find = CORE_TOOLS.find((t) => t.name === "find") as AgentTool;
 
 // A git repo with a .gitignore'd twin of a tracked file.
 const repo = (): string => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-rg-")));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-rg-")));
   writeFileSync(join(dir, ".gitignore"), "dist/\n");
   writeFileSync(join(dir, "tracked.ts"), "const NEEDLE = 1;\n");
   mkdirSync(join(dir, "dist"));

@@ -1,8 +1,8 @@
-# Kelson Privacy Policy
+# Obligato Privacy Policy
 
 ## Local-first, always (TEL-2)
 
-Every telemetry event Kelson records — sessions, step events, routing decisions, budget events, eval results — is stored **only** in a local SQLite database (`~/.kelson/kelson.db`) and local files under your repo's `.kelson/` directory. Nothing is transmitted off your machine unless you explicitly opt in. There is no default endpoint, no phone-home, and the kernel's test suite structurally bans network modules from every telemetry path (the single exception, the OTel exporter below, performs IO only when you hand it an endpoint).
+Every telemetry event Obligato records — sessions, step events, routing decisions, budget events, eval results — is stored **only** in a local SQLite database (`~/.obligato/obligato.db`) and local files under your repo's `.obligato/` directory. Nothing is transmitted off your machine unless you explicitly opt in. There is no default endpoint, no phone-home, and the kernel's test suite structurally bans network modules from every telemetry path (the single exception, the OTel exporter below, performs IO only when you hand it an endpoint).
 
 ## What sharing means when you opt in (TEL-3, OSS-2)
 
@@ -18,7 +18,7 @@ Off by default. `exportSessionOtel(db, sessionId, endpoint)` projects one sessio
 
 ## Snapshots and replay (EVP §4)
 
-Session snapshots (git bundles for counterfactual replay) live under `~/.kelson/snapshots/` and never leave your machine. They may contain your repository content — they exist so *your* harness can replay *your* sessions locally.
+Session snapshots (git bundles for counterfactual replay) live under `~/.obligato/snapshots/` and never leave your machine. They may contain your repository content — they exist so *your* harness can replay *your* sessions locally.
 
 ## Eval ledger entries (EVT-3)
 

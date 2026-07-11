@@ -1,11 +1,11 @@
 ---
 name: divergence
-description: Run Kelson-style divergence testing (SPEC-4) on a spec clause or requirement — two isolated agents interpret the same text blind, and differences in their concrete readings expose ambiguity. Use when asked to "divergence test" a clause, check whether a requirement is ambiguous, stress-test a spec before implementation, or whenever a clause is about to gate implementation work and hasn't been divergence-tested. Also use on any /divergence invocation.
+description: Run Obligato-style divergence testing (SPEC-4) on a spec clause or requirement — two isolated agents interpret the same text blind, and differences in their concrete readings expose ambiguity. Use when asked to "divergence test" a clause, check whether a requirement is ambiguous, stress-test a spec before implementation, or whenever a clause is about to gate implementation work and hasn't been divergence-tested. Also use on any /divergence invocation.
 ---
 
 # Divergence Testing (manual emulation of SPEC-4)
 
-Two competent readers who produce different behavior from the same clause have found a spec bug, not a reading error. This skill runs that experiment with subagents, emulating Kelson's divergence tester until Phase 5 automates it.
+Two competent readers who produce different behavior from the same clause have found a spec bug, not a reading error. This skill runs that experiment with subagents, emulating Obligato's divergence tester until Phase 5 automates it.
 
 ## Procedure
 

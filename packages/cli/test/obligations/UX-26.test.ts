@@ -2,14 +2,14 @@ import type { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb, rebuildIndex, registerArtifact } from "@kelson/kernel";
-import { IndexRebuildResult } from "@kelson/schemas";
+import { openDb, rebuildIndex, registerArtifact } from "@obligato/kernel";
+import { IndexRebuildResult } from "@obligato/schemas";
 import { REBUILD_ENTRY } from "../../src/commands/reindex.ts";
 import { makeTestRepo, runCli, type TestRepo } from "../agent-helpers.ts";
 
 const SPEC = `# fixture spec
 
-\`\`\`kelspec
+\`\`\`obspec
 kind: component
 id: greeter
 tier: T0
@@ -17,14 +17,14 @@ authority: authored
 events: [name_submitted]
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 kind: domain
 id: Name
 type: string
 max_length: 40
 \`\`\`
 
-\`\`\`kelspec
+\`\`\`obspec
 kind: clause
 id: GRT-1
 ears: event
@@ -44,7 +44,7 @@ const setup = (): { t: TestRepo; dbPath: string } => {
   const t = makeTestRepo({});
   mkdirSync(join(t.repo, "specs"), { recursive: true });
   writeFileSync(join(t.repo, SPEC_REL), SPEC);
-  return { t, dbPath: join(t.repo, ".kelson", "kelson.db") };
+  return { t, dbPath: join(t.repo, ".obligato", "obligato.db") };
 };
 
 const rebuild = (t: TestRepo, dbPath: string) =>
@@ -140,10 +140,10 @@ describe("UX-26: index rebuild reconciles the artifact index with pinned count s
       schema_version: 1,
     });
 
-    // a syntactically broken kelspec source aborts with the store unchanged
+    // a syntactically broken obspec source aborts with the store unchanged
     writeFileSync(
       join(t.repo, "specs", "broken.spec.md"),
-      "```kelspec\nkind: clause\nid: {{{\n```\n",
+      "```obspec\nkind: clause\nid: {{{\n```\n",
     );
     const db4 = openDb(dbPath);
     const before = artifactRows(db4);

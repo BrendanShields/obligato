@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { EvidenceLink, Proposal, ProposalDiff } from "@kelson/schemas";
+import type { EvidenceLink, Proposal, ProposalDiff } from "@obligato/schemas";
 import { type ApplyContext, createProposal, transition } from "../src/loop.ts";
 import { ulid } from "../src/ulid.ts";
 import { seedClaudeRun, tmpDir } from "./eval-helpers.ts";
@@ -12,8 +12,8 @@ export interface LoopCtx extends ApplyContext {
 
 export const loopCtx = (): LoopCtx => {
   const repoRoot = tmpDir();
-  mkdirSync(join(repoRoot, ".kelson"), { recursive: true });
-  const lockfilePath = join(repoRoot, "kelson.lock");
+  mkdirSync(join(repoRoot, ".obligato"), { recursive: true });
+  const lockfilePath = join(repoRoot, "obligato.lock");
   writeFileSync(
     lockfilePath,
     `${JSON.stringify(
@@ -40,13 +40,13 @@ export const loopCtx = (): LoopCtx => {
     )}\n`,
   );
   writeFileSync(
-    join(repoRoot, ".kelson", "findings.json"),
+    join(repoRoot, ".obligato", "findings.json"),
     JSON.stringify({ findings: [{ id: "F-001" }, { id: "F-042" }] }),
   );
   return {
     repoRoot,
     lockfilePath,
-    changelogPath: join(repoRoot, ".kelson", "changelog.jsonl"),
+    changelogPath: join(repoRoot, ".obligato", "changelog.jsonl"),
   };
 };
 

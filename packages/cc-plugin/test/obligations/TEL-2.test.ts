@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
+import { openDb } from "@obligato/kernel";
 import { beginSession, finishSession } from "../../src/session.ts";
 import { renderStatus } from "../../src/status.ts";
 import { renderStatusline } from "../../src/statusline.ts";
@@ -57,7 +57,7 @@ describe("TEL-2: zero outbound telemetry across a full session with opt-in unset
       steps: 1,
       failed: 0,
     });
-    expect(renderStatus(db, process.cwd())).toContain("kelson · status");
+    expect(renderStatus(db, process.cwd())).toContain("obligato · status");
     expect(renderStatusline({ model: { display_name: "M" } })).toContain("M");
     db.close();
 

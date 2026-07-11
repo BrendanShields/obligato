@@ -1,6 +1,6 @@
 # Implementation Plan: Phase 0 — Rails
 
-> **Status: COMPLETE (2026-07-02).** All 7 tasks done (`.kelson/tasks.json`), 39 findings logged (`.kelson/findings.json`), zero defects reached main. Exit criterion verified against a real session transcript: 327 steps (unique message ids), all four token classes matching an independent dedup-by-id count; a PRD edit flagged 7 downstream specs stale; `/kelson:status` renders. The cc-plugin hooks are wired in `.claude/settings.json` and the repo's artifact store is seeded — sessions now dogfood into `.kelson/kelson.db` (gitignored). **Next: plan Phase 1 (kelspec DSL parser, spec pipeline — PRD §16) via the feature-pipeline skill.**
+> **Status: COMPLETE (2026-07-02).** All 7 tasks done (`.obligato/tasks.json`), 39 findings logged (`.obligato/findings.json`), zero defects reached main. Exit criterion verified against a real session transcript: 327 steps (unique message ids), all four token classes matching an independent dedup-by-id count; a PRD edit flagged 7 downstream specs stale; `/obligato:status` renders. The cc-plugin hooks are wired in `.claude/settings.json` and the repo's artifact store is seeded — sessions now dogfood into `.obligato/obligato.db` (gitignored). **Next: plan Phase 1 (obspec DSL parser, spec pipeline — PRD §16) via the feature-pipeline skill.**
 >
 > **Deferral ledger (everything intentionally left open):**
 >
@@ -29,17 +29,17 @@ Zod schemas per ERD for Phase 0 entities: `Session`, `Task` (lifecycle enum per 
 
 ## Task 3 — `packages/kernel` storage
 
-`bun:sqlite` bootstrap at `~/.kelson/kelson.db` (WAL), forward-only numbered SQL migrations + runner, migration `0001` creating Phase 0 tables (append-only event tables get no UPDATE path in the data layer).
+`bun:sqlite` bootstrap at `~/.obligato/obligato.db` (WAL), forward-only numbered SQL migrations + runner, migration `0001` creating Phase 0 tables (append-only event tables get no UPDATE path in the data layer).
 **Obligation tests:** OSS-6 — v1-created store readable after adding migration `0002` in a fixture; rows carry `schema_version`.
 
 ## Task 4 — Artifact store (ART-1, ART-2)
 
-`artifacts` module in kernel: SHA-256 content hashing of files under `docs/` conventions, `TRACE_LINK` recording with `upstream_hash_at_link`, transitive staleness flagging via recursive CTE (ADR-0002), `rebuildIndex()` from files (ERD §1 — SQLite disposable). *Scope note (P0-4 audit):* full rebuild-from-files needs the Phase 1 kelspec manifest (DSL-6) to recover upstream declarations; Phase 0 ships `rehashFromDisk` (hash refresh of indexed artifacts) and the full rebuild is discharged with DSL-6.
+`artifacts` module in kernel: SHA-256 content hashing of files under `docs/` conventions, `TRACE_LINK` recording with `upstream_hash_at_link`, transitive staleness flagging via recursive CTE (ADR-0002), `rebuildIndex()` from files (ERD §1 — SQLite disposable). *Scope note (P0-4 audit):* full rebuild-from-files needs the Phase 1 obspec manifest (DSL-6) to recover upstream declarations; Phase 0 ships `rehashFromDisk` (hash refresh of indexed artifacts) and the full rebuild is discharged with DSL-6.
 **Obligation tests:** ART-1 and ART-2 PBTs over generated artifact DAGs (exactly the transitive downstream set flags on edit); index rebuild idempotence.
 
 ## Task 5 — Telemetry capture (TEL-1, TEL-2, TEL-5, TEL-7 skeleton)
 
-Transcript/hook-event ingestion → `SESSION`, `STEP_EVENT`, `INTERVENTION_EVENT` rows; session pins `lockfile_hash` at start (LOOP-7 groundwork); local-only storage with no network path (TEL-2 — there is no transmit code in Phase 0 at all, the strongest form of the obligation); collector failure marks session `incomplete` and never aborts (TEL-5, KERN-1 telemetry path); task lifecycle state machine with legal-transition enforcement (TEL-7 — acceptance signals stubbed to explicit `/kelson:accept` only).
+Transcript/hook-event ingestion → `SESSION`, `STEP_EVENT`, `INTERVENTION_EVENT` rows; session pins `lockfile_hash` at start (LOOP-7 groundwork); local-only storage with no network path (TEL-2 — there is no transmit code in Phase 0 at all, the strongest form of the obligation); collector failure marks session `incomplete` and never aborts (TEL-5, KERN-1 telemetry path); task lifecycle state machine with legal-transition enforcement (TEL-7 — acceptance signals stubbed to explicit `/obligato:accept` only).
 **Obligation tests:** TEL-1 PBT (synthetic transcripts), TEL-2 (no outbound calls — assert no network module imports via lint + runtime recorder in integration test), TEL-5 fault injection, TEL-7 transition PBT.
 
 ## Task 6 — Pack format + lockfile
@@ -49,8 +49,8 @@ Pack directory layout + manifest loader (validate against `PackManifest`, refuse
 
 ## Task 7 — `packages/cc-plugin` shell
 
-SessionStart/SessionEnd/PostToolUse hooks feeding Task 5's ingestion; `/kelson:status` (UX §3) reading pinned lockfile + session state; statusline segment stub (`stage · model · budget` with stage/budget hardcoded until Phase 3).
-**Verify (exit criterion):** run a real session in this repo → `kelson.db` contains the session with step events summing to transcript tokens; edit a spec file → downstream `TRACE_LINK` staleness flags appear; `/kelson:status` renders.
+SessionStart/SessionEnd/PostToolUse hooks feeding Task 5's ingestion; `/obligato:status` (UX §3) reading pinned lockfile + session state; statusline segment stub (`stage · model · budget` with stage/budget hardcoded until Phase 3).
+**Verify (exit criterion):** run a real session in this repo → `obligato.db` contains the session with step events summing to transcript tokens; edit a spec file → downstream `TRACE_LINK` staleness flags appear; `/obligato:status` renders.
 
 ## Sequencing
 

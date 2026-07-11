@@ -1,6 +1,6 @@
 # Vague corpus: check predicate reaches outside its declarations (DSL-3)
 
-```kelspec
+```obspec
 kind: component
 id: quota
 tier: T0
@@ -8,7 +8,7 @@ authority: authored
 events: [usage_reported]
 ```
 
-```kelspec
+```obspec
 kind: domain
 id: Usage
 type: int
@@ -17,7 +17,7 @@ min: 0
 max: 1000000
 ```
 
-```kelspec
+```obspec
 kind: clause
 id: QTA-1
 ears: event

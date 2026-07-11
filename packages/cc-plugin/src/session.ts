@@ -8,7 +8,7 @@ import {
   safeIngest,
   startSession,
   ulid,
-} from "@kelson/kernel";
+} from "@obligato/kernel";
 import { parseTranscript } from "./transcript.ts";
 
 export const HARNESS_VERSION = "0.0.1";
@@ -17,7 +17,7 @@ const EMPTY_LOCKFILE = { schema_version: 1, parent_hash: null, entries: [] };
 
 // LOOP-7 shape: every session pins the lockfile hash it ran under.
 export const pinnedLockfileHash = (root: string): string => {
-  const path = join(root, "kelson.lock");
+  const path = join(root, "obligato.lock");
   return hashLockfile(
     existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : EMPTY_LOCKFILE,
   );

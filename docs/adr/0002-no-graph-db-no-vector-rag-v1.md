@@ -6,14 +6,14 @@
 
 ## Context
 
-Kelson has two workloads that superficially suggest specialized stores: the traceability DAG (feedback → idea → PRD → spec clause → code → test; queried for transitive staleness, ART-2) suggests a graph database, and the context compiler's retrieval problem ("which spec clauses, interfaces, and invariants does this task need?", CTX-1) suggests embeddings-based RAG.
+Obligato has two workloads that superficially suggest specialized stores: the traceability DAG (feedback → idea → PRD → spec clause → code → test; queried for transitive staleness, ART-2) suggests a graph database, and the context compiler's retrieval problem ("which spec clauses, interfaces, and invariants does this task need?", CTX-1) suggests embeddings-based RAG.
 
 ## Decision
 
 **Neither in v1.**
 
-- **Trace graph:** the DAG lives in SQLite (`TRACE_LINK` table); transitive downstream queries are recursive CTEs. The graph is small (thousands of nodes per repo, not millions), append-mostly, and its hot query — "flag everything downstream of this hash" — is a single recursive traversal SQLite executes in microseconds. A graph DB adds an operational dependency to an install that must be `npx kelson init` simple (OSS-1) and buys nothing at this scale.
-- **Context retrieval:** the context compiler uses **structural retrieval** — trace links (the task's spec clauses point at their code regions), the symbol graph (imports/references of touched files), and declared invariants in force. Structural retrieval is deterministic, explainable (`kelson route explain` can show *why* something entered the bundle), and testable against the bundle-miss metric (CTX-2). Embeddings retrieval is none of those, and its failure mode — plausible-but-wrong context — is exactly the ambiguity Kelson exists to eliminate.
+- **Trace graph:** the DAG lives in SQLite (`TRACE_LINK` table); transitive downstream queries are recursive CTEs. The graph is small (thousands of nodes per repo, not millions), append-mostly, and its hot query — "flag everything downstream of this hash" — is a single recursive traversal SQLite executes in microseconds. A graph DB adds an operational dependency to an install that must be `npx obligato init` simple (OSS-1) and buys nothing at this scale.
+- **Context retrieval:** the context compiler uses **structural retrieval** — trace links (the task's spec clauses point at their code regions), the symbol graph (imports/references of touched files), and declared invariants in force. Structural retrieval is deterministic, explainable (`obligato route explain` can show *why* something entered the bundle), and testable against the bundle-miss metric (CTX-2). Embeddings retrieval is none of those, and its failure mode — plausible-but-wrong context — is exactly the ambiguity Obligato exists to eliminate.
 
 ## Escape Hatches (measured, not speculative)
 

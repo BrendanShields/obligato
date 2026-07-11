@@ -25,7 +25,7 @@ The operator prefers OpenTUI for the terminal UI. OpenTUI's native renderer (Zig
 | Sandbox drivers | **Shell out to `git worktree` and `docker`/`podman` binaries** | No SDK dependencies; SEC-1 profiles name the driver used |
 | TLA+ in CI | **TLC via Docker image** | No local toolchain requirement for contributors |
 | CI | **GitHub Actions** (`oven-sh/setup-bun`) | Matches OSS-1/OSS-5 CI obligations |
-| Distribution | **`bun build --compile`** → standalone `kelson` binary per platform, plus `npx kelson` (package name `kelson`, verified available) | End users and Claude Code hooks need no Bun install; the binary embeds the runtime |
+| Distribution | **`bun build --compile`** → standalone `obligato` binary per platform, plus `npx obligato` (package name `obligato`, verified available) | End users and Claude Code hooks need no Bun install; the binary embeds the runtime |
 
 ## Options Considered
 

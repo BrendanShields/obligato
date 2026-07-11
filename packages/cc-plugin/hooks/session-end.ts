@@ -7,7 +7,7 @@
 try {
   const { existsSync, readFileSync, rmSync } = await import("node:fs");
   const { join } = await import("node:path");
-  const { openDb } = await import("@kelson/kernel");
+  const { openDb } = await import("@obligato/kernel");
   const { beginSession, finishSession } = await import("../src/session.ts");
 
   const input = JSON.parse(await Bun.stdin.text()) as {
@@ -16,10 +16,10 @@ try {
   };
   if (input.transcript_path && existsSync(input.transcript_path)) {
     const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-    const db = openDb(join(root, ".kelson", "kelson.db"));
+    const db = openDb(join(root, ".obligato", "obligato.db"));
     const marker = join(
       root,
-      ".kelson",
+      ".obligato",
       "runtime",
       `session-${input.session_id}`,
     );

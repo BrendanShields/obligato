@@ -12,7 +12,7 @@ import { type AgentTool, CORE_TOOLS, localExec } from "../../src/tools.ts";
 const edit = CORE_TOOLS.find((t) => t.name === "edit") as AgentTool;
 
 const workspace = (content: string): { dir: string; file: string } => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-edit-")));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-edit-")));
   const file = join(dir, "f.ts");
   writeFileSync(file, content);
   return { dir, file };

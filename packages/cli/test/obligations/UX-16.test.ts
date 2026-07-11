@@ -35,7 +35,7 @@ describe("UX-16: login unblocks chat/run; the credential is never echoed and liv
     const r = await runCli(t, ["run", "-p", "go"]);
     expect(r.exitCode).toBe(0);
 
-    const authPath = join(t.home, ".kelson", "auth.json");
+    const authPath = join(t.home, ".obligato", "auth.json");
     expect(readFileSync(authPath, "utf8")).toContain(SECRET);
     const offenders = [...filesUnder(t.repo), ...filesUnder(t.home)]
       .filter((p) => p !== authPath)

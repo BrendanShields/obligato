@@ -110,23 +110,23 @@ export interface TestRepo {
   env: Record<string, string>;
 }
 
-// A temp repo + temp HOME: kelson.lock, .kelson store dir, and (optionally)
+// A temp repo + temp HOME: obligato.lock, .obligato store dir, and (optionally)
 // a mock-model overlay + config so setupAgent resolves end-to-end.
 export const makeTestRepo = (opts: {
   baseUrl?: string;
   configured?: boolean;
 }): TestRepo => {
-  const repo = mkdtempSync(join(tmpdir(), "kelson-repo-"));
-  const home = mkdtempSync(join(tmpdir(), "kelson-home-"));
-  mkdirSync(join(repo, ".kelson"), { recursive: true });
-  mkdirSync(join(home, ".kelson"), { recursive: true });
+  const repo = mkdtempSync(join(tmpdir(), "obligato-repo-"));
+  const home = mkdtempSync(join(tmpdir(), "obligato-home-"));
+  mkdirSync(join(repo, ".obligato"), { recursive: true });
+  mkdirSync(join(home, ".obligato"), { recursive: true });
   writeFileSync(
-    join(repo, "kelson.lock"),
+    join(repo, "obligato.lock"),
     JSON.stringify({ schema_version: 1, parent_hash: null, entries: [] }),
   );
   if (opts.baseUrl) {
     writeFileSync(
-      join(home, ".kelson", "models.json"),
+      join(home, ".obligato", "models.json"),
       JSON.stringify([
         {
           id: "mock-m",
@@ -142,7 +142,7 @@ export const makeTestRepo = (opts: {
   }
   if (opts.configured === true) {
     writeFileSync(
-      join(repo, ".kelson", "config.json"),
+      join(repo, ".obligato", "config.json"),
       JSON.stringify({ default_model: "mock-m", schema_version: 1 }),
     );
   }

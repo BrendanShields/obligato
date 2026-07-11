@@ -1,4 +1,4 @@
----------------------------- MODULE KelsonLoop ----------------------------
+---------------------------- MODULE ObligatoLoop ----------------------------
 (* PRD §9.2 proposal state machine. Scope: per-proposal state transitions   *)
 (* and the I2 monitoring bound. I1 (gate soundness) holds by construction   *)
 (* of the transition relation — Apply is enabled only from "approved" — and *)

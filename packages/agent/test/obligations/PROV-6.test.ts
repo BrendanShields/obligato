@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { openDb } from "@kelson/kernel";
+import { openDb } from "@obligato/kernel";
 import { runTurn } from "../../src/loop.ts";
 import {
   authKindOf,

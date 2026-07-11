@@ -29,7 +29,7 @@ describe("UX-8: wizards dispatch through the same entry function as the typed co
       m = answerField(m, "suites/seed");
       expect(m.state).toBe("done");
       // the wizard's dispatch resolves through the SAME table the typed
-      // path (`kelson eval ...`) resolves through — patching that one
+      // path (`obligato eval ...`) resolves through — patching that one
       // entry intercepts both, which is the identity being asserted
       await complete(m, COMMANDS);
       expect(calls).toEqual([

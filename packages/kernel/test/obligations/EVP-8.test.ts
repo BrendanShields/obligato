@@ -86,10 +86,10 @@ describe("EVP-8: a session model override is recorded in the manifest, applied t
     try {
       const overridden = buildClaudeEnv({
         ANTHROPIC_BASE_URL: "http://localhost:11434",
-        ANTHROPIC_API_KEY: "kelson-local",
+        ANTHROPIC_API_KEY: "obligato-local",
         ANTHROPIC_MODEL: "gemma4:e4b",
       });
-      expect(overridden.ANTHROPIC_API_KEY).toBe("kelson-local");
+      expect(overridden.ANTHROPIC_API_KEY).toBe("obligato-local");
       expect("CLAUDE_CODE_OAUTH_TOKEN" in overridden).toBe(false);
       // Without an override endpoint the operator credentials pass through.
       const normal = buildClaudeEnv({});

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb, validateReplay } from "@kelson/kernel";
-import { EvalReportResult, ReplayResult } from "@kelson/schemas";
+import { openDb, validateReplay } from "@obligato/kernel";
+import { EvalReportResult, ReplayResult } from "@obligato/schemas";
 import {
   baseTask,
   lockWith,
@@ -17,7 +17,7 @@ const SID = "01HZZZZZZZZZZZZZZZZZZZZZC1";
 describe("UX-23: eval report re-renders stored verdicts without executing; replay links source session and run", () => {
   it("report renders both stored verdicts with CI bounds and inserts no eval_run row", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const db = openDb(dbPath);
     const insertRun = db.query(
       `INSERT INTO eval_run (id, kind, suite_id, suite_version, config_a, config_b, seed, executor, model_versions, sandbox_profile, manifest_hash, started_at, finished_at)
@@ -76,7 +76,7 @@ describe("UX-23: eval report re-renders stored verdicts without executing; repla
 
   it("replay of a promoted session re-runs the task, records the linking replay_record with validity from validateReplay", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const store = tmpDir();
     const snapshot = makeSnapshot({ "README.md": "fixture\n" }, store);
     const suiteDir = makeSuite([
@@ -143,7 +143,7 @@ describe("UX-23: eval report re-renders stored verdicts without executing; repla
 
   it("a replay against a missing snapshot exits non-zero with the run's finished_at set (no dangling running row)", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const store = tmpDir(); // empty store: the snapshot bundle is absent
     const sid = "01HZZZZZZZZZZZZZZZZZZZZZE7";
     const suiteDir = makeSuite([
@@ -188,9 +188,9 @@ describe("UX-23: eval report re-renders stored verdicts without executing; repla
     expect(row?.finished_at).not.toBeNull();
   }, 60_000);
 
-  it("a session with no promoted benchmark task errors naming `kelson promote`", async () => {
+  it("a session with no promoted benchmark task errors naming `obligato promote`", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const store = tmpDir();
     const snapshot = makeSnapshot({ "README.md": "x\n" }, store);
     const suiteDir = makeSuite([baseTask({ id: "unrelated", snapshot })]);
@@ -209,6 +209,6 @@ describe("UX-23: eval report re-renders stored verdicts without executing; repla
       dbPath,
     ]);
     expect(r.exitCode).not.toBe(0);
-    expect(r.stderr).toContain("kelson promote");
+    expect(r.stderr).toContain("obligato promote");
   }, 60_000);
 });

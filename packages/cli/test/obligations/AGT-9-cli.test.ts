@@ -2,16 +2,16 @@ import { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
 import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb, registerArtifact } from "@kelson/kernel";
+import { openDb, registerArtifact } from "@obligato/kernel";
 import { makeTestRepo, mockOpenAiServer, runCli } from "../agent-helpers.ts";
 
 // Seed a clause + governed file + obligation test into the repo the CLI will
-// open, so `kelson run` loads a non-empty SpecContext. Uses the realpath —
+// open, so `obligato run` loads a non-empty SpecContext. Uses the realpath —
 // the CLI child's process.cwd() resolves /tmp → /private/tmp on macOS, and
 // trace links are keyed by that resolved repo path.
 const seedRepo = (repoArg: string) => {
   const repo = realpathSync(repoArg);
-  const db = openDb(join(repo, ".kelson", "kelson.db"));
+  const db = openDb(join(repo, ".obligato", "obligato.db"));
   registerArtifact(db, {
     repo,
     logical_id: "AGT-DEMO",
@@ -45,7 +45,7 @@ it("sentinel", () => {
   db.close();
 };
 
-describe("AGT-9 (operator surface): kelson run over a spec-native repo emits a VerificationReport", () => {
+describe("AGT-9 (operator surface): obligato run over a spec-native repo emits a VerificationReport", () => {
   it("a run that writes the sentinel reaches done and records a clean report", async () => {
     const server = mockOpenAiServer([
       {
@@ -58,7 +58,7 @@ describe("AGT-9 (operator surface): kelson run over a spec-native repo emits a V
     ]);
     const t = makeTestRepo({ baseUrl: server.url, configured: true });
     seedRepo(t.repo);
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const r = await runCli(t, [
       "run",
       "-p",

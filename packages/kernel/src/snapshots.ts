@@ -10,7 +10,7 @@ import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { hashContent } from "./artifacts.ts";
 
-export const DEFAULT_SNAPSHOT_DIR = join(homedir(), ".kelson", "snapshots");
+export const DEFAULT_SNAPSHOT_DIR = join(homedir(), ".obligato", "snapshots");
 
 const git = (args: string[], cwd: string): void => {
   const res = spawnSync("git", args, { cwd, stdio: "pipe" });
@@ -29,7 +29,7 @@ export const storeSnapshot = (
   mkdirSync(storeDir, { recursive: true });
   const tmp = join(
     tmpdir(),
-    `kelson-bundle-${process.pid}-${Date.now()}.bundle`,
+    `obligato-bundle-${process.pid}-${Date.now()}.bundle`,
   );
   try {
     git(["bundle", "create", tmp, "--all"], sourceRepoDir);

@@ -27,7 +27,7 @@
         "matcher": "Edit|Write",
         "hooks": [
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/spec-lint.mjs\"" },
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/kelspec-lint.mjs\"" },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/obspec-lint.mjs\"" },
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck.mjs\"" },
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/erd-ripple.mjs\"" },
           { "type": "command", "command": "bun \"$CLAUDE_PROJECT_DIR/packages/cc-plugin/hooks/post-tool-use.ts\"" }

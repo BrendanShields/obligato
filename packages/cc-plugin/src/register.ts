@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb, registerArtifact } from "@kelson/kernel";
+import { openDb, registerArtifact } from "@obligato/kernel";
 
 // Seeds this repo's spec suite into the artifact store so PostToolUse edits
 // surface ART-2 staleness (Phase 0 exit criterion). Idempotent — registration
@@ -9,7 +9,7 @@ const PRD = "docs/specs/2026-07-02-agent-harness-prd.md";
 const ERD = "docs/specs/2026-07-02-agent-harness-erd.md";
 const SPECS = [
   "docs/specs/2026-07-02-agent-harness-ux.md",
-  "docs/specs/2026-07-02-kelspec-dsl.md",
+  "docs/specs/2026-07-02-obspec-dsl.md",
   "docs/specs/2026-07-02-pack-format.md",
   "docs/specs/2026-07-02-eval-procedure.md",
   "docs/specs/2026-07-02-routing-policy.md",
@@ -18,7 +18,7 @@ const SPECS = [
 
 if (import.meta.main) {
   const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-  const db = openDb(join(root, ".kelson", "kelson.db"));
+  const db = openDb(join(root, ".obligato", "obligato.db"));
   registerArtifact(db, {
     repo: root,
     logical_id: PRD,

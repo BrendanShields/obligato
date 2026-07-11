@@ -5,8 +5,8 @@ import {
   openDb,
   promoteInferred,
   promotionQueue,
-} from "@kelson/kernel";
-import { DriftListResult } from "@kelson/schemas";
+} from "@obligato/kernel";
+import { DriftListResult } from "@obligato/schemas";
 import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { table } from "../components/render.js";
@@ -152,7 +152,9 @@ export const driftCommand = (argv: string[]): void => {
           ),
         );
       }
-      write("promote surviving clauses: kelson drift promote <logical-id ...>");
+      write(
+        "promote surviving clauses: obligato drift promote <logical-id ...>",
+      );
       return;
     }
 

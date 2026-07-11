@@ -57,11 +57,15 @@ describe("AGT-4: exactly the seven core tools, confined to the caller-supplied T
   it("a symlink pointing outside the workspace is refused for file tools (realpath containment)", async () => {
     const f = fixture([
       toolCallResponse([
-        { id: "c-ln", name: "bash", input: { command: "ln -s .. kelson-up" } },
+        {
+          id: "c-ln",
+          name: "bash",
+          input: { command: "ln -s .. obligato-up" },
+        },
         {
           id: "c-esc",
           name: "write",
-          input: { path: "kelson-up/kelson-escape.txt", content: "x" },
+          input: { path: "obligato-up/obligato-escape.txt", content: "x" },
         },
         {
           id: "c-in",
@@ -92,7 +96,7 @@ describe("AGT-4: exactly the seven core tools, confined to the caller-supplied T
     // The write follows the in-workspace symlink out of cwd → refused, nothing
     // written outside the root (lexical `..`-prefix checks miss this).
     expect(byId.get("c-esc")?.is_error).toBe(true);
-    expect(existsSync(resolve(f.dir, "..", "kelson-escape.txt"))).toBe(false);
+    expect(existsSync(resolve(f.dir, "..", "obligato-escape.txt"))).toBe(false);
     // A normal in-workspace write still succeeds — the realpath'd cwd baseline
     // does not spuriously reject.
     expect(byId.get("c-in")?.is_error).toBeFalsy();
@@ -148,15 +152,15 @@ describe("AGT-4: exactly the seven core tools, confined to the caller-supplied T
     // char ("/xprivate/…" → "private/…"), so /x<realCwd>/f re-attached to
     // exactly <realCwd>/f — an aliased write ACCEPTED inside the workspace at
     // a path the model never named (audit 2026-07-05).
-    const dir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-agent-")));
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-agent-")));
     const write = CORE_TOOLS.find((t) => t.name === "write") as AgentTool;
-    const alias = `/x${dir.slice(1)}/kelson-alias-probe.txt`;
+    const alias = `/x${dir.slice(1)}/obligato-alias-probe.txt`;
     expect(() =>
       write.run(
         { path: alias, content: "x" },
         { cwd: dir, exec: localExec(dir) },
       ),
     ).toThrow("escapes the workspace");
-    expect(existsSync(join(dir, "kelson-alias-probe.txt"))).toBe(false);
+    expect(existsSync(join(dir, "obligato-alias-probe.txt"))).toBe(false);
   });
 });

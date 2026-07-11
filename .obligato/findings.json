@@ -218,6 +218,22 @@
       "status": "fixed",
       "id": "F-171",
       "fix_commit": "acbb6dde6dac0c47f9f0c6c3bff72ece0734dc1c"
+    },
+    {
+      "task": "C1-18",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "EVP-1",
+        "DSL-1",
+        "EVAL-2"
+      ],
+      "summary": "rename left seed benchmark snapshots stale: bundles still materialized docs/kelspec/*.spec.md with kelspec fences while the renamed compiler reads docs/obspec + obspec fences, so spec-repair-vague-clause (obligations = its only check, gating suite) degraded to a vacuous auto-pass; greenfield-rate-limiter statement pointed at the dead path. Gates could not catch it: snapshots are opaque content-addressed git bundles, obspec-lint sweeps checked-out spec files only, no gate executes the seed suite",
+      "root_cause": "test_blindspot",
+      "fix": "both snapshots regenerated (clone, git mv docs/kelspec->docs/obspec, fence+title+prose rewrite with per-step count asserts, re-bundle, re-hash, restore-verify), task.yaml snapshot refs + statements updated, old bundles removed",
+      "status": "fixed",
+      "id": "F-172",
+      "fix_commit": null
     }
   ]
 }

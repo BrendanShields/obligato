@@ -19,7 +19,7 @@ const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 if (!existsSync(join(root, 'package.json'))) process.exit(0)
 
 // Debounce token lives in the gitignored telemetry dir.
-const tokenDir = join(root, '.kelson', 'telemetry')
+const tokenDir = join(root, '.obligato', 'telemetry')
 const tokenFile = join(tokenDir, 'typecheck-debounce')
 const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`
 try {

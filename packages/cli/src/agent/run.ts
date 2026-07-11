@@ -3,8 +3,8 @@ import {
   continueSession,
   createAgentSession,
   runTurn,
-} from "@kelson/agent";
-import { RunResult } from "@kelson/schemas";
+} from "@obligato/agent";
+import { RunResult } from "@obligato/schemas";
 import { emitJson } from "../output/json.js";
 import { streamOut } from "../output/stream.js";
 import { fail, setupAgent, systemPromptFor } from "./common.js";
@@ -28,7 +28,7 @@ export const runCommand = async (argv: string[]): Promise<void> => {
     }
   }
   if (!prompt)
-    return fail('usage: kelson run -p "<task>" [--json] [--allow-asks]');
+    return fail('usage: obligato run -p "<task>" [--json] [--allow-asks]');
 
   const setup =
     typeof named.db === "string"
@@ -85,7 +85,7 @@ export const runCommand = async (argv: string[]): Promise<void> => {
   } else {
     streamOut("\n");
     if (result.status === "paused")
-      console.error(`kelson: session paused (${result.reason})`);
+      console.error(`obligato: session paused (${result.reason})`);
   }
   if (result.status !== "done") process.exitCode = 1;
 };

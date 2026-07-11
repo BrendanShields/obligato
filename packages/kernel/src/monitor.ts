@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { ChangelogEntry, MonitorRecord } from "@kelson/schemas";
+import type { ChangelogEntry, MonitorRecord } from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import {
   type ApplyContext,

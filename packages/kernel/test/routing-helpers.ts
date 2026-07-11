@@ -2,7 +2,7 @@ import type {
   AgentRegistryEntry,
   FeatureVector,
   RoutingPolicy,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import fc from "fast-check";
 
 export const vectorArb: fc.Arbitrary<FeatureVector> = fc

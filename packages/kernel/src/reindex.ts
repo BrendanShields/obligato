@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import type { IndexRebuildResult } from "@kelson/schemas";
+import type { IndexRebuildResult } from "@obligato/schemas";
 import { diskHashSource } from "./artifacts.ts";
-import { compileSpec } from "./kelspec.ts";
+import { compileSpec } from "./obspec.ts";
 
 // UX-26: reconcile the artifact index against the files of record. Count
 // semantics are divergence-pinned (F-151): ingested = new row from the files
@@ -15,7 +15,7 @@ import { compileSpec } from "./kelspec.ts";
 // uncounted. Enumeration is a filesystem scan — the kernel carries no git
 // dependency (re-pin vs both blind readers' git-index reading).
 
-const SCAN_EXCLUDES = new Set([".git", "node_modules", ".kelson"]);
+const SCAN_EXCLUDES = new Set([".git", "node_modules", ".obligato"]);
 
 const walkSpecFiles = (rootDir: string): string[] => {
   const found: string[] = [];
@@ -40,7 +40,7 @@ export const rebuildIndex = (
   repo: string,
   rootDir: string,
 ): RebuildSummary => {
-  // Compile everything BEFORE any write: a broken kelspec source aborts the
+  // Compile everything BEFORE any write: a broken obspec source aborts the
   // whole rebuild with the store unchanged (UX-26 — operator error, not a
   // discrepancy).
   const desired = new Map<

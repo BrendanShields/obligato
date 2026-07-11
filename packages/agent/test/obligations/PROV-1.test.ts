@@ -7,7 +7,7 @@ import { loadRegistry, resolveEntry } from "../../src/llm/registry.ts";
 describe("PROV-1: registry resolution — shipped models, user overlay wins, unknown refs fail loudly", () => {
   it("a shipped id resolves", () => {
     const registry = loadRegistry(
-      join(mkdtempSync(join(tmpdir(), "kelson-reg-")), "none.json"),
+      join(mkdtempSync(join(tmpdir(), "obligato-reg-")), "none.json"),
     );
     const entry = resolveEntry(registry, "claude-opus-4-8");
     expect(entry.provider).toBe("anthropic");
@@ -16,7 +16,7 @@ describe("PROV-1: registry resolution — shipped models, user overlay wins, unk
 
   it("an overlay entry shadows the shipped entry with the same id", () => {
     const overlayPath = join(
-      mkdtempSync(join(tmpdir(), "kelson-reg-")),
+      mkdtempSync(join(tmpdir(), "obligato-reg-")),
       "models.json",
     );
     writeFileSync(
@@ -40,7 +40,7 @@ describe("PROV-1: registry resolution — shipped models, user overlay wins, unk
 
   it("an unknown ref throws naming the ref and at least one known id", () => {
     const registry = loadRegistry(
-      join(mkdtempSync(join(tmpdir(), "kelson-reg-")), "none.json"),
+      join(mkdtempSync(join(tmpdir(), "obligato-reg-")), "none.json"),
     );
     expect(() => resolveEntry(registry, "gpt-42")).toThrow(/gpt-42/);
     expect(() => resolveEntry(registry, "gpt-42")).toThrow(/claude-opus-4-8/);

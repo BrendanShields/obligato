@@ -87,8 +87,8 @@ describe("EVP-12: bounded concurrency changes throughput, never results", () => 
       executor: "api",
       extraExecutors: {
         api: async (ctx) => {
-          if (ctx.sideEnv.KELSON_SIDE === "A") await Bun.sleep(250);
-          completions.push(`${ctx.task.id}:${ctx.sideEnv.KELSON_SIDE}`);
+          if (ctx.sideEnv.OBLIGATO_SIDE === "A") await Bun.sleep(250);
+          completions.push(`${ctx.task.id}:${ctx.sideEnv.OBLIGATO_SIDE}`);
           return { ok: true, cost_micro_usd: 100, detail: null, raw_ref: null };
         },
       },

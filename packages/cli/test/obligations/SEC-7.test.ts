@@ -12,7 +12,7 @@ import { createUiServer } from "../../src/ui/server.ts";
 
 // macOS: /tmp is a symlink to /private/tmp — realpath the base so the
 // containment under test compares against a non-symlinked root.
-const base = realpathSync(mkdtempSync(join(tmpdir(), "kelson-sec7-")));
+const base = realpathSync(mkdtempSync(join(tmpdir(), "obligato-sec7-")));
 const SENTINEL = "SEC7-OUTSIDE-SENTINEL-must-never-be-served";
 
 const staticDir = join(base, "dist");

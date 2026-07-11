@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { AgentRegistryEntry } from "@kelson/schemas";
+import type { AgentRegistryEntry } from "@obligato/schemas";
 import { route } from "../../src/routing.ts";
 import { openDb } from "../../src/storage.ts";
 import { entry, POLICY, REGISTRY } from "../routing-helpers.ts";

@@ -7,10 +7,10 @@ import type {
   UiTelemetryView,
   UiTraceView,
   Verdict,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { readChangelog } from "./loop.ts";
 
-// UX §8 view queries — the single data spine for `kelson ui`. Every function
+// UX §8 view queries — the single data spine for `obligato ui`. Every function
 // returns the shape of its Ui*View schema; the server validates (UX-11).
 // UX-12: empty stores yield well-formed empty views with their verb.
 
@@ -53,7 +53,7 @@ export const telemetryView = (db: Database): UiTelemetryView => {
        GROUP BY s.id ORDER BY s.rowid DESC LIMIT 100`,
     )
     .all() as UiTelemetryView["sessions"];
-  return { empty_verb: "kelson init", ...tiles, models, series, sessions };
+  return { empty_verb: "obligato init", ...tiles, models, series, sessions };
 };
 
 export const evalView = (db: Database): UiEvalView => {
@@ -68,7 +68,7 @@ export const evalView = (db: Database): UiEvalView => {
     deltas: string | null;
   })[];
   return {
-    empty_verb: "kelson eval ablate <pack> --suite <dir>",
+    empty_verb: "obligato eval ablate <pack> --suite <dir>",
     runs: rows.map((r) => {
       const deltas = r.deltas
         ? (JSON.parse(r.deltas) as {
@@ -93,7 +93,7 @@ export const evalView = (db: Database): UiEvalView => {
   };
 };
 
-// UX-23: stored verdicts for `kelson eval report` — a re-render, never a run.
+// UX-23: stored verdicts for `obligato eval report` — a re-render, never a run.
 export const evalReport = (
   db: Database,
   opts: { since?: string } = {},
@@ -158,7 +158,7 @@ export const benchView = (db: Database): UiBenchView => {
     finished_at: string | null;
   }[];
   return {
-    empty_verb: "kelson bench --suite <dir>",
+    empty_verb: "obligato bench --suite <dir>",
     runs: runs.map((r) => {
       const verdict = r.verdict ? (JSON.parse(r.verdict) as Verdict) : null;
       const agg = db
@@ -221,7 +221,7 @@ export const loopView = (db: Database, changelogPath: string): UiLoopView => {
   } catch {
     // missing changelog is the empty state, not an error (UX-12)
   }
-  return { empty_verb: "kelson loop propose", proposals, changelog };
+  return { empty_verb: "obligato loop propose", proposals, changelog };
 };
 
 export const traceView = (db: Database): UiTraceView => {
@@ -242,7 +242,7 @@ export const traceView = (db: Database): UiTraceView => {
     .all() as UiTraceView["edges"];
   return {
     // UX-26: the artifact index regenerates from the files of record
-    empty_verb: "kelson index rebuild",
+    empty_verb: "obligato index rebuild",
     nodes: nodes.map((n) => ({ ...n, drift_open: n.drift_open === 1 })),
     edges,
   };

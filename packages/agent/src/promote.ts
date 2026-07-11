@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { BenchmarkTask, type TaskCheck } from "@kelson/schemas";
+import { BenchmarkTask, type TaskCheck } from "@obligato/schemas";
 import { currentHead, listEvents, reconstructFrom } from "./sessions.ts";
 import { obligationChecks } from "./spec.ts";
 

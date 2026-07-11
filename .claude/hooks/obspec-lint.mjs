@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Proto-spec-compiler (dogfoods SPEC-1/DSL-1 structurally before Phase 1).
-// Validates fenced kelspec blocks in edited *.spec.md files: block kinds,
+// Validates fenced obspec blocks in edited *.spec.md files: block kinds,
 // required keys, clause vagueness rule (check or signed unverifiable).
 // Structural only — predicate compilation and generators arrive in Phase 1.
 import { readFileSync } from 'node:fs'
@@ -16,7 +16,7 @@ const KINDS = ['component', 'domain', 'clause', 'invariant']
 const EARS = ['ubiquitous', 'event', 'state', 'unwanted', 'optional']
 const errs = []
 const src = readFileSync(p, 'utf8')
-const blocks = [...src.matchAll(/```kelspec\n([\s\S]*?)```/g)].map((m) => m[1])
+const blocks = [...src.matchAll(/```obspec\n([\s\S]*?)```/g)].map((m) => m[1])
 if (blocks.length === 0) process.exit(0)
 
 const key = (b, k) => b.match(new RegExp(`^${k}:\\s*(.*)$`, 'm'))?.[1]?.trim()
@@ -41,7 +41,7 @@ blocks.forEach((b, i) => {
 })
 
 if (errs.length) {
-  console.error(`kelspec-lint: ${p}\n${errs.join('\n')}`)
+  console.error(`obspec-lint: ${p}\n${errs.join('\n')}`)
   process.exit(2)
 }
 process.exit(0)

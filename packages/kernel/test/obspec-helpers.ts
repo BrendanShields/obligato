@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type CompiledSpec, compileSpec } from "../src/kelspec.ts";
+import { type CompiledSpec, compileSpec } from "../src/obspec.ts";
 
 export const FIXTURES = join(import.meta.dir, "fixtures");
-export const RATE_LIMITER_FILE = "docs/kelspec/rate-limiter.spec.md";
+export const RATE_LIMITER_FILE = "docs/obspec/rate-limiter.spec.md";
 
 export const rateLimiterMarkdown = (): string =>
   readFileSync(join(FIXTURES, "DSL", "rate-limiter.spec.md"), "utf8");

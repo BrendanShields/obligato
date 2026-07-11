@@ -2,7 +2,7 @@ import { execFile, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { SandboxProfile } from "@kelson/schemas";
+import type { SandboxProfile } from "@obligato/schemas";
 import { restoreSnapshot } from "./snapshots.ts";
 
 export interface ExecResult {
@@ -59,7 +59,7 @@ export const createWorkspace = (
         "network allowlists are not implemented yet — only full deny is supported (SEC-2 v1)",
       );
   }
-  const root = mkdtempSync(join(tmpdir(), "kelson-ws-"));
+  const root = mkdtempSync(join(tmpdir(), "obligato-ws-"));
   const dir = join(root, "workspace");
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });

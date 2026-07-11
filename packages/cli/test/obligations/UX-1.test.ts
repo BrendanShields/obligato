@@ -2,14 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { InitResult, PackLintResult } from "@kelson/schemas";
+import { InitResult, PackLintResult } from "@obligato/schemas";
 import { COMMANDS } from "../../src/index.ts";
 import { JSON_OUTPUT } from "../../src/output/registry.ts";
 import { makeTestRepo, runCli } from "../agent-helpers.ts";
 
 // A byte-identical pack pair → requiredBump "none" → lint ok.
 const makePack = (): string => {
-  const dir = mkdtempSync(join(tmpdir(), "kelson-pack-"));
+  const dir = mkdtempSync(join(tmpdir(), "obligato-pack-"));
   writeFileSync(
     join(dir, "pack.yaml"),
     JSON.stringify({
@@ -34,14 +34,14 @@ describe("UX-1: every CLI command declares a --json contract or a recorded skip;
     );
   });
 
-  it("kelson init --json emits an InitResult", async () => {
+  it("obligato init --json emits an InitResult", async () => {
     const t = makeTestRepo({});
     const r = await runCli(t, ["init", "--dir", t.repo, "--json"]);
     expect(r.exitCode).toBe(0);
     expect(InitResult.safeParse(JSON.parse(r.stdout)).success).toBe(true);
   });
 
-  it("kelson pack lint --json emits a PackLintResult", async () => {
+  it("obligato pack lint --json emits a PackLintResult", async () => {
     const t = makeTestRepo({});
     const r = await runCli(t, [
       "pack",

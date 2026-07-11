@@ -6,7 +6,7 @@ import {
   type Executor,
   ReplayRecord,
   type SandboxProfile,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import {
   type Lockfileish,
@@ -106,7 +106,7 @@ export const runReplay = async (
   const task = tasks.find((t) => t.id === taskId);
   if (!task)
     throw new Error(
-      `session ${opts.sessionId} has no promoted benchmark task in ${opts.suiteDir} — run \`kelson promote <session> --suite <dir>\` first (UX-23)`,
+      `session ${opts.sessionId} has no promoted benchmark task in ${opts.suiteDir} — run \`obligato promote <session> --suite <dir>\` first (UX-23)`,
     );
   const fn = { ...EXECUTORS, ...opts.extraExecutors }[opts.executor];
   if (!fn)
@@ -176,8 +176,8 @@ export const runReplay = async (
       if (opts.executor === "claude")
         materializeClaudeSide(ws.dir, opts.lockfile);
       outcome = await runTask(task, ws, fn, {
-        KELSON_SEED: "0",
-        KELSON_ENABLED_PACKS: opts.lockfile.entries
+        OBLIGATO_SEED: "0",
+        OBLIGATO_ENABLED_PACKS: opts.lockfile.entries
           .filter((e) => e.enabled)
           .map((e) => e.name)
           .join(","),

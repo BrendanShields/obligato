@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { readDecision } from "@kelson/kernel";
+import { readDecision } from "@obligato/kernel";
 import { runTurn } from "../../src/loop.ts";
 import { escalateStep } from "../../src/routing.ts";
 import { loadSpecContext } from "../../src/spec.ts";

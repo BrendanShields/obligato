@@ -3,13 +3,13 @@ import {
   DEFAULT_DB_PATH,
   runBench as kernelRunBench,
   openDb,
-} from "@kelson/kernel";
+} from "@obligato/kernel";
 import {
   BenchReport,
   Executor,
   Lockfile,
   SandboxProfile,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { panel, renderVerdict, table } from "../components/render.js";
@@ -20,7 +20,7 @@ import { emitJson } from "../output/json.js";
 // re-export is the identity the obligation test checks against.
 export const BENCH_ENTRY = kernelRunBench;
 
-// UX-18: `kelson bench --suite <dir> [--agents a,b] [--repeats n] [--seed s]
+// UX-18: `obligato bench --suite <dir> [--agents a,b] [--repeats n] [--seed s]
 // [--json]` — an EVP-11 cross-agent run through the kernel entry point.
 export const benchCommand = async (argv: string[]): Promise<void> => {
   const { named } = parseArgs(argv);
@@ -55,7 +55,7 @@ export const benchCommand = async (argv: string[]): Promise<void> => {
   const lockfilePath =
     typeof named.lockfile === "string"
       ? named.lockfile
-      : join(process.cwd(), "kelson.lock");
+      : join(process.cwd(), "obligato.lock");
   let lockfile: Lockfile;
   try {
     lockfile = Lockfile.parse(JSON.parse(await Bun.file(lockfilePath).text()));
@@ -68,7 +68,7 @@ export const benchCommand = async (argv: string[]): Promise<void> => {
   const db = openDb(typeof named.db === "string" ? named.db : DEFAULT_DB_PATH);
   try {
     // EVP-9: the composition root injects the native executor.
-    const { apiExecutor } = await import("@kelson/agent");
+    const { apiExecutor } = await import("@obligato/agent");
     let result: Awaited<ReturnType<typeof BENCH_ENTRY>>;
     try {
       result = await BENCH_ENTRY(db, {
@@ -88,7 +88,7 @@ export const benchCommand = async (argv: string[]): Promise<void> => {
         ...(typeof named.model === "string" ? { model: named.model } : {}),
       });
     } catch (e) {
-      // UX-18: a refusal exits non-zero with a kelson: diagnostic, not a
+      // UX-18: a refusal exits non-zero with a obligato: diagnostic, not a
       // raw stack (pre-flight refusals are expected operator feedback).
       return fail((e as Error).message);
     }

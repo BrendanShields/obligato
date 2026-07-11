@@ -32,7 +32,7 @@ export const buildLauncher = (
 
   const title = new TextRenderable(renderer, {
     id: "title",
-    content: "kelson — pick a command (esc to quit)",
+    content: "obligato — pick a command (esc to quit)",
     flexShrink: 0,
   });
   renderer.root.add(title);

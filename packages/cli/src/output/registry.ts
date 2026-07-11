@@ -5,7 +5,7 @@ import {
   IndexRebuildResult,
   InitResult,
   RunResult,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import type { ZodType } from "zod";
 
 // UX-1: every COMMANDS entry maps here to its declared --json output schema or a

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Proposal } from "@kelson/schemas";
+import { Proposal } from "@obligato/schemas";
 import { createProposal } from "../../src/loop.ts";
 import { openDb } from "../../src/storage.ts";
 import { DISABLE_PONYTAIL, draftProposal, loopCtx } from "../loop-helpers.ts";

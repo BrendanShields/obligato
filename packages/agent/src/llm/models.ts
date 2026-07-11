@@ -1,4 +1,4 @@
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 
 // Prices in micro-USD per million tokens, from the claude-api reference
 // (cached 2026-06-24): cache_read = 0.1x input, cache_write = 1.25x input

@@ -8,10 +8,10 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { AuthFile, type Credential } from "@kelson/schemas";
+import { AuthFile, type Credential } from "@obligato/schemas";
 
 export const defaultAuthPath = (): string =>
-  join(homedir(), ".kelson", "auth.json");
+  join(homedir(), ".obligato", "auth.json");
 
 export const loadAuth = (path = defaultAuthPath()): AuthFile => {
   if (!existsSync(path)) return {};

@@ -11,7 +11,7 @@ export interface InferredClauseDraft {
   evidence: string[]; // code paths the clause was inferred from (SPEC-7)
 }
 
-// SPEC-7: excavation emits kelspec with authority: inferred — drift
+// SPEC-7: excavation emits obspec with authority: inferred — drift
 // detectors, never build blockers, until a human promotes them. Evidence
 // paths ride as prose next to each block (prose is never load-bearing,
 // DSL-1), and as registered trace-link upstreams at ingest.
@@ -32,7 +32,7 @@ export const inferredSpecMarkdown = (args: {
         ...(c.observe ? { observe: c.observe } : {}),
         check: c.check,
       };
-      return `Inferred from: ${c.evidence.map((e) => `\`${e}\``).join(", ")}\n\n\`\`\`kelspec\n${JSON.stringify(clause, null, 2)}\n\`\`\``;
+      return `Inferred from: ${c.evidence.map((e) => `\`${e}\``).join(", ")}\n\n\`\`\`obspec\n${JSON.stringify(clause, null, 2)}\n\`\`\``;
     })
     .join("\n\n");
   const component = {
@@ -42,7 +42,7 @@ export const inferredSpecMarkdown = (args: {
     authority: "inferred",
     events: args.events,
   };
-  return `# Kelspec: ${args.componentId} (excavated)\n\nEmitted by excavation with \`authority: inferred\` (SPEC-7): every clause below is a drift detector, not a build blocker, until a human promotes it.\n\n\`\`\`kelspec\n${JSON.stringify(component, null, 2)}\n\`\`\`\n\n${blocks}\n`;
+  return `# Obspec: ${args.componentId} (excavated)\n\nEmitted by excavation with \`authority: inferred\` (SPEC-7): every clause below is a drift detector, not a build blocker, until a human promotes it.\n\n\`\`\`obspec\n${JSON.stringify(component, null, 2)}\n\`\`\`\n\n${blocks}\n`;
 };
 
 export interface PromotionCandidate {

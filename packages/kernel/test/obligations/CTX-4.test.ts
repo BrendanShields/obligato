@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { OverrunAttribution } from "@kelson/schemas";
+import { OverrunAttribution } from "@obligato/schemas";
 import {
   BudgetMonitor,
   budgetEvents,

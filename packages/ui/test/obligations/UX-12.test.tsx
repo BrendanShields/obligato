@@ -6,8 +6,8 @@ import { Empty } from "../../src/components";
 // empty state displays the producing CLI verb.
 describe("UX-12: views render a designed empty state naming the producing CLI verb", () => {
   it("Empty displays the verb", () => {
-    const html = renderToStaticMarkup(<Empty verb="kelson loop propose" />);
-    expect(html).toContain("kelson loop propose");
+    const html = renderToStaticMarkup(<Empty verb="obligato loop propose" />);
+    expect(html).toContain("obligato loop propose");
     expect(html).toContain("no data yet");
   });
 });

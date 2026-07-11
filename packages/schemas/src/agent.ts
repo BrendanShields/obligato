@@ -71,7 +71,7 @@ export const AgentConfig = z.object({
   schema_version: SchemaVersion,
 });
 
-// UX-15: kelson run --json final result.
+// UX-15: obligato run --json final result.
 export const RunResult = z.object({
   session_id: Ulid,
   status: z.enum(["done", "paused"]),

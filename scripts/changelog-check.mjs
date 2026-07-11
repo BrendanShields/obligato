@@ -4,7 +4,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 
-const PATH = '.kelson/changelog.jsonl'
+const PATH = '.obligato/changelog.jsonl'
 const ref = process.argv[2] ?? 'HEAD'
 
 const current = existsSync(PATH) ? readFileSync(PATH, 'utf8') : ''

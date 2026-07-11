@@ -11,11 +11,11 @@ const gate = (name, fn) => gates.push([name, fn])
 gate('doctor', () => run('node scripts/doctor.mjs'))
 gate('spec-lint', () =>
   run(`echo '{"tool_input":{"file_path":"docs/specs/gates.md"}}' | node .claude/hooks/spec-lint.mjs`))
-gate('kelspec-lint', () => {
+gate('obspec-lint', () => {
   const files = execSync(`find . -name '*.spec.md' -not -path './node_modules/*'`, { cwd: root })
     .toString().trim().split('\n').filter(Boolean)
   for (const f of files)
-    run(`echo '{"tool_input":{"file_path":"${f}"}}' | node .claude/hooks/kelspec-lint.mjs`)
+    run(`echo '{"tool_input":{"file_path":"${f}"}}' | node .claude/hooks/obspec-lint.mjs`)
 })
 gate('schema-consistency', () => run('node scripts/schema-consistency.mjs'))
 gate('typecheck', () => run('bunx tsc --noEmit'))

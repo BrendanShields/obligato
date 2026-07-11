@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { openDb, promoteInferred, registerArtifact } from "@kelson/kernel";
-import { DriftListResult } from "@kelson/schemas";
+import { openDb, promoteInferred, registerArtifact } from "@obligato/kernel";
+import { DriftListResult } from "@obligato/schemas";
 import { PROMOTE_ENTRY } from "../../src/commands/drift.ts";
 import { makeTestRepo, runCli } from "../agent-helpers.ts";
 
@@ -44,7 +44,7 @@ describe("UX-22: drift list survival table + fatigue collapse; promote is all-or
 
   it("11 open items collapse to authority-split module counts; 10 render itemized; survival renders fully in both", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const db = openDb(dbPath);
     seedDrift(db, 11);
     db.close();
@@ -94,7 +94,7 @@ describe("UX-22: drift list survival table + fatigue collapse; promote is all-or
 
   it("promote flips exactly the named artifacts to confirmed; a selection with one non-inferred id flips nothing; empty flips nothing", async () => {
     const t = makeTestRepo({});
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
     const db = openDb(dbPath);
     seedDrift(db, 4); // inf-0, inf-3 inferred; code-1, code-2 authored
     const before = authorities(db);

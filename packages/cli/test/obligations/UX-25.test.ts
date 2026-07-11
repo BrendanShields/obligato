@@ -2,8 +2,8 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
-import { UiBenchView } from "@kelson/schemas";
+import { openDb } from "@obligato/kernel";
+import { UiBenchView } from "@obligato/schemas";
 import { createUiServer } from "../../src/ui/server.ts";
 
 const RUN_ID = "01HZZZZZZZZZZZZZZZZZZZZZZA";
@@ -44,10 +44,10 @@ const seed = (dbPath: string): void => {
   db.close();
 };
 
-describe("UX-25: /api/bench renders the per-agent matrix and CI-carrying verdict; empty store names kelson bench", () => {
-  const dir = mkdtempSync(join(tmpdir(), "kelson-ux25-"));
+describe("UX-25: /api/bench renders the per-agent matrix and CI-carrying verdict; empty store names obligato bench", () => {
+  const dir = mkdtempSync(join(tmpdir(), "obligato-ux25-"));
 
-  it("an empty store returns 200 with the schema-valid empty state naming `kelson bench`", async () => {
+  it("an empty store returns 200 with the schema-valid empty state naming `obligato bench`", async () => {
     const dbPath = join(dir, "empty.db");
     openDb(dbPath).close();
     const server = createUiServer({ dbPath, port: 0 });
@@ -56,7 +56,7 @@ describe("UX-25: /api/bench renders the per-agent matrix and CI-carrying verdict
       expect(res.status).toBe(200);
       const view = UiBenchView.parse(await res.json());
       expect(view.runs).toHaveLength(0);
-      expect(view.empty_verb).toContain("kelson bench");
+      expect(view.empty_verb).toContain("obligato bench");
     } finally {
       server.stop(true);
     }

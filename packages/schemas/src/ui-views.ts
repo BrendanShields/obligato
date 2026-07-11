@@ -5,7 +5,7 @@ import { Delta, EvalRunKind, Executor, VerdictDecision } from "./eval.ts";
 import { ChangelogEntry, ProposalState } from "./loop.ts";
 import { IsoUtc, MicroUsd, Sha256, Ulid } from "./scalars.ts";
 
-// UX-11: `kelson ui` API view schemas — UI-only envelopes composing the
+// UX-11: `obligato ui` API view schemas — UI-only envelopes composing the
 // CLI/kernel schemas by reference. UX-12: every view carries `empty_verb`,
 // the CLI command that produces its data.
 const EmptyVerb = z.string().min(1);

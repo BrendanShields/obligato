@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { RunManifest, SandboxProfile } from "@kelson/schemas";
+import { RunManifest, SandboxProfile } from "@obligato/schemas";
 import { runEval } from "../../src/evalrun.ts";
 import { openDb } from "../../src/storage.ts";
 import {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import type { StepEvent } from "@kelson/schemas";
+import type { StepEvent } from "@obligato/schemas";
 import fc from "fast-check";
 import { stripStepEvent } from "../../src/privacy.ts";
 
-const MARKER = "XKELSON_SECRET_MARKERX";
+const MARKER = "XOBLIGATO_SECRET_MARKERX";
 
 const eventArb: fc.Arbitrary<StepEvent> = fc
   .record({

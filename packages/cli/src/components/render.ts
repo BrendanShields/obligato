@@ -1,4 +1,4 @@
-import type { Verdict } from "@kelson/schemas";
+import type { Verdict } from "@obligato/schemas";
 import { paint, type Tone } from "./theme.js";
 
 // UX §7 static component set: pure string renderers. The only stdout writer

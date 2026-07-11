@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
-import { VerificationReport } from "@kelson/schemas";
+import { VerificationReport } from "@obligato/schemas";
 import { hashContent, registerArtifact } from "../../src/artifacts.ts";
 import { openDb } from "../../src/storage.ts";
 import { runVerify, verifyPassed } from "../../src/verify.ts";
@@ -10,7 +10,7 @@ const passingTests = () => ({ status: "passed" as const, detail: null });
 const cleanRepo = (db: Database) => {
   registerArtifact(db, {
     repo: "r",
-    logical_id: "docs/kelspec/w.spec.md#W-1",
+    logical_id: "docs/obspec/w.spec.md#W-1",
     type: "spec",
     content: "clause-v1",
   });
@@ -19,7 +19,7 @@ const cleanRepo = (db: Database) => {
     logical_id: "src/w.ts",
     type: "code_region",
     content: "code-v1",
-    upstream: ["docs/kelspec/w.spec.md#W-1"],
+    upstream: ["docs/obspec/w.spec.md#W-1"],
   });
   return (id: string) =>
     id === "src/w.ts" ? hashContent("code-v1") : hashContent("clause-v1");

@@ -10,7 +10,7 @@ import { tmpDir } from "../eval-helpers.ts";
 const v1 = join(import.meta.dir, "..", "fixtures", "OSS-6", "v1");
 const v2 = join(import.meta.dir, "..", "fixtures", "OSS-6", "v2");
 const tmp = () =>
-  join("/tmp", `kelson-oss6-${Math.random().toString(36).slice(2)}.db`);
+  join("/tmp", `obligato-oss6-${Math.random().toString(36).slice(2)}.db`);
 
 describe("OSS-6: versioned schemas with forward migrations, no silent coercion", () => {
   it("a store created at schema v1 is readable after upgrade to v2", () => {

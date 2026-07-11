@@ -2,7 +2,7 @@
 
 - **Status:** Draft for review
 - **Date:** 2026-07-02
-- **Upstream:** [PRD §8.1, §8.7](./2026-07-02-agent-harness-prd.md) (PIPE-1, PIPE-10). This is the published contract external systems implement; Kelson never needs to know the producer.
+- **Upstream:** [PRD §8.1, §8.7](./2026-07-02-agent-harness-prd.md) (PIPE-1, PIPE-10). This is the published contract external systems implement; Obligato never needs to know the producer.
 - **Clause family:** `SIG-*`
 
 ## 1. Schema (v1 — JSON; normative Zod schema in `packages/schemas`, JSON Schema exported from it)
@@ -19,7 +19,7 @@
     { "type": "url", "value": "https://grafana.example/d/abc" },
     { "type": "text", "value": "5xx rate 4.2% for 11 minutes, rolled back" }
   ],
-  "artifact_refs": ["docs/kelspec/checkout.spec.md#CHK-3"],
+  "artifact_refs": ["docs/obspec/checkout.spec.md#CHK-3"],
   "dedupe_key": "deploy-v2.3.1-5xx"
 }
 ```
@@ -39,7 +39,7 @@ Field rules:
 
 ## 2. Delivery (v1: files, no server)
 
-Producers write one JSON file per signal to `.kelson/signals/inbox/` in the target repo (or pipe to `kelson signals ingest -`). The harness ingests on session start and on `kelson signals ingest`, moving processed files to `.kelson/signals/processed/<ULID>.json`. Local-first (TEL-2 discipline): no listener, no port, nothing to secure. A webhook receiver is a post-v1 companion concern (PRD §8.7) — it would translate to these files, so the contract doesn't change.
+Producers write one JSON file per signal to `.obligato/signals/inbox/` in the target repo (or pipe to `obligato signals ingest -`). The harness ingests on session start and on `obligato signals ingest`, moving processed files to `.obligato/signals/processed/<ULID>.json`. Local-first (TEL-2 discipline): no listener, no port, nothing to secure. A webhook receiver is a post-v1 companion concern (PRD §8.7) — it would translate to these files, so the contract doesn't change.
 
 - **SIG-2.** The ingester shall process inbox files idempotently: re-ingesting an already-processed file (same content hash) shall create no duplicate SIGNAL row.
   *Obligation:* integration test — double ingestion of the same file and of a byte-identical copy yields one row.
@@ -47,8 +47,8 @@ Producers write one JSON file per signal to `.kelson/signals/inbox/` in the targ
 ## 3. Versioning Rules
 
 - **Additive** (new optional field, new enum value in an open position) → minor; consumers ignore what they don't know.
-- **Breaking** (field removed/renamed/retyped, closed-enum value removed, semantics changed) → `schema_version` increments; Kelson supports the previous major for ≥ 2 kernel minor releases with a migration note in the changelog.
+- **Breaking** (field removed/renamed/retyped, closed-enum value removed, semantics changed) → `schema_version` increments; Obligato supports the previous major for ≥ 2 kernel minor releases with a migration note in the changelog.
 - The exported JSON Schema is published in the registry repo and versioned with this spec; OSS-6's no-silent-coercion rule applies to cross-version signal reads.
 
-- **SIG-3.** If a signal declares an unsupported `schema_version`, then the ingester shall park it in `.kelson/signals/unsupported/` with a diagnostic rather than guess, and shall surface a count in `kelson signals inbox`.
+- **SIG-3.** If a signal declares an unsupported `schema_version`, then the ingester shall park it in `.obligato/signals/unsupported/` with a diagnostic rather than guess, and shall surface a count in `obligato signals inbox`.
   *Obligation:* fixture with `schema_version: 99` — parked, counted, never a SIGNAL row.

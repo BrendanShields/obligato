@@ -7,14 +7,14 @@ try {
   const { existsSync } = await import("node:fs");
   const { join } = await import("node:path");
   const { detectStaleness, openDb, rehashFromDisk } = await import(
-    "@kelson/kernel"
+    "@obligato/kernel"
   );
 
   const input = JSON.parse(await Bun.stdin.text()) as {
     tool_input?: { file_path?: string };
   };
   const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-  const dbPath = join(root, ".kelson", "kelson.db");
+  const dbPath = join(root, ".obligato", "obligato.db");
   if (input.tool_input?.file_path && existsSync(dbPath)) {
     const db = openDb(dbPath);
     rehashFromDisk(db, root, root);

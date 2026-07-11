@@ -3,7 +3,7 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const DEFAULT_DB_PATH = join(homedir(), ".kelson", "kelson.db");
+export const DEFAULT_DB_PATH = join(homedir(), ".obligato", "obligato.db");
 export const KERNEL_MIGRATIONS_DIR = join(import.meta.dir, "..", "migrations");
 
 interface Migration {

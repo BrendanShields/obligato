@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
-import type { Artifact } from "@kelson/schemas";
+import type { Artifact } from "@obligato/schemas";
 import {
   buildGate,
   detectDrift,
@@ -9,7 +9,7 @@ import {
 } from "../../src/artifacts.ts";
 import { openDb } from "../../src/storage.ts";
 
-const CLAUSE = "docs/kelspec/w.spec.md#W-1";
+const CLAUSE = "docs/obspec/w.spec.md#W-1";
 
 const staleClause = (
   db: Database,

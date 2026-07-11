@@ -1,4 +1,4 @@
-import { loadRegistry } from "@kelson/agent";
+import { loadRegistry } from "@obligato/agent";
 import type { DispatchTable } from "../wizards.js";
 
 // UX-17: the /model listing IS the exported registry function — identity
@@ -91,7 +91,7 @@ export const slashTargets = (
 export const HELP_TEXT = [
   "/help — this help",
   "/model [id] — list registry models or switch the session model (UX-17)",
-  "/route <flags> — routing transparency (same as `kelson route explain`)",
+  "/route <flags> — routing transparency (same as `obligato route explain`)",
   "/exit — leave the chat",
 ].join("\n");
 

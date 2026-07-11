@@ -2,8 +2,8 @@ import type { Database } from "bun:sqlite";
 import { mkdtempSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import { openDb } from "@obligato/kernel";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import type { StepDeps } from "../src/loop.ts";
 import { appendEvent, createAgentSession } from "../src/sessions.ts";
@@ -72,7 +72,7 @@ export const fixture = (
   opts: { dbPath?: string; task?: string } = {},
 ): Fixture => {
   // realpath: macOS tmpdir is a symlink; tool containment compares prefixes.
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-agent-")));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-agent-")));
   const db = openDb(opts.dbPath ?? ":memory:");
   const { sessionId, taskId, rootEventId } = createAgentSession(db, {
     repo: "test-repo",

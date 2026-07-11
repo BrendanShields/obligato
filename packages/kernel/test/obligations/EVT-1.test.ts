@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Verdict } from "@kelson/schemas";
+import { Verdict } from "@obligato/schemas";
 import { runEval } from "../../src/evalrun.ts";
 import { openDb } from "../../src/storage.ts";
 import {

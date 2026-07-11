@@ -16,7 +16,7 @@ const manifest = (capabilities: string[], kernel_compat = ">=0.1 <2") =>
   ].join("\n");
 
 const writePack = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(tmpdir(), "kelson-pack-"));
+  const dir = mkdtempSync(join(tmpdir(), "obligato-pack-"));
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), content);

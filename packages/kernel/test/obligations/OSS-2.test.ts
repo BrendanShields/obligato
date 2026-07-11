@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { SharedSessionEvent, SharedStepEvent } from "@kelson/schemas";
+import { SharedSessionEvent, SharedStepEvent } from "@obligato/schemas";
 
 const VALID_STEP = {
   id: "01ARZ3NDEKTSV4RRFFQ69G5FAV",

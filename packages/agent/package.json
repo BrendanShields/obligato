@@ -1,5 +1,5 @@
 {
-  "name": "@kelson/agent",
+  "name": "@obligato/agent",
   "version": "0.0.1",
   "license": "Apache-2.0",
   "private": true,
@@ -8,8 +8,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@kelson/kernel": "workspace:*",
-    "@kelson/schemas": "workspace:*",
+    "@obligato/kernel": "workspace:*",
+    "@obligato/schemas": "workspace:*",
     "ai": "7.0.14",
     "@ai-sdk/anthropic": "4.0.7",
     "@ai-sdk/openai-compatible": "3.0.5",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Lockfile } from "@kelson/schemas";
+import { Lockfile } from "@obligato/schemas";
 import { hashLockfile } from "../../src/packs.ts";
 
 // A lockfile authored under an earlier kernel, byte-frozen here. A kernel

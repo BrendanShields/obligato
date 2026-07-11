@@ -14,7 +14,7 @@ export const EVIDENCE_TABLES = [
   "bundle_event",
 ] as const;
 
-export const EVIDENCE_FILES = [".kelson/findings.json"] as const;
+export const EVIDENCE_FILES = [".obligato/findings.json"] as const;
 
 const dbLink = new RegExp(
   `^ev:db/(${EVIDENCE_TABLES.join("|")})/[0-9A-HJKMNP-TV-Z]{26}$`,
@@ -71,7 +71,7 @@ export const Proposal = z.strictObject({
   schema_version: SchemaVersion,
 });
 
-// PACK-5 (.kelson/changelog.jsonl): seq must equal last+1, append-only.
+// PACK-5 (.obligato/changelog.jsonl): seq must equal last+1, append-only.
 export const ChangelogEntry = z.strictObject({
   seq: z.number().int().positive(),
   at: IsoUtc,

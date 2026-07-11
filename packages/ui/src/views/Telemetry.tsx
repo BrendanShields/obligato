@@ -1,4 +1,4 @@
-import type { UiTelemetryView } from "@kelson/schemas";
+import type { UiTelemetryView } from "@obligato/schemas";
 import {
   CartesianGrid,
   Line,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { EvidenceLink } from "@kelson/schemas";
+import type { EvidenceLink } from "@obligato/schemas";
 import {
   type CycleDraft,
   EDIT_BUDGET_DEFAULT,

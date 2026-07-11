@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { openDb } from "@kelson/kernel";
+import { openDb } from "@obligato/kernel";
 import fc from "fast-check";
 import { beginSession, finishSession } from "../../src/session.ts";
 import { parseTranscript } from "../../src/transcript.ts";

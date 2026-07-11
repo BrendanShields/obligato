@@ -1,4 +1,4 @@
-# Kelson
+# Obligato
 
 Self-improving, token-efficient engineering harness: work flows feedback → ideation → planning → spec → build → verify, every behavioral claim compiles to an executable check, and the harness's own configuration evolves only through evidence. This file is the ontology — the canonical vocabulary. Requirements live in `docs/specs/`; this file owns what the words mean.
 
@@ -98,7 +98,7 @@ Spend on evals, replay, and the loop divided by spend on product work. Capped; o
 ### Specs & Traceability
 
 **Spec**:
-A kelspec document: human-reviewable Markdown whose fenced blocks are the machine-parseable contract between planning and build.
+A obspec document: human-reviewable Markdown whose fenced blocks are the machine-parseable contract between planning and build.
 
 **Clause**:
 An addressable requirement inside a spec, in EARS form, with a stable never-renumbered ID. The atom of traceability — links, drift, and obligations are all clause-level.
@@ -216,7 +216,7 @@ The recorded reproduction key of an eval run — lockfile, suite version, models
 ### Native Runtime & Sessions
 
 **Runtime**:
-Kelson's own agent loop — sessions, steps, tools, permissions, provider access — with Claude Code remaining one executor among peers.
+Obligato's own agent loop — sessions, steps, tools, permissions, provider access — with Claude Code remaining one executor among peers.
 _Avoid_: agent (overloaded; qualify as agent loop or registry agent)
 
 **Session**:

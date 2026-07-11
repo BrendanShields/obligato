@@ -27,7 +27,7 @@ schema_version: 1
 name: ponytail            # kebab-case, unique in registry
 version: 1.2.0            # semver (rules in §3)
 kind: efficiency          # stage|efficiency|spec_tooling|routing|eval_suite|agent_registry
-kernel_compat: ">=0.1 <2" # semver range of the Kelson kernel (grammar below)
+kernel_compat: ">=0.1 <2" # semver range of the Obligato kernel (grammar below)
 capabilities:             # closed enum — the SEC-4 surfaces this pack may influence
   - rules
 description: One line.
@@ -41,12 +41,12 @@ description: One line.
 ## 2. Hashing & Signing
 
 - **Content hash:** SHA-256 over the pack's files in path-sorted order, each contributing `path + "\0" + bytes`; manifest included, `pack.sig` excluded (the signature cannot cover itself). Canonical JSON (RFC 8785) wherever JSON is hashed.
-- **Signature:** Ed25519 detached signature over the content hash (`pack.sig`), key published in the registry repo's `keys/` directory (ADR-0003). `kelson` verifies at install; unsigned installs require an explicit `--unsigned` flag that marks the pack untrusted in telemetry.
+- **Signature:** Ed25519 detached signature over the content hash (`pack.sig`), key published in the registry repo's `keys/` directory (ADR-0003). `obligato` verifies at install; unsigned installs require an explicit `--unsigned` flag that marks the pack untrusted in telemetry.
 
 - **PACK-2.** The pack installer shall recompute the content hash, verify the Ed25519 signature against the registry-published key, and refuse mismatches; packs installed with `--unsigned` shall carry an `untrusted` flag on every telemetry event they influence.
   *Obligation:* tamper test — one flipped byte in any file fails install; an `--unsigned` fixture's step events carry the flag.
 
-## 3. Semver Rules (mechanical, checked by `kelson pack lint`)
+## 3. Semver Rules (mechanical, checked by `obligato pack lint`)
 
 | Change | Bump |
 |---|---|
@@ -54,7 +54,7 @@ description: One line.
 | Entry added, entry content changed with same surface | **minor** |
 | Typo/metadata-only (no content-hash change to entries) | **patch** |
 
-- **PACK-3.** `kelson pack lint` shall compute the required bump by diffing manifests and entry hashes against the previous published version — capabilities or kind changed → major; any content hash changed → minor; manifest-metadata-only → patch — and shall fail CI when the declared version bump is lower than required.
+- **PACK-3.** `obligato pack lint` shall compute the required bump by diffing manifests and entry hashes against the previous published version — capabilities or kind changed → major; any content hash changed → minor; manifest-metadata-only → patch — and shall fail CI when the declared version bump is lower than required.
   *Obligation:* fixture pairs per table row — each change class yields the required bump; an under-bumped fixture fails.
 
 ## 3.1 Capability surfaces (normative for SEC-4)
@@ -74,7 +74,7 @@ description: One line.
 
 Declared capabilities are a **ceiling**: declared-but-absent content is legal (an empty pack with `capabilities: []` is valid and inert). Excess = addressed − declared; non-empty excess refuses the load **atomically** with a diagnostic naming every excess surface and one example path each. (Pinned after divergence testing: both blind readers converged on exactly this table.)
 
-## 4. Lockfile (`kelson.lock`, in the target repo, git-tracked)
+## 4. Lockfile (`obligato.lock`, in the target repo, git-tracked)
 
 ```json
 {
@@ -91,7 +91,7 @@ Lockfile hash = SHA-256 of its RFC 8785 canonical form, excluding `parent_hash` 
 - **PACK-4.** Lockfile hashing shall be canonical: semantically identical lockfiles (key order, whitespace) produce identical hashes, and any entry change produces a different hash.
   *Obligation:* PBT — hash invariant under key/array-formatting permutations that preserve content; sensitive to every content field mutation (`parent_hash` excluded — it chains history, per this section).
 
-## 5. Changelog (`.kelson/changelog.jsonl`, append-only, git-tracked)
+## 5. Changelog (`.obligato/changelog.jsonl`, append-only, git-tracked)
 
 One JSON object per line: `{seq, at, action: apply|revert|human_change, proposal_id, lockfile_before, lockfile_after, evidence_summary}`. Invariant I5 (append-only) is enforced by the writer (seq must equal last+1) and by CI (a PR that rewrites an existing line fails).
 
@@ -100,7 +100,7 @@ One JSON object per line: `{seq, at, action: apply|revert|human_change, proposal
 
 ## 6. Registry (v1: a git repo)
 
-The registry is a public git repository: `packs/<name>/<version>/` (manifest + hash + sig, not content — content lives in the pack's own repo/tarball URL recorded in the manifest), `keys/<name>.pub`, and `ledger/` (EVT-3 entries). Publishing = PR passing the OSS-4 contribution gate (reproducible ablation + SEC-5 scan). No registry server in v1; `kelson` reads the repo raw. This keeps trust auditable (git history is the audit log) and infrastructure at zero.
+The registry is a public git repository: `packs/<name>/<version>/` (manifest + hash + sig, not content — content lives in the pack's own repo/tarball URL recorded in the manifest), `keys/<name>.pub`, and `ledger/` (EVT-3 entries). Publishing = PR passing the OSS-4 contribution gate (reproducible ablation + SEC-5 scan). No registry server in v1; `obligato` reads the repo raw. This keeps trust auditable (git history is the audit log) and infrastructure at zero.
 
-- **PACK-6.** `kelson pack publish` shall produce a registry PR containing manifest, content hash, signature, and the eval-run manifest hash backing its ledger entry, and the registry CI shall reject submissions missing any of the four.
+- **PACK-6.** `obligato pack publish` shall produce a registry PR containing manifest, content hash, signature, and the eval-run manifest hash backing its ledger entry, and the registry CI shall reject submissions missing any of the four.
   *Obligation:* CI contribution-gate test (extends OSS-4's) with per-artifact omission fixtures.

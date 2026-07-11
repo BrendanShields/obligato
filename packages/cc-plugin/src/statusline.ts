@@ -4,7 +4,7 @@ export const renderStatusline = (input: unknown): string => {
   const model =
     (input as { model?: { display_name?: string } })?.model?.display_name ??
     "?";
-  return `kelson ⛭ build · ${model} · budget —`;
+  return `obligato ⛭ build · ${model} · budget —`;
 };
 
 if (import.meta.main) {

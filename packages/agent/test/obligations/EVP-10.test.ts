@@ -2,14 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
-import { BenchmarkTask } from "@kelson/schemas";
+import { openDb } from "@obligato/kernel";
+import { BenchmarkTask } from "@obligato/schemas";
 import { promoteSession } from "../../src/promote.ts";
 import { appendEvent, createAgentSession } from "../../src/sessions.ts";
 
 // A minimal git repo so createAgentSession's storeSnapshot succeeds.
 const gitRepo = (): string => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-promote-")));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-promote-")));
   const run = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: dir });
   run(["init", "-q"]);
   run(["config", "user.email", "t@t.io"]);
@@ -23,7 +23,7 @@ const gitRepo = (): string => {
 describe("EVP-10: promote a session into a staging BenchmarkTask", () => {
   it("compiles statement, snapshot, checks, and budget×1.5 into a runnable task", () => {
     const repo = gitRepo();
-    const store = realpathSync(mkdtempSync(join(tmpdir(), "kelson-snap-")));
+    const store = realpathSync(mkdtempSync(join(tmpdir(), "obligato-snap-")));
     const db = openDb(":memory:");
     const { sessionId, rootEventId } = createAgentSession(db, {
       repo,
@@ -63,7 +63,9 @@ describe("EVP-10: promote a session into a staging BenchmarkTask", () => {
       },
     });
 
-    const suiteDir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-suite-")));
+    const suiteDir = realpathSync(
+      mkdtempSync(join(tmpdir(), "obligato-suite-")),
+    );
     const task = promoteSession(db, sessionId, suiteDir);
 
     expect(task.statement).toBe("add a sentinel to the file");
@@ -99,7 +101,9 @@ describe("EVP-10: promote a session into a staging BenchmarkTask", () => {
       kind: "user_message",
       payload: { text: "hi" },
     });
-    const suiteDir = realpathSync(mkdtempSync(join(tmpdir(), "kelson-suite-")));
+    const suiteDir = realpathSync(
+      mkdtempSync(join(tmpdir(), "obligato-suite-")),
+    );
     expect(() => promoteSession(db, sessionId, suiteDir)).toThrow(/snapshot/);
   });
 });

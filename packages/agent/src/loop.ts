@@ -6,12 +6,12 @@ import {
   endSession,
   safeIngest,
   ulid,
-} from "@kelson/kernel";
+} from "@obligato/kernel";
 import type {
   ModelRegistryEntry,
   PermissionRule,
   SessionEvent,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { type LanguageModel, streamText, type ToolSet, tool } from "ai";
 import { assembleContext } from "./context.ts";
 import { costOf, type Usage } from "./llm/registry.ts";
@@ -541,7 +541,7 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
         (err as { statusCode?: number }).statusCode === 401
       )
         throw new Error(
-          `anthropic rejected the subscription token (401) — re-mint it with \`claude setup-token\` and re-run \`kelson auth login anthropic --token <token>\` (PROV-7): ${(err as Error).message}`,
+          `anthropic rejected the subscription token (401) — re-mint it with \`claude setup-token\` and re-run \`obligato auth login anthropic --token <token>\` (PROV-7): ${(err as Error).message}`,
         );
       const { retryable, retryAfterMs } = retryDecision(err);
       if (!streamed && retryable && attempt < maxRetries) {

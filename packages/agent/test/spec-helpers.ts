@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { detectDrift, hashContent, registerArtifact } from "@kelson/kernel";
+import { detectDrift, hashContent, registerArtifact } from "@obligato/kernel";
 import { loadSpecContext } from "../src/spec.ts";
 
 // An obligation test that passes iff the governed file contains SENTINEL.

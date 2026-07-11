@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ExecResult } from "@kelson/kernel";
-import type { SessionEvent } from "@kelson/schemas";
+import type { ExecResult } from "@obligato/kernel";
+import type { SessionEvent } from "@obligato/schemas";
 import type { ModelMessage, SystemModelMessage } from "ai";
 
 interface ToolCall {

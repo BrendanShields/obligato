@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { VerificationReport } from "@kelson/schemas";
+import { VerificationReport } from "@obligato/schemas";
 import { runTurn } from "../../src/loop.ts";
 import { loadSpecContext } from "../../src/spec.ts";
 import { fixture, textResponse, toolCallResponse } from "../helpers.ts";

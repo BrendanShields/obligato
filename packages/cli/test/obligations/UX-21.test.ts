@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { loadPack } from "@kelson/kernel";
-import { PackNewResult } from "@kelson/schemas";
+import { loadPack } from "@obligato/kernel";
+import { PackNewResult } from "@obligato/schemas";
 import { makeTestRepo, runCli } from "../agent-helpers.ts";
 
 describe("UX-21: pack new scaffolds a manifest with explicit capabilities covering its content; self-lint exits 0", () => {

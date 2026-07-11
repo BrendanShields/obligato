@@ -11,7 +11,7 @@ import { ReplayRecord } from "./loop.ts";
 import { AgentRegistryEntry } from "./routing.ts";
 import { IsoUtc, SchemaVersion, Ulid } from "./scalars.ts";
 
-// UX-1: machine output for `kelson init`.
+// UX-1: machine output for `obligato init`.
 export const InitResult = z.object({
   store_path: z.string().min(1),
   lockfile: z.enum(["created", "existing"]),
@@ -20,7 +20,7 @@ export const InitResult = z.object({
 });
 export type InitResult = z.infer<typeof InitResult>;
 
-// UX-1: machine output for `kelson pack lint` (PACK-3).
+// UX-1: machine output for `obligato pack lint` (PACK-3).
 export const PackLintResult = z.object({
   ok: z.boolean(),
   required_bump: z.enum(["major", "minor", "patch", "none"]),
@@ -42,7 +42,7 @@ export const BenchTaskRow = z.object({
 });
 export type BenchTaskRow = z.infer<typeof BenchTaskRow>;
 
-// UX-1/UX-18: machine output for `kelson bench`.
+// UX-1/UX-18: machine output for `obligato bench`.
 export const BenchReport = z.object({
   run_id: z.string().min(1),
   suite: z.string().min(1),
@@ -55,7 +55,7 @@ export const BenchReport = z.object({
 });
 export type BenchReport = z.infer<typeof BenchReport>;
 
-// UX-19: one probed component of `kelson doctor`.
+// UX-19: one probed component of `obligato doctor`.
 export const DoctorComponent = z.object({
   name: z.enum(["store", "lockfile", "auth", "telemetry"]),
   status: z.enum(["pass", "warn", "fail"]),
@@ -65,7 +65,7 @@ export const DoctorComponent = z.object({
 });
 export type DoctorComponent = z.infer<typeof DoctorComponent>;
 
-// UX-1/UX-19: machine output for `kelson doctor`.
+// UX-1/UX-19: machine output for `obligato doctor`.
 export const DoctorReport = z.object({
   ok: z.boolean(),
   components: z.array(DoctorComponent),
@@ -101,7 +101,7 @@ export const DivergenceReportRow = z.object({
 });
 export type DivergenceReportRow = z.infer<typeof DivergenceReportRow>;
 
-// UX-1/UX-20: machine output for `kelson divergence list|show` (show emits a
+// UX-1/UX-20: machine output for `obligato divergence list|show` (show emits a
 // single-report envelope of the same shape).
 export const DivergenceListResult = z.object({
   reports: z.array(DivergenceReportRow),
@@ -109,7 +109,7 @@ export const DivergenceListResult = z.object({
 });
 export type DivergenceListResult = z.infer<typeof DivergenceListResult>;
 
-// UX-21: machine output for `kelson pack new`.
+// UX-21: machine output for `obligato pack new`.
 export const PackNewResult = z.object({
   dir: z.string().min(1),
   files: z.array(z.string().min(1)),
@@ -117,7 +117,7 @@ export const PackNewResult = z.object({
 });
 export type PackNewResult = z.infer<typeof PackNewResult>;
 
-// UX-22: machine output for `kelson drift list`.
+// UX-22: machine output for `obligato drift list`.
 export const DriftSurvivalRow = z.object({
   logical_id: z.string().min(1),
   sessions_survived: z.number().int().nonnegative(),
@@ -152,7 +152,7 @@ export const DriftListResult = z.object({
 });
 export type DriftListResult = z.infer<typeof DriftListResult>;
 
-// UX-23: machine output for `kelson eval report` — stored verdicts only.
+// UX-23: machine output for `obligato eval report` — stored verdicts only.
 export const EvalReportRow = z.object({
   run_id: Ulid,
   kind: EvalRunKind,
@@ -173,14 +173,14 @@ export const EvalReportResult = z.object({
 });
 export type EvalReportResult = z.infer<typeof EvalReportResult>;
 
-// UX-23: machine output for `kelson eval replay` — the recorded link.
+// UX-23: machine output for `obligato eval replay` — the recorded link.
 export const ReplayResult = z.object({
   record: ReplayRecord,
   schema_version: SchemaVersion,
 });
 export type ReplayResult = z.infer<typeof ReplayResult>;
 
-// UX-24: machine output for `kelson agents list`.
+// UX-24: machine output for `obligato agents list`.
 export const AgentsListResult = z.object({
   registry_dir: z.string().min(1),
   agents: z.array(AgentRegistryEntry),
@@ -188,7 +188,7 @@ export const AgentsListResult = z.object({
 });
 export type AgentsListResult = z.infer<typeof AgentsListResult>;
 
-// UX-26: machine output for `kelson index rebuild` (count semantics
+// UX-26: machine output for `obligato index rebuild` (count semantics
 // divergence-pinned 2026-07-06, F-151).
 export const IndexRebuildResult = z.object({
   ingested: z.number().int().nonnegative(),
@@ -198,14 +198,14 @@ export const IndexRebuildResult = z.object({
 });
 export type IndexRebuildResult = z.infer<typeof IndexRebuildResult>;
 
-// UX-27: one table's row count as `kelson db stats|backup` reports it.
+// UX-27: one table's row count as `obligato db stats|backup` reports it.
 export const DbTableCount = z.object({
   name: z.string().min(1),
   rows: z.number().int().nonnegative(),
 });
 export type DbTableCount = z.infer<typeof DbTableCount>;
 
-// UX-1/UX-27: machine output for `kelson db stats`.
+// UX-1/UX-27: machine output for `obligato db stats`.
 export const DbStatsResult = z.object({
   path: z.string().min(1),
   size_bytes: z.number().int().nonnegative(),
@@ -214,7 +214,7 @@ export const DbStatsResult = z.object({
 });
 export type DbStatsResult = z.infer<typeof DbStatsResult>;
 
-// UX-1/UX-27: machine output for `kelson db backup <dest>`.
+// UX-1/UX-27: machine output for `obligato db backup <dest>`.
 export const DbBackupResult = z.object({
   source: z.string().min(1),
   dest: z.string().min(1),

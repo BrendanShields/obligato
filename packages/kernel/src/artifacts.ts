@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Artifact } from "@kelson/schemas";
+import type { Artifact } from "@obligato/schemas";
 import { ulid } from "./ulid.ts";
 
 export const hashContent = (content: string | Uint8Array): string =>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import { assembleContext } from "../../src/context.ts";
 import { instantiate } from "../../src/llm/resolve.ts";
 import { runTurn } from "../../src/loop.ts";
@@ -84,7 +84,7 @@ describe("PROV-8: prompt-cache breakpoints on the system block and the final mes
     await runTurn({
       ...f.deps,
       entry,
-      model: instantiate(entry, { type: "api_key", key: "kelson-test" }),
+      model: instantiate(entry, { type: "api_key", key: "obligato-test" }),
       tools: CORE_TOOLS,
       ctx: { cwd: f.dir, exec: localExec(f.dir) },
     }).catch(() => {});

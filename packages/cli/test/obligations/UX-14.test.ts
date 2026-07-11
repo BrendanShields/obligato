@@ -55,10 +55,10 @@ describe("UX-14: chat is a pure reducer behind a thin shell; slash = typed dispa
     expect(targets["/route"]).toBe(COMMANDS.route as never);
   });
 
-  it("non-TTY chat exits non-zero naming kelson run", async () => {
+  it("non-TTY chat exits non-zero naming obligato run", async () => {
     const t = makeTestRepo({ configured: false });
     const r = await runCli(t, ["chat"]);
     expect(r.exitCode).not.toBe(0);
-    expect(r.stderr).toContain("kelson run");
+    expect(r.stderr).toContain("obligato run");
   }, 20_000);
 });

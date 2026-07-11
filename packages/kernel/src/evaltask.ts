@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { BenchmarkTask, CheckResult, Executor } from "@kelson/schemas";
-import { compileSpec } from "./kelspec.ts";
+import type { BenchmarkTask, CheckResult, Executor } from "@obligato/schemas";
+import { compileSpec } from "./obspec.ts";
 import type { Workspace } from "./sandbox.ts";
 
 export interface SessionOutcome {
@@ -36,7 +36,7 @@ const readCostFile = (
   if (/^\d+$/.test(raw)) return { cost: Number(raw), warning: null };
   return {
     cost: 0,
-    warning: `KELSON_COST_FILE unparseable as non-negative integer micro-USD (${JSON.stringify(raw)}); recording cost 0`,
+    warning: `OBLIGATO_COST_FILE unparseable as non-negative integer micro-USD (${JSON.stringify(raw)}); recording cost 0`,
   };
 };
 
@@ -45,17 +45,17 @@ export const commandExecutor: ExecutorFn = async (ctx) => {
     throw new Error(
       `executor "command" requires session_command; missing in task ${ctx.task.id}`,
     );
-  const costFileHost = join(ctx.workspace.dir, ".kelson-cost");
+  const costFileHost = join(ctx.workspace.dir, ".obligato-cost");
   // Inside a container the workspace mounts at /workspace, so the env var
   // must name the sandbox-side path; the runner reads the host side.
   const costFileEnv =
     ctx.workspace.profile.isolation === "container"
-      ? "/workspace/.kelson-cost"
+      ? "/workspace/.obligato-cost"
       : costFileHost;
   // EVP-12: sessions run async so concurrent cells genuinely overlap.
   const res = await ctx.workspace.execAsync(ctx.task.session_command, {
     timeoutMs: ctx.timeoutMs,
-    env: { KELSON_COST_FILE: costFileEnv, ...ctx.sideEnv },
+    env: { OBLIGATO_COST_FILE: costFileEnv, ...ctx.sideEnv },
   });
   const { cost, warning } = readCostFile(costFileHost);
   const detail =
@@ -121,12 +121,12 @@ export const claudeExecutor: ExecutorFn = async (ctx) => {
     // Disposable detached workspace + temp HOME: skipping permission prompts
     // is the sandbox's point — a headless session cannot answer them. The
     // statement travels as an env var so the shell never parses its content.
-    'claude -p "$KELSON_STATEMENT" --output-format json --dangerously-skip-permissions',
+    'claude -p "$OBLIGATO_STATEMENT" --output-format json --dangerously-skip-permissions',
     {
       timeoutMs: ctx.timeoutMs,
       env: {
         ...buildClaudeEnv(ctx.sideEnv),
-        KELSON_STATEMENT: ctx.task.statement,
+        OBLIGATO_STATEMENT: ctx.task.statement,
       },
     },
   );
@@ -172,19 +172,19 @@ const runCheck = (
 ): CheckResult => {
   switch (check.kind) {
     case "obligations": {
-      // EVP §1: every kelspec in the workspace compiles (SPEC-1); property
+      // EVP §1: every obspec in the workspace compiles (SPEC-1); property
       // execution against the impl needs Phase 3 harness wiring.
-      const dir = join(workspace.dir, "docs", "kelspec");
+      const dir = join(workspace.dir, "docs", "obspec");
       if (!existsSync(dir))
         return {
           kind: "obligations",
           passed: true,
-          detail: "no kelspec files",
+          detail: "no obspec files",
         };
       const failures: string[] = [];
       for (const f of readdirSync(dir).filter((f) => f.endsWith(".spec.md"))) {
         const res = compileSpec(readFileSync(join(dir, f), "utf8"), {
-          file: join("docs", "kelspec", f),
+          file: join("docs", "obspec", f),
           rootDir: workspace.dir,
         });
         if (!res.ok)

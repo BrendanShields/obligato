@@ -21,12 +21,12 @@ describe("SES-5: session.runner is additive and stamped by every creator", () =>
   it("a pre-0008 row reads back null after the migration (additive, no rewrite)", () => {
     // Build a db at migration 0007, insert a legacy-shaped row, then apply
     // the full migration set — the discriminating pre-column fixture.
-    const partialDir = mkdtempSync(join(tmpdir(), "kelson-mig-"));
+    const partialDir = mkdtempSync(join(tmpdir(), "obligato-mig-"));
     for (const f of readdirSync(KERNEL_MIGRATIONS_DIR).filter(
       (f) => f <= "0007",
     ))
       cpSync(join(KERNEL_MIGRATIONS_DIR, f), join(partialDir, f));
-    const dbPath = join(mkdtempSync(join(tmpdir(), "kelson-db-")), "k.db");
+    const dbPath = join(mkdtempSync(join(tmpdir(), "obligato-db-")), "k.db");
     const oldDb = openDb(dbPath, partialDir);
     oldDb
       .query(

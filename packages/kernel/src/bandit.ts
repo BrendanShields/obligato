@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRegistryEntry, FeatureVector } from "@kelson/schemas";
+import type { AgentRegistryEntry, FeatureVector } from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import { canExplore } from "./routing.ts";
 import { ulid as newUlid } from "./ulid.ts";

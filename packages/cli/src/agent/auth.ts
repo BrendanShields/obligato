@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { SHIPPED_MODELS, saveConfig, saveCredential } from "@kelson/agent";
-import { ModelRegistryEntry } from "@kelson/schemas";
+import { SHIPPED_MODELS, saveConfig, saveCredential } from "@obligato/agent";
+import { ModelRegistryEntry } from "@obligato/schemas";
 import { z } from "zod";
 import { write } from "../components/sink.js";
 import { fail } from "./common.js";
@@ -10,7 +10,7 @@ import { fail } from "./common.js";
 const OLLAMA_DEFAULT = "http://127.0.0.1:11434";
 
 const writeOverlay = (entries: ModelRegistryEntry[]): void => {
-  const path = join(homedir(), ".kelson", "models.json");
+  const path = join(homedir(), ".obligato", "models.json");
   const existing = existsSync(path)
     ? z.array(ModelRegistryEntry).parse(JSON.parse(readFileSync(path, "utf8")))
     : [];
@@ -24,7 +24,7 @@ export const authCommand = async (argv: string[]): Promise<void> => {
   const [sub, provider] = argv;
   if (sub !== "login" || !provider)
     return fail(
-      "usage: kelson auth login <anthropic|ollama> [--key <api-key> | --token <setup-token>] [--model --base-url]",
+      "usage: obligato auth login <anthropic|ollama> [--key <api-key> | --token <setup-token>] [--model --base-url]",
     );
   const named: Record<string, string> = {};
   for (let i = 2; i < argv.length; i++) {
@@ -35,8 +35,8 @@ export const authCommand = async (argv: string[]): Promise<void> => {
     }
   }
   const root = process.cwd();
-  if (!existsSync(join(root, ".kelson")))
-    return fail("no .kelson directory — run `kelson init` first");
+  if (!existsSync(join(root, ".obligato")))
+    return fail("no .obligato directory — run `obligato init` first");
 
   if (provider === "anthropic") {
     // PROV-5: --token stores a Claude subscription bearer (`claude
@@ -55,7 +55,7 @@ export const authCommand = async (argv: string[]): Promise<void> => {
     const model = named.model ?? SHIPPED_MODELS[0]?.id;
     if (!model) return fail("no shipped models — pass --model");
     saveConfig(root, { default_model: model, schema_version: 1 });
-    write(`kelson: anthropic configured, default model ${model}`);
+    write(`obligato: anthropic configured, default model ${model}`);
     return;
   }
 
@@ -87,7 +87,7 @@ export const authCommand = async (argv: string[]): Promise<void> => {
       return fail(`model ${model} not in ollama tags: ${names.join(", ")}`);
     saveConfig(root, { default_model: model, schema_version: 1 });
     write(
-      `kelson: ollama configured (${names.length} model(s)), default ${model}`,
+      `obligato: ollama configured (${names.length} model(s)), default ${model}`,
     );
     return;
   }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { compileSpec } from "../../src/kelspec.ts";
+import { compileSpec } from "../../src/obspec.ts";
 
-const COMPONENT = `\`\`\`kelspec
+const COMPONENT = `\`\`\`obspec
 kind: component
 id: widget
 tier: T0
@@ -10,9 +10,9 @@ events: [poked]
 \`\`\``;
 
 const spec = (block: string) =>
-  `# doc\n\n${COMPONENT}\n\n\`\`\`kelspec\n${block}\`\`\`\n`;
+  `# doc\n\n${COMPONENT}\n\n\`\`\`obspec\n${block}\`\`\`\n`;
 
-describe("DSL-1: fenced kelspec blocks are the sole clause source; schema failures name file, block index, and field path", () => {
+describe("DSL-1: fenced obspec blocks are the sole clause source; schema failures name file, block index, and field path", () => {
   it("prose-only files parse as empty specs without error", () => {
     const res = compileSpec("# Only prose here.\n\nNo fenced blocks.\n", {
       file: "prose.spec.md",

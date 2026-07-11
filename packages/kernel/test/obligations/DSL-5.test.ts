@@ -3,7 +3,7 @@ import {
   compileRateLimiter,
   loadRateLimiter,
   rateLimiterMarkdown,
-} from "../kelspec-helpers.ts";
+} from "../obspec-helpers.ts";
 
 describe("DSL-5: T1+ invariants require an existing formal model; every T1+ invariant registers a runtime probe", () => {
   it("a T1 fixture with a missing model file is rejected", () => {

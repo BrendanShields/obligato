@@ -68,6 +68,8 @@ describe("PERM-2: ask flow lives entirely in session events; always-allow is a s
     ).toBe(1);
 
     // Never a config-file write.
-    expect(existsSync(join(f.dir, ".kelson", "permissions.json"))).toBe(false);
+    expect(existsSync(join(f.dir, ".obligato", "permissions.json"))).toBe(
+      false,
+    );
   });
 });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Proto-`kelson doctor` (UX §5.5) + environment manifest (EVP §4 shape).
+// Proto-`obligato doctor` (UX §5.5) + environment manifest (EVP §4 shape).
 // Fails on toolchain skew: bun below the engines pin, or local bun != CI pin.
 // Platform difference from CI is a warning, not a failure.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
@@ -32,8 +32,8 @@ const manifest = {
   bun, node: process.version, platform: process.platform, arch: process.arch,
   engines_pin: enginesPin || null, ci_pin: ciPin || null,
 }
-mkdirSync(`${root}/.kelson`, { recursive: true })
-writeFileSync(`${root}/.kelson/env.json`, JSON.stringify(manifest, null, 2) + '\n')
+mkdirSync(`${root}/.obligato`, { recursive: true })
+writeFileSync(`${root}/.obligato/env.json`, JSON.stringify(manifest, null, 2) + '\n')
 
 warns.forEach((w) => console.error(`doctor WARN: ${w}`))
 if (errs.length) {

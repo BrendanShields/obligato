@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Proposal } from "@kelson/schemas";
+import { Proposal } from "@obligato/schemas";
 import {
   assembleRejectionHistory,
   type CycleDraft,

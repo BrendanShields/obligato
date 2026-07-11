@@ -7,7 +7,7 @@ describe("SES-4: run --continue extends the same chain; new sessions get a kerne
   it("the follow-up user_message's parent is the prior head, in the same session", async () => {
     const server = mockOpenAiServer([{ kind: "text", text: "first answer" }]);
     const t = makeTestRepo({ baseUrl: server.url, configured: true });
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
 
     const first = await runCli(t, [
       "run",
@@ -64,7 +64,7 @@ describe("SES-4: run --continue extends the same chain; new sessions get a kerne
     server.stop();
   }, 20_000);
 
-  it("a session done on a text-less, tool-less final turn is still --continue-able through kelson run (F-085 operator surface)", async () => {
+  it("a session done on a text-less, tool-less final turn is still --continue-able through obligato run (F-085 operator surface)", async () => {
     // Turn 1 ends the session with neither text nor tool calls; the resumed
     // chain must drop that empty assistant message before it reaches the
     // provider — an empty-content assistant entry is a provider rejection.
@@ -73,7 +73,7 @@ describe("SES-4: run --continue extends the same chain; new sessions get a kerne
       { kind: "text", text: "second answer" },
     ]);
     const t = makeTestRepo({ baseUrl: server.url, configured: true });
-    const dbPath = join(t.repo, ".kelson", "kelson.db");
+    const dbPath = join(t.repo, ".obligato", "obligato.db");
 
     const first = await runCli(t, [
       "run",

@@ -14,12 +14,12 @@ import { makeTestRepo, mockOpenAiServer, runCli } from "../agent-helpers.ts";
 const setupEvalRepo = (baseUrl: string) => {
   const t = makeTestRepo({ baseUrl, configured: false });
   const store = tmpDir();
-  // The task snapshot commits its own .kelson/config.json — the api
+  // The task snapshot commits its own .obligato/config.json — the api
   // executor's model source inside the sandbox (EVP-9).
   const snapshot = makeSnapshot(
     {
       "README.md": "fixture\n",
-      ".kelson/config.json": JSON.stringify({
+      ".obligato/config.json": JSON.stringify({
         default_model: "mock-m",
         schema_version: 1,
       }),
@@ -40,7 +40,7 @@ const setupEvalRepo = (baseUrl: string) => {
     lockPath,
     JSON.stringify(lockWith([{ name: "p", enabled: true }])),
   );
-  const dbPath = join(t.repo, ".kelson", "kelson.db");
+  const dbPath = join(t.repo, ".obligato", "obligato.db");
   return { t, suiteDir, lockPath, dbPath, store };
 };
 
@@ -63,7 +63,7 @@ const TURNS = [
 ];
 
 describe("EVP-9: the api executor runs ablate end-to-end; container and unknown names refuse; ledger stays fenced", () => {
-  it("kelson eval ablate --executor api completes to a verdict with executor recorded; publish refuses", async () => {
+  it("obligato eval ablate --executor api completes to a verdict with executor recorded; publish refuses", async () => {
     const server = mockOpenAiServer(TURNS);
     const { t, suiteDir, lockPath, dbPath, store } = setupEvalRepo(server.url);
     const r = await runCli(t, [
@@ -175,7 +175,7 @@ describe("EVP-9: the api executor runs ablate end-to-end; container and unknown 
       ANTHROPIC_API_KEY: "sk-OPERATOR-REAL-KEY",
     };
     writeFileSync(
-      join(t.home, ".kelson", "models.json"),
+      join(t.home, ".obligato", "models.json"),
       JSON.stringify([
         {
           id: "claude-opus-4-8",
@@ -206,12 +206,12 @@ describe("EVP-9: the api executor runs ablate end-to-end; container and unknown 
       "--snapshots",
       store,
       "--db",
-      join(t.repo, ".kelson", "kelson.db"),
+      join(t.repo, ".obligato", "obligato.db"),
     ]);
     capture.stop(true);
     expect(r.exitCode).toBe(0); // sessions fail on 400 but the run completes
     expect(seen.apiKey).not.toBe("sk-OPERATOR-REAL-KEY");
-    expect(seen.apiKey).toBe("kelson-local");
+    expect(seen.apiKey).toBe("obligato-local");
     expect(seen.auth).toBeNull();
   }, 60_000);
 

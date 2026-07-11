@@ -1,11 +1,11 @@
 import { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
-import { DEFAULT_DB_PATH } from "@kelson/kernel";
+import { DEFAULT_DB_PATH } from "@obligato/kernel";
 import {
   DbBackupResult,
   DbStatsResult,
   type DbTableCount,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { kvGrid, panel } from "../components/render.js";
@@ -16,7 +16,7 @@ import { emitJson } from "../output/json.js";
 // openDb — it applies pending migrations on open. Read-only connections only.
 const openReadonly = (path: string): Database => {
   if (!existsSync(path))
-    return fail(`${path} does not exist — fix: kelson init`);
+    return fail(`${path} does not exist — fix: obligato init`);
   return new Database(path, { readonly: true });
 };
 
@@ -70,7 +70,7 @@ const statsCommand = (argv: string[]): void => {
 const backupCommand = (argv: string[]): void => {
   const { named, positional } = parseArgs(argv);
   const dest = positional[0];
-  if (dest === undefined) return fail("usage: kelson db backup <dest>");
+  if (dest === undefined) return fail("usage: obligato db backup <dest>");
   // Refused before any connection opens — neither file may be touched.
   if (existsSync(dest))
     return fail(`${dest} already exists — refusing to overwrite`);

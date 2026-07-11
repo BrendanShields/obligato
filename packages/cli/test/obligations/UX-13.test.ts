@@ -2,26 +2,26 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_DB_PATH, openDb } from "@kelson/kernel";
+import { DEFAULT_DB_PATH, openDb } from "@obligato/kernel";
 import { createUiServer, resolveUiDbPath } from "../../src/ui/server.ts";
 
-describe("UX-13: kelson ui resolves its store repo-first; --db overrides", () => {
-  it("prefers ./.kelson/kelson.db when present", () => {
-    const dir = mkdtempSync(join(tmpdir(), "kelson-ux13-"));
-    mkdirSync(join(dir, ".kelson"));
-    writeFileSync(join(dir, ".kelson", "kelson.db"), "");
-    expect(resolveUiDbPath(dir)).toBe(join(dir, ".kelson", "kelson.db"));
+describe("UX-13: obligato ui resolves its store repo-first; --db overrides", () => {
+  it("prefers ./.obligato/obligato.db when present", () => {
+    const dir = mkdtempSync(join(tmpdir(), "obligato-ux13-"));
+    mkdirSync(join(dir, ".obligato"));
+    writeFileSync(join(dir, ".obligato", "obligato.db"), "");
+    expect(resolveUiDbPath(dir)).toBe(join(dir, ".obligato", "obligato.db"));
   });
 
   it("falls back to the user store when the repo has none", () => {
-    const dir = mkdtempSync(join(tmpdir(), "kelson-ux13-"));
+    const dir = mkdtempSync(join(tmpdir(), "obligato-ux13-"));
     expect(resolveUiDbPath(dir)).toBe(DEFAULT_DB_PATH);
   });
 
   it("wiring: a server created with no dbPath serves the repo store's rows", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "kelson-ux13-wire-"));
-    mkdirSync(join(dir, ".kelson"));
-    const repoDb = join(dir, ".kelson", "kelson.db");
+    const dir = mkdtempSync(join(tmpdir(), "obligato-ux13-wire-"));
+    mkdirSync(join(dir, ".obligato"));
+    const repoDb = join(dir, ".obligato", "obligato.db");
     const db = openDb(repoDb);
     db.query(
       `INSERT INTO proposal (id, target_pack, diff, diff_hash, evidence, rationale,

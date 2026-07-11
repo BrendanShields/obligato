@@ -1,7 +1,7 @@
 import { createHash, verify as edVerify } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, sep } from "node:path";
-import { type Capability, Lockfile, PackManifest } from "@kelson/schemas";
+import { type Capability, Lockfile, PackManifest } from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 
 const STAGES = new Set([

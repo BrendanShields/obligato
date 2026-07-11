@@ -2,14 +2,14 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDb } from "@kelson/kernel";
+import { openDb } from "@obligato/kernel";
 import {
   UiBenchView,
   UiEvalView,
   UiLoopView,
   UiTelemetryView,
   UiTraceView,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import { API_PATHS, createUiServer } from "../../src/ui/server.ts";
 
 const SCHEMAS = {
@@ -20,13 +20,13 @@ const SCHEMAS = {
   "/api/trace": UiTraceView,
 } as const;
 
-const dir = mkdtempSync(join(tmpdir(), "kelson-ux11-"));
+const dir = mkdtempSync(join(tmpdir(), "obligato-ux11-"));
 const dbPath = join(dir, "k.db");
 openDb(dbPath).close(); // migrate
 const server = createUiServer({ dbPath, port: 0 });
 afterAll(() => server.stop(true));
 
-describe("UX-11: every kelson ui API response validates against its paired schema; failure returns 500, never an invalid body", () => {
+describe("UX-11: every obligato ui API response validates against its paired schema; failure returns 500, never an invalid body", () => {
   it("the route matrix and the schema pairing cover each other exactly", () => {
     expect(API_PATHS.toSorted()).toEqual(Object.keys(SCHEMAS).toSorted());
   });

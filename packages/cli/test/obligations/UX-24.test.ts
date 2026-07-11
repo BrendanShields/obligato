@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { AgentsListResult } from "@kelson/schemas";
+import { AgentsListResult } from "@obligato/schemas";
 import { makeTestRepo, runCli, type TestRepo } from "../agent-helpers.ts";
 
 // Minimal default registry + policy so `route explain` resolves in the
@@ -53,7 +53,9 @@ describe("UX-24: agents register makes the agent a route candidate and a list en
     const reg = await runCli(t, ["agents", "register", manifestPath]);
     expect(reg.exitCode).toBe(0);
     expect(
-      existsSync(join(t.repo, ".kelson", "routing", "agents", "my-tuned.yaml")),
+      existsSync(
+        join(t.repo, ".obligato", "routing", "agents", "my-tuned.yaml"),
+      ),
     ).toBe(true);
 
     const route = await runCli(t, [
@@ -89,7 +91,7 @@ describe("UX-24: agents register makes the agent a route candidate and a list en
     );
     const r = await runCli(t, ["agents", "register", manifestPath]);
     expect(r.exitCode).not.toBe(0);
-    const dir = join(t.repo, ".kelson", "routing", "agents");
+    const dir = join(t.repo, ".obligato", "routing", "agents");
     expect(existsSync(dir) ? readdirSync(dir) : []).toHaveLength(0);
   }, 30_000);
 });

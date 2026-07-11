@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { Lockfile } from "@kelson/schemas";
+import type { Lockfile } from "@obligato/schemas";
 import fc from "fast-check";
 import { canonicalJson, hashLockfile } from "../../src/packs.ts";
 

@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { AgentConfig } from "@kelson/schemas";
+import { AgentConfig } from "@obligato/schemas";
 
 export const configPath = (repoRoot: string): string =>
-  join(repoRoot, ".kelson", "config.json");
+  join(repoRoot, ".obligato", "config.json");
 
 export const loadConfig = (repoRoot: string): AgentConfig | null => {
   const path = configPath(repoRoot);

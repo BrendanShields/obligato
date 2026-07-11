@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { compileSpec } from "../../src/kelspec.ts";
+import { compileSpec } from "../../src/obspec.ts";
 
-const spec = (body: string) => `\`\`\`kelspec\n${body.trim()}\n\`\`\`\n`;
+const spec = (body: string) => `\`\`\`obspec\n${body.trim()}\n\`\`\`\n`;
 const compile = (body: string) =>
   compileSpec(spec(body), { file: "t.spec.md" });
 const messages = (body: string) => {

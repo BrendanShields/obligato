@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { restoreSnapshot, storeSnapshot } from "../../src/snapshots.ts";
 import { makeRepo, tmpDir } from "../eval-helpers.ts";
 
-// storeSnapshot writes `kelson-bundle-<pid>-<ts>.bundle` under os.tmpdir();
+// storeSnapshot writes `obligato-bundle-<pid>-<ts>.bundle` under os.tmpdir();
 // realpath the dir before listing — macOS /tmp is a symlink to /private/tmp.
 const TEMP_ROOT = realpathSync(tmpdir());
-const OWN_PREFIX = `kelson-bundle-${process.pid}-`;
+const OWN_PREFIX = `obligato-bundle-${process.pid}-`;
 const bundleEntries = () =>
   new Set(readdirSync(TEMP_ROOT).filter((e) => e.startsWith(OWN_PREFIX)));
 const leakedSince = (before: Set<string>): string[] =>

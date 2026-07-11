@@ -1,4 +1,4 @@
-import type { UiTraceView } from "@kelson/schemas";
+import type { UiTraceView } from "@obligato/schemas";
 import { Background, Controls, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMemo, useState } from "react";
@@ -95,7 +95,7 @@ export default function Trace() {
                 drift
               </dt>
               <dd>
-                {sel.drift_open ? "~ open — kelson drift list" : "✓ none"}
+                {sel.drift_open ? "~ open — obligato drift list" : "✓ none"}
               </dd>
             </dl>
           </div>

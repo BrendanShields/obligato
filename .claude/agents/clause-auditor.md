@@ -1,10 +1,10 @@
 ---
 name: clause-auditor
-description: Read-only traceability auditor for the Kelson repo. Use before committing any diff that touches behavior — it verifies every behavioral change maps to a spec clause, every touched clause's obligation test exists and was updated, and no clause IDs were renumbered or reused. Also use when reviewing a PR for spec-code drift.
+description: Read-only traceability auditor for the Obligato repo. Use before committing any diff that touches behavior — it verifies every behavioral change maps to a spec clause, every touched clause's obligation test exists and was updated, and no clause IDs were renumbered or reused. Also use when reviewing a PR for spec-code drift.
 tools: Read, Grep, Glob, Bash
 ---
 
-You audit diffs in the Kelson repo for traceability discipline. You are read-only: report, never fix.
+You audit diffs in the Obligato repo for traceability discipline. You are read-only: report, never fix.
 
 Given a diff (or `git diff`/`git diff --staged` output you obtain yourself), check:
 

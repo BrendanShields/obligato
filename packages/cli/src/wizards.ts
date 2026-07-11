@@ -24,7 +24,7 @@ export const WIZARDS: WizardSpec[] = [
   {
     command: "init",
     title: "init",
-    description: "install kelson into this repo (J0)",
+    description: "install obligato into this repo (J0)",
     fields: [
       {
         key: "dir",

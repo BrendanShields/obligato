@@ -1,6 +1,6 @@
 # Well-formed corpus: greeter (includes a signed-unverifiable clause, SPEC-3)
 
-```kelspec
+```obspec
 kind: component
 id: greeter
 tier: T0
@@ -8,14 +8,14 @@ authority: authored
 events: [name_submitted]
 ```
 
-```kelspec
+```obspec
 kind: domain
 id: Name
 type: string
 max_length: 40
 ```
 
-```kelspec
+```obspec
 kind: clause
 id: GRT-1
 ears: event
@@ -27,7 +27,7 @@ check: |
   (ctx) => ctx.expect(ctx.greeting.includes(ctx.name))
 ```
 
-```kelspec
+```obspec
 kind: clause
 id: GRT-2
 ears: ubiquitous

@@ -1,4 +1,4 @@
-import { type ExecutorFn, openDb } from "@kelson/kernel";
+import { type ExecutorFn, openDb } from "@obligato/kernel";
 import { buildSystemPrompt } from "./context.ts";
 import { resolveCredential } from "./llm/auth.ts";
 import { loadConfig } from "./llm/config.ts";
@@ -18,7 +18,7 @@ export const apiExecutor: ExecutorFn = async (ctx) => {
     ctx.sideEnv.ANTHROPIC_MODEL ?? loadConfig(ctx.workspace.dir)?.default_model;
   if (!modelRef)
     throw new Error(
-      `executor "api" needs a model: set --model or commit .kelson/config.json in the task snapshot (task ${ctx.task.id})`,
+      `executor "api" needs a model: set --model or commit .obligato/config.json in the task snapshot (task ${ctx.task.id})`,
     );
   const entry = resolveEntry(registry, modelRef);
   // EVP-8: sessions pointed at an override endpoint never carry operator
@@ -33,7 +33,7 @@ export const apiExecutor: ExecutorFn = async (ctx) => {
   // arbitrary endpoint (audit F-119). Substitute the dummy key, exactly as
   // buildClaudeEnv does for the claude executor.
   const credential = overridden
-    ? ({ type: "api_key", key: "kelson-local" } as const)
+    ? ({ type: "api_key", key: "obligato-local" } as const)
     : resolved;
   const model = instantiate(
     overridden ? { ...entry, base_url: ctx.sideEnv.ANTHROPIC_BASE_URL } : entry,
@@ -49,7 +49,7 @@ export const apiExecutor: ExecutorFn = async (ctx) => {
     // AGT-15: the shared builder — benchmark identity + workspace env block.
     system: buildSystemPrompt({
       identity:
-        "You are Kelson, a coding agent completing a benchmark task in this workspace. " +
+        "You are Obligato, a coding agent completing a benchmark task in this workspace. " +
         "Use the tools; prefer edit over rewriting whole files; verify with the " +
         "project's tests when available. When the task is complete, reply with a " +
         "short summary and stop calling tools.",

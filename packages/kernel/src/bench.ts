@@ -5,8 +5,8 @@ import type {
   Executor,
   SandboxProfile,
   Verdict,
-} from "@kelson/schemas";
-import { BenchManifest } from "@kelson/schemas";
+} from "@obligato/schemas";
+import { BenchManifest } from "@obligato/schemas";
 import { hashContent } from "./artifacts.ts";
 import {
   type Lockfileish,
@@ -207,10 +207,10 @@ export const runBench = async (
           // EVP-11: a session failure inside runTask is a scored repeat (the
           // failed-session check), never a run abort.
           const outcome = await runTask(task, ws, resolved[idx] as ExecutorFn, {
-            KELSON_SEED: String(benchSeed(runSeed, task.id, i)),
-            KELSON_BENCH_AGENT: String(opts.executors[idx]),
-            KELSON_BENCH_REPEAT: String(i),
-            KELSON_ENABLED_PACKS: opts.lockfile.entries
+            OBLIGATO_SEED: String(benchSeed(runSeed, task.id, i)),
+            OBLIGATO_BENCH_AGENT: String(opts.executors[idx]),
+            OBLIGATO_BENCH_REPEAT: String(i),
+            OBLIGATO_ENABLED_PACKS: opts.lockfile.entries
               .filter((e) => e.enabled)
               .map((e) => e.name)
               .join(","),

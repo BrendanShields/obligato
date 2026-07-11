@@ -1,12 +1,12 @@
 schema_version: 1
 id: greenfield-rate-limiter
 statement: >
-  Implement src/rate-limiter.ts per docs/kelspec/rate-limiter.spec.md so `bun test` passes.
+  Implement src/rate-limiter.ts per docs/obspec/rate-limiter.spec.md so `bun test` passes.
   Export `createLimiter(rate: number)` returning `{ request(caller: string): { status:
   number; retry_after: number | null } }` with a fixed 60s window; when a caller's count in
   the current window equals the rate, respond 429 with retry_after set to the window
   remainder.
-snapshot: sha256:dce1d542a4dfc79ef51c91cca9665e60966aee581d58aac27b1b7dd22b0ce726
+snapshot: sha256:43b60dcbf21b63efff3ce8e0b2657a4dbbe26f27b4025cc412da1d60b2f320d8
 checks:
   - kind: obligations
   - kind: command

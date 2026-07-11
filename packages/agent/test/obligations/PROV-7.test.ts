@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ModelRegistryEntry } from "@kelson/schemas";
+import type { ModelRegistryEntry } from "@obligato/schemas";
 import { instantiate } from "../../src/llm/resolve.ts";
 import { runTurn } from "../../src/loop.ts";
 import { fixture } from "../helpers.ts";

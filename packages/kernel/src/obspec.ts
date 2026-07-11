@@ -2,13 +2,13 @@ import type { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
-  KelspecBlock,
-  type KelspecClause,
-  type KelspecComponent,
-  type KelspecDomain,
-  type KelspecInvariant,
-  type KelspecManifest,
-} from "@kelson/schemas";
+  ObspecBlock,
+  type ObspecClause,
+  type ObspecComponent,
+  type ObspecDomain,
+  type ObspecInvariant,
+  type ObspecManifest,
+} from "@obligato/schemas";
 import fc from "fast-check";
 import { hashContent } from "./artifacts.ts";
 import { domainArbitrary } from "./generators.ts";
@@ -30,7 +30,7 @@ export type ObservationHarness = (
 
 export interface CompiledClause {
   id: string;
-  tier: KelspecComponent["tier"];
+  tier: ObspecComponent["tier"];
   block_hash: string;
   unverifiable: boolean;
   makeProperty:
@@ -47,11 +47,11 @@ export interface CompiledInvariant {
 
 export interface CompiledSpec {
   file: string;
-  component: KelspecComponent;
-  domains: Map<string, KelspecDomain>;
+  component: ObspecComponent;
+  domains: Map<string, ObspecDomain>;
   clauses: CompiledClause[];
   invariants: CompiledInvariant[];
-  manifest: KelspecManifest;
+  manifest: ObspecManifest;
 }
 
 export type CompileResult =
@@ -63,17 +63,17 @@ export interface RawBlock {
   index: number;
 }
 
-// DSL-1: fenced `kelspec` blocks are the sole clause source; prose is never
+// DSL-1: fenced `obspec` blocks are the sole clause source; prose is never
 // load-bearing, so a prose-only file is an empty spec, not an error.
 export const extractBlocks = (markdown: string): RawBlock[] => {
-  const fence = /^```kelspec[ \t]*\r?\n([\s\S]*?)^```[ \t]*$/gm;
+  const fence = /^```obspec[ \t]*\r?\n([\s\S]*?)^```[ \t]*$/gm;
   return [...markdown.matchAll(fence)].map((m, i) => ({
     source: m[1] as string,
     index: i,
   }));
 };
 
-const eventSet = (component: KelspecComponent): Set<string> => {
+const eventSet = (component: ObspecComponent): Set<string> => {
   const events = new Set(component.events);
   for (const sv of component.state)
     for (const ev of sv.mutated_by) events.add(ev);
@@ -100,7 +100,7 @@ export const compileSpec = (
   const raw = extractBlocks(markdown);
   if (raw.length === 0) return { ok: true, spec: null };
 
-  const blocks: { block: KelspecBlock; source: string; index: number }[] = [];
+  const blocks: { block: ObspecBlock; source: string; index: number }[] = [];
   for (const r of raw) {
     let parsed: unknown;
     try {
@@ -109,7 +109,7 @@ export const compileSpec = (
       err(`invalid YAML: ${(e as Error).message}`, { block_index: r.index });
       continue;
     }
-    const res = KelspecBlock.safeParse(parsed);
+    const res = ObspecBlock.safeParse(parsed);
     if (!res.success) {
       for (const issue of res.error.issues)
         err(issue.message, {
@@ -128,10 +128,10 @@ export const compileSpec = (
       `spec must declare exactly one component block, found ${components.length}`,
     );
   else if (blocks[0]?.block.kind !== "component")
-    err("the component block must be the first kelspec block in the file");
+    err("the component block must be the first obspec block in the file");
   if (errors.length) return { ok: false, errors };
   const component = (components[0] as (typeof blocks)[0])
-    .block as KelspecComponent;
+    .block as ObspecComponent;
   const events = eventSet(component);
 
   // SPEC-6: mechanical tier escalation, checked at spec time (PRD §7.4). The
@@ -167,7 +167,7 @@ export const compileSpec = (
       `component declares tier ${component.tier} but escalation criteria require ${mechanical.tier} (SPEC-6: ${mechanical.reason}); raise the declared tier — the compiler never lowers below the mechanical result`,
     );
 
-  const domains = new Map<string, KelspecDomain>();
+  const domains = new Map<string, ObspecDomain>();
   for (const b of blocks) {
     if (b.block.kind !== "domain") continue;
     if (domains.has(b.block.id))
@@ -235,7 +235,7 @@ export const compileSpec = (
       continue;
     }
 
-    const clause = b.block as KelspecClause;
+    const clause = b.block as ObspecClause;
     if (
       (clause.ears === "event" || clause.ears === "unwanted") &&
       clause.trigger !== null &&
@@ -357,7 +357,7 @@ export const compileSpec = (
   if (errors.length) return { ok: false, errors };
 
   const clauseCount = clauses.length;
-  const manifest: KelspecManifest = {
+  const manifest: ObspecManifest = {
     spec_path: opts.file,
     component: component.id,
     spec_hash: hashContent(markdown),
@@ -400,8 +400,8 @@ export const compileSpec = (
 export const ingestManifest = (
   db: Database,
   repo: string,
-  manifest: KelspecManifest,
-  authority: KelspecComponent["authority"] = "authored",
+  manifest: ObspecManifest,
+  authority: ObspecComponent["authority"] = "authored",
 ): string[] => {
   const now = new Date().toISOString();
   const upsert = db.query(

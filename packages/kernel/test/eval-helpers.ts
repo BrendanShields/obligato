@@ -3,17 +3,22 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { BenchmarkTask, Lockfile, SandboxProfile } from "@kelson/schemas";
+import type {
+  BenchmarkTask,
+  Lockfile,
+  SandboxProfile,
+} from "@obligato/schemas";
 import { storeSnapshot } from "../src/snapshots.ts";
 import { ulid } from "../src/ulid.ts";
 
-export const tmpDir = (): string => mkdtempSync(join(tmpdir(), "kelson-test-"));
+export const tmpDir = (): string =>
+  mkdtempSync(join(tmpdir(), "obligato-test-"));
 
 const GIT_ENV = {
   GIT_AUTHOR_NAME: "fixture",
-  GIT_AUTHOR_EMAIL: "fixture@kelson.test",
+  GIT_AUTHOR_EMAIL: "fixture@obligato.test",
   GIT_COMMITTER_NAME: "fixture",
-  GIT_COMMITTER_EMAIL: "fixture@kelson.test",
+  GIT_COMMITTER_EMAIL: "fixture@obligato.test",
   GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z",
   GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z",
   HOME: tmpdir(),
@@ -109,13 +114,13 @@ export const FAST_GATE = { resamples: 300, minSample: 2 };
 export const CMD = {
   // pack effect on cost: enabled "effectpack" halves spend
   costEffect:
-    'case ",$KELSON_ENABLED_PACKS," in *,effectpack,*) printf 100 > "$KELSON_COST_FILE";; *) printf 200 > "$KELSON_COST_FILE";; esac',
+    'case ",$OBLIGATO_ENABLED_PACKS," in *,effectpack,*) printf 100 > "$OBLIGATO_COST_FILE";; *) printf 200 > "$OBLIGATO_COST_FILE";; esac',
   // pack effect on fpar: task only succeeds with the pack enabled
   fparEffect:
-    'case ",$KELSON_ENABLED_PACKS," in *,effectpack,*) exit 0;; *) exit 1;; esac',
+    'case ",$OBLIGATO_ENABLED_PACKS," in *,effectpack,*) exit 0;; *) exit 1;; esac',
   // deterministic 50% pass keyed on the derived task seed (EVP-5 fixture)
-  seededFlaky: "[ $((KELSON_SEED % 2)) -eq 0 ]",
-  cost: (musd: string) => `printf '${musd}' > "$KELSON_COST_FILE"`,
+  seededFlaky: "[ $((OBLIGATO_SEED % 2)) -eq 0 ]",
+  cost: (musd: string) => `printf '${musd}' > "$OBLIGATO_COST_FILE"`,
 } as const;
 
 // Ledger generation requires a completed claude-executor run (EVP-7); the

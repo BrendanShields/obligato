@@ -8,14 +8,14 @@ import {
   openDb,
   telemetryView,
   traceView,
-} from "@kelson/kernel";
+} from "@obligato/kernel";
 import {
   UiBenchView,
   UiEvalView,
   UiLoopView,
   UiTelemetryView,
   UiTraceView,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 import type { ZodType } from "zod";
 import { write } from "../components/sink.js";
 
@@ -57,10 +57,10 @@ interface RouteCtx {
 
 export const API_PATHS = Object.keys(routes);
 
-// UX-13: repo-first store resolution — ./.kelson/kelson.db when present,
+// UX-13: repo-first store resolution — ./.obligato/obligato.db when present,
 // else the user store; --db overrides both.
 export const resolveUiDbPath = (cwd = process.cwd()): string => {
-  const repoDb = join(cwd, ".kelson", "kelson.db");
+  const repoDb = join(cwd, ".obligato", "obligato.db");
   return existsSync(repoDb) ? repoDb : DEFAULT_DB_PATH;
 };
 
@@ -93,7 +93,7 @@ const containStatic = (root: string, asset: string): Containment => {
 export const createUiServer = (opts: UiServerOptions = {}) => {
   const dbPath = opts.dbPath ?? resolveUiDbPath();
   const changelogPath =
-    opts.changelogPath ?? join(process.cwd(), ".kelson", "changelog.jsonl");
+    opts.changelogPath ?? join(process.cwd(), ".obligato", "changelog.jsonl");
   const staticDir =
     opts.staticDir ?? join(import.meta.dir, "..", "..", "..", "ui", "dist");
 
@@ -113,7 +113,7 @@ export const createUiServer = (opts: UiServerOptions = {}) => {
           const parsed = route.schema.safeParse(body);
           if (!parsed.success) {
             console.error(
-              `kelson ui: response validation failed (UX-11) on ${path}: ${parsed.error.message}`,
+              `obligato ui: response validation failed (UX-11) on ${path}: ${parsed.error.message}`,
             );
             return Response.json(
               { error: "response_validation_failed", route: path },
@@ -122,7 +122,7 @@ export const createUiServer = (opts: UiServerOptions = {}) => {
           }
           return Response.json(parsed.data);
         } catch (e) {
-          console.error(`kelson ui: ${path}: ${(e as Error).message}`);
+          console.error(`obligato ui: ${path}: ${(e as Error).message}`);
           return Response.json(
             { error: "response_build_failed", route: path },
             { status: 500 },
@@ -154,7 +154,7 @@ export const createUiServer = (opts: UiServerOptions = {}) => {
       const index = join(staticDir, "index.html");
       if (existsSync(index)) return new Response(Bun.file(index));
       return new Response(
-        "kelson ui: web assets not built — run `bun run build` in packages/ui",
+        "obligato ui: web assets not built — run `bun run build` in packages/ui",
         { status: 200, headers: { "content-type": "text/plain" } },
       );
     },
@@ -176,6 +176,6 @@ export const uiCommand = (argv: string[]): void => {
       : {}),
   });
   write(
-    `kelson ui serving on http://127.0.0.1:${server.port} (read-only; ctrl-c to stop)`,
+    `obligato ui serving on http://127.0.0.1:${server.port} (read-only; ctrl-c to stop)`,
   );
 };

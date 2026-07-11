@@ -1,9 +1,9 @@
-# Kelspec: rate-limiter
+# Obspec: rate-limiter
 
-Normative test fixture #1 for the Phase 1 compiler (kelspec DSL §4). This
+Normative test fixture #1 for the Phase 1 compiler (obspec DSL §4). This
 prose is deliberately not load-bearing (DSL-1) — only the fenced blocks are.
 
-```kelspec
+```obspec
 kind: component
 id: rate-limiter
 tier: T1
@@ -17,7 +17,7 @@ domains_of_concern: []
 
 The limiter's input domains, generator-facing (DSL-2):
 
-```kelspec
+```obspec
 kind: domain
 id: RequestRate
 type: int
@@ -26,7 +26,7 @@ min: 0
 max: 100000
 ```
 
-```kelspec
+```obspec
 kind: domain
 id: WindowCount
 type: int
@@ -35,9 +35,9 @@ min: 0
 max: 100000
 ```
 
-The one behavioral clause (kelspec DSL §2.3):
+The one behavioral clause (obspec DSL §2.3):
 
-```kelspec
+```obspec
 kind: clause
 id: RL-1
 ears: event
@@ -54,9 +54,9 @@ check: |
                   && ctx.response.retry_after === ctx.window_remainder)
 ```
 
-And the safety invariant (kelspec DSL §2.4):
+And the safety invariant (obspec DSL §2.4):
 
-```kelspec
+```obspec
 kind: invariant
 id: RL-INV-1
 text: The sum of window counts never exceeds limit × active_callers.

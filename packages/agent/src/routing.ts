@@ -13,12 +13,12 @@ import {
   route,
   stepTriageState,
   ulid,
-} from "@kelson/kernel";
+} from "@obligato/kernel";
 import type {
   AgentRegistryEntry,
   RoutingDecision,
   RoutingPolicy,
-} from "@kelson/schemas";
+} from "@obligato/schemas";
 
 // AGT-10..12: an optional routing pack loaded from the operator repo. Absent
 // => the session's fixed model and an unbounded budget (Phases 6–8).
@@ -32,12 +32,12 @@ export interface RoutingContext {
 }
 
 // The routing pack layout (packs/routing-default): routing/policy.yaml +
-// agents/*.yaml. Looked up under <repo>/.kelson/routing or an explicit dir.
+// agents/*.yaml. Looked up under <repo>/.obligato/routing or an explicit dir.
 export const loadRoutingContext = (
   repo: string,
   dir?: string,
 ): RoutingContext | null => {
-  const base = dir ?? join(repo, ".kelson", "routing");
+  const base = dir ?? join(repo, ".obligato", "routing");
   const policyPath = join(base, "policy.yaml");
   const agentsDir = join(base, "agents");
   if (!existsSync(policyPath) || !existsSync(agentsDir)) return null;

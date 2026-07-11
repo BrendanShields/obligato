@@ -56,7 +56,7 @@ describe("EVAL-2: synthetic distributions are accepted/rejected at configured er
       gate(pairs, { resamples: RESAMPLES, seed: 1, minSample: 6 }).decision,
     ).not.toBe("underpowered");
     const { EvalSuite } =
-      require("@kelson/schemas") as typeof import("@kelson/schemas");
+      require("@obligato/schemas") as typeof import("@obligato/schemas");
     expect(
       EvalSuite.safeParse({
         id: "s",
