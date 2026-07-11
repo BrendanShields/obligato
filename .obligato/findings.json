@@ -511,7 +511,7 @@
       "fix": "makeTestRepo defaults OBLIGATO_TEST_ANTHROPIC_ROOT to a refusing loopback root (127.0.0.1:9); PROV-12 fixtures override per-server",
       "status": "fixed",
       "id": "F-191",
-      "fix_commit": null
+      "fix_commit": "ba01ae7779158f3c2dc66eb86c1ba19cb789985f"
     },
     {
       "task": "anthropic-model-detection",
@@ -525,7 +525,7 @@
       "fix": "loopback-only guard: seam honored only for 127.0.0.1/::1/localhost, any other host disables detection with a distinct notice; pinned in PROV-12 with obligation case (f)",
       "status": "fixed",
       "id": "F-192",
-      "fix_commit": null
+      "fix_commit": "ba01ae7779158f3c2dc66eb86c1ba19cb789985f"
     },
     {
       "task": "anthropic-model-detection",
@@ -539,7 +539,7 @@
       "fix": "pinned as malformed page in clause text: stops detection with notice, overlay untouched; impl + obligation case (h)",
       "status": "fixed",
       "id": "F-193",
-      "fix_commit": null
+      "fix_commit": "ba01ae7779158f3c2dc66eb86c1ba19cb789985f"
     },
     {
       "task": "anthropic-model-detection",
@@ -553,7 +553,7 @@
       "fix": "obligation case (g): two-page walk, second page 500, overlay asserted absent",
       "status": "fixed",
       "id": "F-194",
-      "fix_commit": null
+      "fix_commit": "ba01ae7779158f3c2dc66eb86c1ba19cb789985f"
     },
     {
       "task": "anthropic-model-detection",
@@ -567,7 +567,7 @@
       "fix": "pinned deliberately in clause text: detected entries always spell the official endpoint; operator re-pins after re-login",
       "status": "fixed",
       "id": "F-195",
-      "fix_commit": null
+      "fix_commit": "ba01ae7779158f3c2dc66eb86c1ba19cb789985f"
     },
     {
       "task": "anthropic-model-detection",
@@ -581,7 +581,7 @@
       "fix": "board.mjs task --clauses PROV-12",
       "status": "fixed",
       "id": "F-196",
-      "fix_commit": null
+      "fix_commit": "ba01ae7779158f3c2dc66eb86c1ba19cb789985f"
     }
   ]
 }
