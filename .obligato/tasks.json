@@ -121,6 +121,13 @@
         "PROV-12"
       ],
       "completed_at": "2026-07-11T11:09:27Z"
+    },
+    {
+      "id": "chat-cockpit-design",
+      "title": "Design doc: chat cockpit (panes+GenUI+living surface, T2.2-T2.5 consolidation)",
+      "state": "completed",
+      "clauses": [],
+      "completed_at": "2026-07-12T13:27:46Z"
     }
   ]
 }
