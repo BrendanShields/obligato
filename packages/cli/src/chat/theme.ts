@@ -18,6 +18,7 @@ export type GlyphRole =
   | "fold"
   | "unfold"
   | "err"
+  | "ok"
   | "info"
   | "cur"
   | "sep";
@@ -44,6 +45,7 @@ export const CHAT_THEME: ChatTheme = {
     fold: "▸",
     unfold: "▾",
     err: "✖",
+    ok: "✓",
     info: "◆",
     cur: "▌",
     sep: "·",

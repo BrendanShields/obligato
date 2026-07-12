@@ -15,7 +15,7 @@ shader-driven visualizer that shows what the agent is doing from across the room
 ## Decisions
 
 - **Ambition A+B+C** (cockpit + GenUI + living surface), sliced; approved 2026-07-12.
-- **Theme: Quiet Pro default** (single-line box, indigo accent, glyphs ❯ ● ▸ ▾ ✖ ◆).
+- **Theme: Quiet Pro default** (single-line box, indigo accent, glyphs ❯ ● ▸ ▾ ✖ ✓ ◆).
   Themes are a token file; alternates (Cyberdeck, Phosphor, Mission Control,
   Playhouse — mocked 2026-07-12 playground) may land later as theme files only.
 - **Real shader** via `@opentui/three` (WebGPU): one scene, two moments — ~1.5 s
@@ -101,7 +101,12 @@ it: hints are session events on the chain, validated against the same schema.
 2. **chat-cockpit-shell** — panes, keymap layers, typed renderables, empty state
    (T2.2, T2.4 visuals, discoverability).
 3. **chat-live-rail** — budget/route/tree panes + honest ticker (T2.3, T2.5).
-4. **chat-genui-rules** — composer + rule table.
+4. **chat-genui-rules** — composer + rule table; carries the T2.2(b) diff-typed
+   edit/write results and T2.2(c) reverse-search deferred out of slice 2
+   (recorded 2026-07-13), plus assistant markdown rendering. Slice 2 also
+   deferred the `@opentui/keymap` adoption — a focus-switched keypress handler
+   covers the shell's six bindings; adopt keymap when overlay layers multiply
+   modes (slice 3+).
 5. **chat-visualizer** — shader + degrade ladder.
 6. **chat-failure-ux** — error panels (429 retry countdown), permission/budget
    prompts as styled panels.

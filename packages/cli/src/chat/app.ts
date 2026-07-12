@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+import { basename } from "node:path";
 import {
   answerPermission,
   appendEvent,
@@ -10,13 +12,10 @@ import {
   sessionModelOf,
 } from "@obligato/agent";
 import {
-  type CliRenderer,
   createCliRenderer,
-  InputRenderable,
   InputRenderableEvents,
   SelectRenderable,
   SelectRenderableEvents,
-  TextRenderable,
 } from "@opentui/core";
 import { setupAgent, systemPromptFor } from "../agent/common.js";
 import type { DispatchTable } from "../wizards.js";
@@ -28,10 +27,10 @@ import {
   type ChatMsg,
   createChat,
   listModels,
-  renderChat,
   slashTargets,
   update,
 } from "./model.js";
+import { createSurface } from "./surface.js";
 
 // UX-14: thin OpenTUI shell over the pure reducer in model.ts. The shell
 // only feeds ChatMsg events and executes ChatEffects; every state
@@ -64,26 +63,38 @@ export const chatCommand = async (
   const startingModel =
     sessionModelOf(reconstruct(listEvents(setup.deps.db, sessionId))) ??
     setup.entry.id;
-  let model = createChat(startingModel);
+  // UX-30: empty-state context — branch best-effort, never an error (AGT-15).
+  let branch: string | null = null;
+  try {
+    const out = execSync("git branch --show-current 2>/dev/null", {
+      cwd: setup.root,
+      timeout: 5_000,
+    })
+      .toString()
+      .trim();
+    branch = out.length > 0 ? out : null;
+  } catch {
+    branch = null;
+  }
+  let model = createChat(startingModel, {
+    authKind: setup.authKind,
+    contextWindow: setup.entry.context_window,
+    repoName: basename(setup.root),
+    branch,
+  });
   const slash = slashTargets(commands);
 
-  const transcript = new TextRenderable(renderer, {
-    id: "transcript",
-    content: "",
-    flexGrow: 1,
-  });
-  const input = new InputRenderable(renderer, {
-    id: "chat-input",
-    placeholder: "task or /help (esc to quit)",
-    flexShrink: 0,
-  });
-  renderer.root.add(transcript);
-  renderer.root.add(input);
+  const surface = createSurface(renderer);
+  const { input } = surface;
   input.focus();
 
   let askMenu: SelectRenderable | null = null;
   const redraw = (): void => {
-    transcript.content = renderChat(model);
+    surface.update(model);
+    // UX-31: focus follows the reducer — transcript focus blurs the input so
+    // j/k/enter act on the transcript instead of typing.
+    if (model.focus === "input" && !askMenu) input.focus();
+    else input.blur();
   };
 
   const dispatch = (msg: ChatMsg): void => {
@@ -92,6 +103,12 @@ export const chatCommand = async (
     redraw();
     for (const effect of next.effects) void runEffect(effect);
   };
+
+  // UX-31: liveness ticks — 100 ms cadence, reducer counts them; idle ticks
+  // are reducer no-ops so the timer stays trivially always-on while mounted.
+  const tickTimer = setInterval(() => {
+    if (model.busy) dispatch({ type: "tick" });
+  }, 100);
 
   const showAsk = (): void => {
     if (!model.ask || askMenu) return;
@@ -145,7 +162,8 @@ export const chatCommand = async (
       ...setup.deps,
       sessionId,
       onDelta: (text) => dispatch({ type: "delta", text }),
-      onToolResult: (name, ok) => dispatch({ type: "tool_result", name, ok }),
+      onToolResult: (name, ok, output) =>
+        dispatch({ type: "tool_result", name, ok, output: output ?? "" }),
       onStepCost: (costMicroUsd) =>
         dispatch({ type: "step_cost", costMicroUsd }),
     });
@@ -178,6 +196,7 @@ export const chatCommand = async (
 
   const runEffect = async (effect: ChatEffect): Promise<void> => {
     if (effect.type === "exit") {
+      clearInterval(tickTimer);
       renderer.destroy();
       process.exit(0);
     } else if (effect.type === "send_user") {
@@ -268,9 +287,22 @@ export const chatCommand = async (
   });
   renderer.keyInput.on("keypress", (key: { name?: string; ctrl?: boolean }) => {
     if (key.name === "escape" || (key.ctrl === true && key.name === "c")) {
+      clearInterval(tickTimer);
       renderer.destroy();
       process.exit(0);
     }
+    if (askMenu) return; // ask menu owns the keys while mounted
+    // UX-31: tab always toggles focus; j/k/enter go to the reducer only while
+    // transcript-focused (otherwise they type into the input normally).
+    if (key.name === "tab") dispatch({ type: "key", key: "tab" });
+    else if (
+      model.focus === "transcript" &&
+      (key.name === "j" || key.name === "k" || key.name === "return")
+    )
+      dispatch({
+        type: "key",
+        key: key.name === "return" ? "enter" : key.name,
+      });
   });
   redraw();
 };

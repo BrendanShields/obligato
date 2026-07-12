@@ -1,5 +1,6 @@
 import { loadRegistry } from "@obligato/agent";
 import type { DispatchTable } from "../wizards.js";
+import { CHAT_THEME } from "./theme.js";
 
 // UX-17: the /model listing IS the exported registry function — identity
 // asserted by the obligation test, not a reimplementation.
@@ -8,8 +9,32 @@ export const listModels = loadRegistry;
 export type ChatEntry =
   | { kind: "user"; text: string }
   | { kind: "assistant"; text: string }
-  | { kind: "tool"; name: string; ok: boolean }
+  | {
+      kind: "tool";
+      name: string;
+      ok: boolean;
+      output: string;
+      expanded: boolean;
+    }
   | { kind: "info"; text: string };
+
+// UX-31: raw split length — a trailing newline's empty tail segment counts
+// (divergence-pinned 2026-07-13).
+export const lineCount = (output: string): number => output.split("\n").length;
+
+export const isFoldable = (e: ChatEntry): boolean =>
+  e.kind === "tool" && lineCount(e.output) > 4;
+
+export const foldableIndices = (entries: ChatEntry[]): number[] =>
+  entries.flatMap((e, i) => (isFoldable(e) ? [i] : []));
+
+// UX-30: empty-state / header context, fixed at session start.
+export interface ChatMetaInfo {
+  authKind: string;
+  contextWindow: number;
+  repoName: string;
+  branch: string | null;
+}
 
 // PERM-4: rule is the matched-rule provenance recorded on the
 // permission_request event, or the literal "default".
@@ -51,12 +76,21 @@ export interface ChatModel {
   costMicroUsd: number;
   costUnknown: boolean;
   modelId: string;
+  // UX-31: focus/selection/liveness — selection indexes the ordered foldable
+  // subarray (divergence-pinned), tickCount is the only time state (F-126).
+  focus: "input" | "transcript";
+  selected: number;
+  tickCount: number;
+  meta: ChatMetaInfo;
 }
 
 export type ChatMsg =
   | { type: "submit"; text: string }
   | { type: "delta"; text: string }
-  | { type: "tool_result"; name: string; ok: boolean }
+  | { type: "tool_result"; name: string; ok: boolean; output: string }
+  | { type: "toggle_fold"; index: number }
+  | { type: "key"; key: "tab" | "j" | "k" | "enter" }
+  | { type: "tick" }
   | { type: "step_cost"; costMicroUsd: number | null }
   | { type: "paused"; ask: PermissionAsk }
   | { type: "answer"; decision: "allow" | "deny"; always: boolean }
@@ -95,7 +129,10 @@ export const HELP_TEXT = [
   "/exit — leave the chat",
 ].join("\n");
 
-export const createChat = (modelId: string): ChatModel => ({
+export const createChat = (
+  modelId: string,
+  meta?: Partial<ChatMetaInfo>,
+): ChatModel => ({
   entries: [],
   busy: false,
   ask: null,
@@ -103,7 +140,28 @@ export const createChat = (modelId: string): ChatModel => ({
   costMicroUsd: 0,
   costUnknown: false,
   modelId,
+  focus: "input",
+  selected: 0,
+  tickCount: 0,
+  meta: {
+    authKind: "none",
+    contextWindow: 0,
+    repoName: "",
+    branch: null,
+    ...meta,
+  },
 });
+
+// UX-31: flip one entry's expanded flag; untoggleable/out-of-range targets
+// return the unchanged model (divergence-pinned no-op).
+const toggleFold = (model: ChatModel, index: number): ChatModel => {
+  const entry = model.entries[index];
+  if (entry === undefined || entry.kind !== "tool" || !isFoldable(entry))
+    return model;
+  const entries = [...model.entries];
+  entries[index] = { ...entry, expanded: !entry.expanded };
+  return { ...model, entries };
+};
 
 export const update = (
   model: ChatModel,
@@ -172,6 +230,7 @@ export const update = (
         model: {
           ...model,
           busy: true,
+          tickCount: 0,
           entries: [
             ...model.entries,
             { kind: "user", text },
@@ -195,12 +254,59 @@ export const update = (
           ...model,
           entries: [
             ...model.entries,
-            { kind: "tool", name: msg.name, ok: msg.ok },
+            {
+              kind: "tool",
+              name: msg.name,
+              ok: msg.ok,
+              output: msg.output,
+              expanded: false,
+            },
             { kind: "assistant", text: "" },
           ],
         },
         effects: [],
       };
+    case "toggle_fold":
+      return { model: toggleFold(model, msg.index), effects: [] };
+    case "key": {
+      if (msg.key === "tab")
+        return {
+          model: {
+            ...model,
+            focus: model.focus === "input" ? "transcript" : "input",
+          },
+          effects: [],
+        };
+      // UX-31: j/k/enter act only while transcript-focused; other keys reach
+      // the input via the shell (never dispatched here when input-focused).
+      if (model.focus !== "transcript") return { model, effects: [] };
+      const folds = foldableIndices(model.entries);
+      if (folds.length === 0) return { model, effects: [] };
+      const selected = Math.min(model.selected, folds.length - 1);
+      if (msg.key === "j") {
+        const next = Math.min(selected + 1, folds.length - 1);
+        return next === model.selected
+          ? { model, effects: [] }
+          : { model: { ...model, selected: next }, effects: [] };
+      }
+      if (msg.key === "k") {
+        const next = Math.max(selected - 1, 0);
+        return next === model.selected
+          ? { model, effects: [] }
+          : { model: { ...model, selected: next }, effects: [] };
+      }
+      // enter: toggle the selection's entry (transcript index via subarray).
+      const target = folds[selected];
+      return target === undefined
+        ? { model, effects: [] }
+        : { model: toggleFold(model, target), effects: [] };
+    }
+    case "tick":
+      // UX-31: idle ticks change nothing — same model reference (F-126
+      // fixture determinism: time enters only as counted messages).
+      return model.busy
+        ? { model: { ...model, tickCount: model.tickCount + 1 }, effects: [] }
+        : { model, effects: [] };
     case "step_cost":
       return {
         model: {
@@ -232,6 +338,8 @@ export const update = (
         model: {
           ...model,
           busy: false,
+          // UX-31: busy ending resets the tick count.
+          tickCount: 0,
           entries:
             msg.status === "paused" && msg.reason !== undefined
               ? [
@@ -267,6 +375,7 @@ export const update = (
         model: {
           ...model,
           busy: false,
+          tickCount: 0,
           entries: [
             ...model.entries,
             { kind: "info", text: `error: ${msg.message}` },
@@ -277,13 +386,28 @@ export const update = (
   }
 };
 
-const GLYPH = { ok: "✓", fail: "✗" };
+const g = CHAT_THEME.glyphs;
 
+// Plain-text projection (UX-31 shapes, no color roles) — the structured
+// view lives in view.ts; this stays for headless assertions and debugging.
 export const renderChat = (model: ChatModel): string => {
   const lines = model.entries.flatMap((e) => {
-    if (e.kind === "user") return [`> ${e.text}`];
-    if (e.kind === "tool")
-      return [`  ${e.ok ? GLYPH.ok : GLYPH.fail} ${e.name}`];
+    if (e.kind === "user") return [`${g.user} ${e.text}`];
+    if (e.kind === "tool") {
+      const status = e.ok ? g.ok : g.err;
+      if (!isFoldable(e))
+        return [
+          `  ${status} ${e.name}`,
+          ...(e.output === "" ? [] : e.output.split("\n")),
+        ];
+      const n = lineCount(e.output);
+      return e.expanded
+        ? [
+            `  ${g.unfold} ${e.name} ${status} ${n} lines`,
+            ...e.output.split("\n"),
+          ]
+        : [`  ${g.fold} ${e.name} ${status} ${n} lines (enter expands)`];
+    }
     if (e.kind === "info") return [e.text];
     return e.text === "" ? [] : [e.text];
   });
