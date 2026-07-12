@@ -707,7 +707,7 @@
       "fix": "renderer.on(resize, redraw) in app.ts; clause pins resize re-evaluation; live-resize obligation arm via the harness resize API",
       "status": "fixed",
       "id": "F-205",
-      "fix_commit": null
+      "fix_commit": "173069468cab65b4eae114774fb3247d00c42fa4"
     },
     {
       "task": "chat-slice3-live-rail",
@@ -721,7 +721,7 @@
       "fix": "clause pins all-priced-steps-never-the-window; 16-step discriminating fixture whose window and all-steps avg differ",
       "status": "fixed",
       "id": "F-206",
-      "fix_commit": null
+      "fix_commit": "173069468cab65b4eae114774fb3247d00c42fa4"
     },
     {
       "task": "chat-slice3-live-rail",
@@ -735,7 +735,7 @@
       "fix": "test validates parsed stdout against z.array(SessionTreeNode) independently",
       "status": "fixed",
       "id": "F-207",
-      "fix_commit": null
+      "fix_commit": "173069468cab65b4eae114774fb3247d00c42fa4"
     },
     {
       "task": "chat-slice3-live-rail",
@@ -749,7 +749,7 @@
       "fix": "one treeDepth exported from chat/view.ts, both consumers import it",
       "status": "fixed",
       "id": "F-208",
-      "fix_commit": null
+      "fix_commit": "173069468cab65b4eae114774fb3247d00c42fa4"
     }
   ]
 }
