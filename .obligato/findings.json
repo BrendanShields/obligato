@@ -763,7 +763,7 @@
       "fix": "explicit identity asserts for user/info/tool; transcriptEntryLines []-assert; node-reference toBe across streaming updates",
       "status": "fixed",
       "id": "F-209",
-      "fix_commit": null
+      "fix_commit": "c6f8250bc84f15b9bd34169f0b968a0c81abb857"
     },
     {
       "task": "chat-slice4-genui-rules",
@@ -778,7 +778,7 @@
       "fix": "UX-31 repointed at UX-35 recorded deferrals",
       "status": "fixed",
       "id": "F-210",
-      "fix_commit": null
+      "fix_commit": "c6f8250bc84f15b9bd34169f0b968a0c81abb857"
     },
     {
       "task": "chat-slice4-genui-rules",
@@ -793,7 +793,7 @@
       "fix": "UX-35 pins the unstyled decision + resolveColor integration path + never-finalize; handle lifetime noted (process-scoped)",
       "status": "fixed",
       "id": "F-211",
-      "fix_commit": null
+      "fix_commit": "c6f8250bc84f15b9bd34169f0b968a0c81abb857"
     }
   ]
 }
