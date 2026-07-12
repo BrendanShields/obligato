@@ -101,7 +101,8 @@ export interface StepDeps {
     contextWindow: number;
   };
   onDelta?: (text: string) => void;
-  onToolResult?: (name: string, ok: boolean) => void;
+  // UX-31: output is additive — the chat transcript folds long tool results.
+  onToolResult?: (name: string, ok: boolean, output?: string) => void;
   onStepCost?: (costMicroUsd: number | null) => void;
   abort?: AbortSignal;
 }
@@ -331,7 +332,7 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
         is_error: isError,
       },
     }).id;
-    deps.onToolResult?.(call.name, !isError);
+    deps.onToolResult?.(call.name, !isError, output);
   }
 
   // AGT-7: after the batch, run the touched clauses' obligations (cached by

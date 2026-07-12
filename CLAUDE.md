@@ -2,7 +2,7 @@
 
 Open-source harness covering feedback → ideation → planning → spec → build → verify. Pre-code phase: the spec suite is the codebase right now.
 
-Names: product **Obligato**, working dir `agent-harness`, GitHub repo `kelson` — one project; a question naming any of the three means this repo.
+Names: product **Obligato**, working dir `agent-harness`, GitHub repo `obligato` (renamed from `kelson` 2026-07-13) — one project; a question naming any of these means this repo.
 
 ## Source of Truth
 

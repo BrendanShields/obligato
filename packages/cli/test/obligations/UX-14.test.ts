@@ -18,14 +18,19 @@ describe("UX-14: chat is a pure reducer behind a thin shell; slash = typed dispa
 
     m = update(m, { type: "delta", text: "look" }).model;
     m = update(m, { type: "delta", text: "ing…" }).model;
-    m = update(m, { type: "tool_result", name: "read", ok: true }).model;
+    m = update(m, {
+      type: "tool_result",
+      name: "read",
+      ok: true,
+      output: "",
+    }).model;
     m = update(m, { type: "delta", text: "fixed it" }).model;
     m = update(m, { type: "step_cost", costMicroUsd: 548 }).model;
     m = update(m, { type: "turn_done", status: "done" }).model;
 
     expect(m.busy).toBe(false);
     const view = renderChat(m);
-    expect(view).toContain("> fix the bug");
+    expect(view).toContain("❯ fix the bug");
     expect(view).toContain("looking…");
     expect(view).toContain("✓ read");
     expect(view).toContain("fixed it");
