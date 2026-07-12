@@ -837,7 +837,7 @@
       "fix": "design doc slice-6 landing annotation records the drop + folds the shockwave state into UX-36 deferral",
       "status": "fixed",
       "id": "F-214",
-      "fix_commit": null
+      "fix_commit": "db5b27f56639e174f663ab424b88fac0a84eb66a"
     },
     {
       "task": "chat-slice6-failure-ux",
@@ -849,7 +849,7 @@
       "fix": "marked completed pre-commit",
       "status": "fixed",
       "id": "F-215",
-      "fix_commit": null
+      "fix_commit": "db5b27f56639e174f663ab424b88fac0a84eb66a"
     },
     {
       "task": "chat-slice6-failure-ux",
@@ -863,7 +863,7 @@
       "fix": "hazard recorded accepted in UX-37 (cosmetic; internal messages are one-liners)",
       "status": "fixed",
       "id": "F-216",
-      "fix_commit": null
+      "fix_commit": "db5b27f56639e174f663ab424b88fac0a84eb66a"
     }
   ]
 }
