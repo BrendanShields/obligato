@@ -877,7 +877,7 @@
       "fix": "askMounted folded into handleEscape as a REQUIRED parameter; suppression arm added to UX-38.test.ts",
       "status": "fixed",
       "id": "F-217",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-md-theme",
@@ -891,7 +891,7 @@
       "fix": "wiring arm added: mounted MarkdownRenderable syntaxStyle.getStyle(markup.strong).bold asserted; obligation names it",
       "status": "fixed",
       "id": "F-218",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-cmd-menu",
@@ -905,7 +905,7 @@
       "fix": "parameter made required (F-076/F-085 pattern); typechecker-enumerated 33-site sweep via mechanical agent",
       "status": "fixed",
       "id": "F-219",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-viz-cockpit",
@@ -919,7 +919,7 @@
       "fix": "onToolStart moved to fire on execution-or-denial resolution (ask-pause fires nothing); semantics + single-fire loop fixture pinned in UX-36",
       "status": "fixed",
       "id": "F-220",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-viz-cockpit",
@@ -933,7 +933,7 @@
       "fix": "turn boundaries close open items at the pre-reset tick with ok:false; clause + discriminating arm added",
       "status": "fixed",
       "id": "F-221",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-viz-cockpit",
@@ -948,7 +948,7 @@
       "fix": "schema refined newline-free; pinned on AGT-19 with the line-forgery test arm",
       "status": "fixed",
       "id": "F-222",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-viz-cockpit",
@@ -962,7 +962,7 @@
       "fix": "reserved-cell fit check; multi-segment exact-boundary arm added",
       "status": "fixed",
       "id": "F-223",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     },
     {
       "task": "chat-viz-cockpit",
@@ -976,7 +976,7 @@
       "fix": "clause wording fixed to the tool-role rendering; role-level assertion added",
       "status": "fixed",
       "id": "F-224",
-      "fix_commit": null
+      "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
     }
   ]
 }
