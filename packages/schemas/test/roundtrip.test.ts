@@ -41,6 +41,8 @@ import {
   UiBenchView,
   UiEvalView,
   UiLoopView,
+  UiSearchView,
+  UiSessionView,
   UiTelemetryView,
   UiTraceView,
   WidgetTree,
@@ -462,6 +464,129 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
           steps: count,
           tokens: count,
           cost_micro_usd: count,
+        }),
+        { maxLength: 5 },
+      ),
+    }),
+  ],
+  UiSessionView: [
+    UiSessionView,
+    fc.record({
+      empty_verb: nonEmpty,
+      session: fc.option(
+        fc.record({
+          id: ulid,
+          repo: nonEmpty,
+          status: fc.constantFrom("complete", "incomplete", "degraded"),
+          runner: fc.option(fc.constantFrom("cc", "native"), { nil: null }),
+          model: fc.option(fc.string(), { nil: null }),
+          auth_kind: fc.option(fc.string(), { nil: null }),
+          started_at: isoUtc,
+          ended_at: fc.option(isoUtc, { nil: null }),
+          steps: count,
+          tokens: count,
+          cost_micro_usd: fc.option(count, { nil: null }),
+          unpriced_steps: count,
+        }),
+        { nil: null },
+      ),
+      items: fc.array(
+        fc
+          .record({
+            seq: fc.integer({ min: 1, max: 1000 }),
+            id: ulid,
+            at: isoUtc,
+          })
+          .chain((base) =>
+            fc
+              .oneof(
+                fc.record({
+                  kind: fc.constant("user" as const),
+                  preview: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("step" as const),
+                  model: nonEmpty,
+                  tokens_in: count,
+                  tokens_out: count,
+                  tokens_cache_read: count,
+                  tokens_cache_write: count,
+                  cost_micro_usd: fc.option(count, { nil: null }),
+                  tool_calls: count,
+                  preview: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("tool" as const),
+                  name: nonEmpty,
+                  ok: fc.boolean(),
+                  detail: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("permission" as const),
+                  phase: fc.constantFrom("request", "decision"),
+                  tool: fc.string(),
+                  detail: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("compaction" as const),
+                  from_event: fc.string(),
+                  to_event: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("model_switch" as const),
+                  from: fc.string(),
+                  to: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("escalation" as const),
+                  model: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("obligation" as const),
+                  clause_id: fc.string(),
+                  status: fc.constantFrom("pass", "fail"),
+                }),
+                fc.record({
+                  kind: fc.constant("fork" as const),
+                  from_event: fc.string(),
+                }),
+                fc.record({
+                  kind: fc.constant("meta" as const),
+                  keys: fc.array(fc.string(), { maxLength: 4 }),
+                }),
+                fc.record({
+                  kind: fc.constant("budget" as const),
+                  event: fc.constantFrom(
+                    "overrun",
+                    "triage_requested",
+                    "triage_resolved",
+                  ),
+                  detail: fc.string(),
+                }),
+              )
+              .map((v) => ({ ...base, ...v })),
+          ),
+        { maxLength: 6 },
+      ),
+    }),
+  ],
+  UiSearchView: [
+    UiSearchView,
+    fc.record({
+      empty_verb: nonEmpty,
+      query: fc.string(),
+      hits: fc.array(
+        fc.record({
+          kind: fc.constantFrom(
+            "session",
+            "eval_run",
+            "proposal",
+            "divergence",
+            "clause",
+          ),
+          id: nonEmpty,
+          label: fc.string(),
+          command: nonEmpty,
         }),
         { maxLength: 5 },
       ),

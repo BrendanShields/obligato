@@ -9,7 +9,15 @@ import {
   YAxis,
 } from "recharts";
 import { fmtMicroUsd, fmtTokens, usePoll } from "../api";
-import { Empty, Section, Sparkline, Status, Tile } from "../components";
+import {
+  Empty,
+  Pending,
+  Section,
+  Sparkline,
+  StaleBadge,
+  Status,
+  Tile,
+} from "../components";
 
 const axis = {
   stroke: "var(--baseline)",
@@ -56,12 +64,14 @@ function Series({
 }
 
 export default function Telemetry() {
-  const { data } = usePoll<UiTelemetryView>("/api/telemetry");
-  if (!data) return null;
+  const poll = usePoll<UiTelemetryView>("/api/telemetry");
+  const { data } = poll;
+  if (!data) return <Pending path="/api/telemetry" error={poll.error} />;
   if (data.sessions_count === 0) return <Empty verb={data.empty_verb} />;
   const maxSteps = Math.max(...data.models.map((m) => m.steps), 1);
   return (
     <div>
+      <StaleBadge poll={poll} />
       <Section title="totals">
         <div className="flex gap-4 flex-wrap">
           <Tile label="sessions" value={String(data.sessions_count)} />
@@ -144,8 +154,14 @@ export default function Telemetry() {
             >
               {data.sessions.map((s) => (
                 <tr key={s.id} style={{ borderTop: "1px solid var(--grid)" }}>
-                  <td className="p-2" style={{ color: "var(--series-1)" }}>
-                    {s.id.slice(0, 10)}…
+                  <td className="p-2">
+                    {/* UX-50: drill down into the session timeline */}
+                    <a
+                      href={`#/session/${s.id}`}
+                      style={{ color: "var(--series-1)" }}
+                    >
+                      {s.id.slice(0, 10)}…
+                    </a>
                   </td>
                   <td className="p-2">{s.repo}</td>
                   <td className="p-2">

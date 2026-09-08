@@ -17,6 +17,50 @@ export function Empty({ verb }: { verb: string }) {
   );
 }
 
+// UX-53: a failed refresh is visible — symbol + timestamp + error over the
+// last good payload; a fresh poll renders nothing.
+export function StaleBadge({
+  poll,
+}: {
+  poll: { stale: boolean; updated_at: string | null; error: string | null };
+}) {
+  if (!poll.stale) return null;
+  return (
+    <div
+      className="mono text-xs inline-block px-2 py-1 rounded mb-3"
+      style={{
+        color: "var(--status-warning)",
+        border: "1px solid var(--status-warning)",
+      }}
+    >
+      ~ stale · updated {poll.updated_at ?? "never"} · {poll.error}
+    </div>
+  );
+}
+
+// UX-53: before the first payload — the designed pending state, never null.
+export function Pending({
+  path,
+  error,
+}: {
+  path: string;
+  error: string | null;
+}) {
+  return (
+    <div className="card p-8 text-center">
+      <p style={{ color: "var(--text-muted)" }}>
+        {error === null ? "loading" : `refresh failed: ${error}`} — polling
+      </p>
+      <code
+        className="mono mt-2 inline-block px-2 py-1 rounded"
+        style={{ background: "var(--page)", color: "var(--text-secondary)" }}
+      >
+        GET {path}
+      </code>
+    </div>
+  );
+}
+
 export function Tile({
   label,
   value,

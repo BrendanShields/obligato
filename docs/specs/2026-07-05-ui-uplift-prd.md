@@ -239,7 +239,7 @@ with metered spend unmarked. *Obligation:* fixture session with mixed
 `priced_as` steps — chat ticker shows `~`-prefixed total, telemetry tile separates
 metered from list-priced, and no unmarked combined figure appears in any `--json`.
 
-**T2.6 Web step timeline drill-down** — upgrade the telemetry view's per-session
+**T2.6 Web step timeline drill-down** *(landed 2026-09-08 as UX-50 + UX-52; cross-links to routing decisions/bundles deferred — no per-step routing rows exist for chat sessions yet)* — upgrade the telemetry view's per-session
 drill-down to a vertical step timeline: model badge, duration, token/cost bar, tool
 calls with ✓/✗ glyphs, permission asks, budget events, UX-17 model-switch events —
 each entity cross-linked (step → routing decision → bundle). The read-only sibling
@@ -265,7 +265,7 @@ and report the bundle-miss rate with its CI. *Obligation:* fixture bundle events
 render one row per member with reason; miss-rate line carries CI bounds; `--json`
 validates.
 
-**T2.8 Web command palette** — Cmd-K over the SPA: fuzzy-jump to any entity
+**T2.8 Web command palette** *(landed 2026-09-08 as UX-51; substring match, not fuzzy — recorded)* — Cmd-K over the SPA: fuzzy-jump to any entity
 (session, run, proposal, clause); every *action* result is a copyable CLI command —
 the UX-5 copy-verb pattern as a first-class interaction. No new viz dependency.
 Surface: web. Data: existing `GET /api/*` + one small search route with its own
@@ -514,7 +514,7 @@ Every feature in this PRD, without restatement per item:
   TUI, and web (the T3.5/T2.1 identity obligation is the pattern).
 - Event-stream reads order by rowid; costs carry units; effect sizes carry CIs;
   color never the only signal (UX §7).
-- Polled web views surface a failed refresh as a visible stale badge over the last
+- *(Landed as UX-53, 2026-09-08.)* Polled web views surface a failed refresh as a visible stale badge over the last
   good payload with a last-updated timestamp — never a silent blank; the loading
   state is the UX-12 empty state, never `null`. (Lands as a numbered clause with
   the first Phase B web feature.)

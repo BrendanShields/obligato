@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Evals from "./views/Evals";
 import Loop from "./views/Loop";
+import Palette from "./views/Palette";
+import Session from "./views/Session";
 import Telemetry from "./views/Telemetry";
 import Trace from "./views/Trace";
 
@@ -13,17 +15,26 @@ const VIEWS = {
 
 type Route = keyof typeof VIEWS;
 
+// UX-50: the one parameterised hash route; everything else is the table.
+const resolve = (hash: string): { route: Route; session: string | null } => {
+  const h = hash || "#/";
+  const m = /^#\/session\/(.+)$/.exec(h);
+  if (m) {
+    let id = m[1] as string;
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // malformed percent-encoding: keep the literal segment
+    }
+    return { route: "#/", session: id };
+  }
+  return { route: h in VIEWS ? (h as Route) : "#/", session: null };
+};
+
 export default function App() {
-  const [route, setRoute] = useState<Route>(
-    (window.location.hash || "#/") in VIEWS
-      ? ((window.location.hash || "#/") as Route)
-      : "#/",
-  );
+  const [loc, setLoc] = useState(() => resolve(window.location.hash));
   useEffect(() => {
-    const onHash = () => {
-      const h = window.location.hash || "#/";
-      if (h in VIEWS) setRoute(h as Route);
-    };
+    const onHash = () => setLoc(resolve(window.location.hash));
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -50,9 +61,9 @@ export default function App() {
               className="mono text-sm"
               style={{
                 color:
-                  route === r ? "var(--text-primary)" : "var(--text-muted)",
+                  loc.route === r ? "var(--text-primary)" : "var(--text-muted)",
                 borderBottom:
-                  route === r
+                  loc.route === r
                     ? "2px solid var(--series-1)"
                     : "2px solid transparent",
                 paddingBottom: 2,
@@ -66,10 +77,17 @@ export default function App() {
           className="ml-auto text-xs"
           style={{ color: "var(--text-muted)" }}
         >
-          read-only · actions via CLI
+          read-only · actions via CLI · ⌘K search
         </span>
       </header>
-      <main className="p-6 max-w-6xl mx-auto">{VIEWS[route].el}</main>
+      <main className="p-6 max-w-6xl mx-auto">
+        {loc.session !== null ? (
+          <Session id={loc.session} />
+        ) : (
+          VIEWS[loc.route].el
+        )}
+      </main>
+      <Palette />
     </div>
   );
 }

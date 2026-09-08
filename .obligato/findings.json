@@ -977,6 +977,21 @@
       "status": "fixed",
       "id": "F-224",
       "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
+    },
+    {
+      "task": "E2-3",
+      "source": "self-audit",
+      "severity": "warning",
+      "clauses": [
+        "UX-50",
+        "SES-8"
+      ],
+      "summary": "SessionEventKind carries `compaction` and `tool_call` members no producer writes — SES-8 records compaction as a session_meta payload and tool calls ride assistant_message; UX-50 needed a totality fallback for dead kinds",
+      "root_cause": "spec_gap",
+      "fix": "UX-50 maps a compaction-kind row to the same variant and tool_call to meta; enum cleanup deferred (a widening/narrowing needs a CHECK rebuild migration)",
+      "status": "open",
+      "id": "F-231",
+      "fix_commit": null
     }
   ]
 }

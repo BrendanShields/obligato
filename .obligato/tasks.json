@@ -262,9 +262,9 @@
     {
       "id": "E2-3",
       "title": "Web: step timeline drill-down (T2.6) + command palette (T2.8) + inbox view; obligato session show <id> CLI timeline",
-      "state": "open",
+      "state": "completed",
       "clauses": [],
-      "completed_at": null
+      "completed_at": "2026-09-08T12:51:32Z"
     },
     {
       "id": "E3-1",
