@@ -1021,7 +1021,7 @@
       "fix": "answerPermission persists {tool, arg: <exact primary arg>, allow} when the request provenance is a guard (isGuardRule); sessionRules carries arg; PERM-2 amended, PERM-6 pinned, discriminating arm in PERM-6 test",
       "status": "fixed",
       "id": "F-233",
-      "fix_commit": null
+      "fix_commit": "63ad957185e0666127ef3eddbbbdc9bd1f27c369"
     }
   ]
 }
