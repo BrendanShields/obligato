@@ -7,6 +7,8 @@ import {
   UiBenchView,
   UiEvalView,
   UiLoopView,
+  UiSearchView,
+  UiSessionView,
   UiTelemetryView,
   UiTraceView,
 } from "@obligato/schemas";
@@ -18,6 +20,9 @@ const SCHEMAS = {
   "/api/bench": UiBenchView,
   "/api/loop": UiLoopView,
   "/api/trace": UiTraceView,
+  // UX-50/51: parameterised routes are registered by their example path
+  "/api/session/01ARZ3NDEKTSV4RRFFQ69G5FAV": UiSessionView,
+  "/api/search?q=": UiSearchView,
 } as const;
 
 const dir = mkdtempSync(join(tmpdir(), "obligato-ux11-"));

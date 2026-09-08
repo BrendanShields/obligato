@@ -1,6 +1,12 @@
 import type { UiBenchView, UiEvalRunRow, UiEvalView } from "@obligato/schemas";
 import { fmtMicroUsd, usePoll } from "../api";
-import { Empty, Section, Status } from "../components";
+import {
+  Pending,
+  PolledEmpty,
+  Section,
+  StaleBadge,
+  Status,
+} from "../components";
 
 // CI dot-and-whisker: numbers always carry their interval (UX §7)
 function Whisker({
@@ -71,11 +77,14 @@ function Deltas({
 // UX-25: per-run per-task agent matrix — pass/fail symbol + cost with units,
 // verdict with deltas and CIs (never a bare label).
 function BenchRuns() {
-  const { data } = usePoll<UiBenchView>("/api/bench");
-  if (!data) return null;
-  if (data.runs.length === 0) return <Empty verb={data.empty_verb} />;
+  const poll = usePoll<UiBenchView>("/api/bench");
+  const { data } = poll;
+  if (!data) return <Pending path="/api/bench" error={poll.error} />;
+  if (data.runs.length === 0)
+    return <PolledEmpty poll={poll} verb={data.empty_verb} />;
   return (
     <div className="flex flex-col gap-3">
+      <StaleBadge poll={poll} />
       {data.runs.map((r) => (
         <div key={r.id} className="card p-4">
           <div className="flex items-center gap-3 flex-wrap">
@@ -128,12 +137,13 @@ function BenchRuns() {
 }
 
 export default function Evals() {
-  const { data } = usePoll<UiEvalView>("/api/evals");
-  if (!data) return null;
+  const poll = usePoll<UiEvalView>("/api/evals");
+  const { data } = poll;
+  if (!data) return <Pending path="/api/evals" error={poll.error} />;
   if (data.runs.length === 0)
     return (
       <>
-        <Empty verb={data.empty_verb} />
+        <PolledEmpty poll={poll} verb={data.empty_verb} />
         <Section title="bench runs">
           <BenchRuns />
         </Section>
@@ -141,6 +151,7 @@ export default function Evals() {
     );
   return (
     <>
+      <StaleBadge poll={poll} />
       <Section title="eval runs">
         <div className="flex flex-col gap-3">
           {data.runs.map((r) => (

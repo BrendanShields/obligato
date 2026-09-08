@@ -824,7 +824,7 @@ const help = (): void => {
         ["chat", "interactive native-runtime chat (TTY)"],
         [
           "session",
-          "tree | fork | compare | compact — tree-session ops (UX-34)",
+          "tree | fork | compare | compact | show — tree-session ops (UX-34, UX-52)",
         ],
         ["promote", "<session> --suite <dir> — session → benchmark task"],
         ["bench", "--suite <dir> — native vs claude head-to-head (EVP-11)"],

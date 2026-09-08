@@ -6,6 +6,8 @@ import {
   evalView,
   loopView,
   openDb,
+  searchView,
+  sessionView,
   telemetryView,
   traceView,
 } from "@obligato/kernel";
@@ -13,6 +15,8 @@ import {
   UiBenchView,
   UiEvalView,
   UiLoopView,
+  UiSearchView,
+  UiSessionView,
   UiTelemetryView,
   UiTraceView,
 } from "@obligato/schemas";
@@ -55,7 +59,44 @@ interface RouteCtx {
   changelogPath: string;
 }
 
-export const API_PATHS = Object.keys(routes);
+// UX-50/UX-51: parameterised routes — matched by pattern only after the exact
+// table misses; each carries one example concrete path so the UX-10/11/12
+// route matrices iterate it like any exact route.
+const patternRoutes: {
+  example: string;
+  match: (url: URL) => Record<string, string> | null;
+  schema: ZodType;
+  build: (ctx: RouteCtx, params: Record<string, string>) => unknown;
+}[] = [
+  {
+    example: "/api/session/01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    match: (url) => {
+      const m = /^\/api\/session\/([^/]+)$/.exec(url.pathname);
+      if (!m) return null;
+      try {
+        return { id: decodeURIComponent(m[1] as string) };
+      } catch {
+        return { id: m[1] as string };
+      }
+    },
+    schema: UiSessionView,
+    build: (ctx, p) => sessionView(ctx.db, p.id ?? ""),
+  },
+  {
+    example: "/api/search?q=",
+    match: (url) =>
+      url.pathname === "/api/search"
+        ? { q: url.searchParams.get("q") ?? "" }
+        : null,
+    schema: UiSearchView,
+    build: (ctx, p) => searchView(ctx.db, p.q ?? ""),
+  },
+];
+
+export const API_PATHS = [
+  ...Object.keys(routes),
+  ...patternRoutes.map((r) => r.example),
+];
 
 // UX-13: repo-first store resolution — ./.obligato/obligato.db when present,
 // else the user store; --db overrides both.
@@ -103,13 +144,28 @@ export const createUiServer = (opts: UiServerOptions = {}) => {
     fetch(req) {
       if (req.method !== "GET")
         return Response.json({ error: "method_not_allowed" }, { status: 405 });
-      const path = new URL(req.url).pathname;
+      const url = new URL(req.url);
+      const path = url.pathname;
 
-      const route = routes[path];
-      if (route) {
+      const exact = routes[path];
+      let matched: {
+        schema: ZodType;
+        build: (ctx: RouteCtx, params: Record<string, string>) => unknown;
+        params: Record<string, string>;
+      } | null = exact ? { ...exact, params: {} } : null;
+      if (!matched)
+        for (const r of patternRoutes) {
+          const params = r.match(url);
+          if (params) {
+            matched = { schema: r.schema, build: r.build, params };
+            break;
+          }
+        }
+      if (matched) {
+        const route = matched;
         const db = openDb(dbPath);
         try {
-          const body = route.build({ db, changelogPath });
+          const body = route.build({ db, changelogPath }, route.params);
           const parsed = route.schema.safeParse(body);
           if (!parsed.success) {
             console.error(

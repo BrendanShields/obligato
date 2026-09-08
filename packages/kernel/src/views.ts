@@ -4,6 +4,11 @@ import type {
   UiBenchView,
   UiEvalView,
   UiLoopView,
+  UiSearchHit,
+  UiSearchView,
+  UiSessionHeader,
+  UiSessionItem,
+  UiSessionView,
   UiTelemetryView,
   UiTraceView,
   Verdict,
@@ -246,4 +251,287 @@ export const traceView = (db: Database): UiTraceView => {
     nodes: nodes.map((n) => ({ ...n, drift_open: n.drift_open === 1 })),
     edges,
   };
+};
+
+// UX-50: the per-session timeline — one function behind `GET /api/session/<id>`
+// and `obligato session show` (F-085). Items are the raw rowid stream across
+// every branch (no chain reconstruction); the session's budget events follow
+// in their own rowid order — never timestamp-interleaved (F-060/F-067).
+const firstLine = (v: unknown): string =>
+  String(v ?? "")
+    .split("\n")[0]
+    ?.slice(0, 80) ?? "";
+
+interface EventRow {
+  id: string;
+  kind: string;
+  payload: string;
+  at: string;
+  parent_id: string | null;
+}
+
+const sessionItem = (row: EventRow, seq: number): UiSessionItem => {
+  const p = JSON.parse(row.payload) as Record<string, unknown>;
+  const base = { seq, id: row.id, at: row.at };
+  const meta = (): UiSessionItem => ({
+    ...base,
+    kind: "meta",
+    keys: Object.keys(p),
+  });
+  switch (row.kind) {
+    case "user_message":
+      return { ...base, kind: "user", preview: firstLine(p.text) };
+    case "assistant_message": {
+      const u = (p.usage ?? {}) as Record<string, unknown>;
+      const n = (k: string): number => Number(u[k] ?? 0);
+      return {
+        ...base,
+        kind: "step",
+        model:
+          typeof p.model === "string" && p.model !== "" ? p.model : "unknown",
+        tokens_in: n("tokens_in"),
+        tokens_out: n("tokens_out"),
+        tokens_cache_read: n("tokens_cache_read"),
+        tokens_cache_write: n("tokens_cache_write"),
+        cost_micro_usd:
+          typeof p.cost_micro_usd === "number" ? p.cost_micro_usd : null,
+        tool_calls: Array.isArray(p.tool_calls) ? p.tool_calls.length : 0,
+        preview: firstLine(p.text),
+      };
+    }
+    case "tool_result":
+      return {
+        ...base,
+        kind: "tool",
+        name: typeof p.name === "string" && p.name !== "" ? p.name : "unknown",
+        ok: p.is_error !== true,
+        detail: firstLine(p.output),
+      };
+    case "permission_request":
+      return {
+        ...base,
+        kind: "permission",
+        phase: "request",
+        tool: String(p.tool ?? ""),
+        detail: firstLine(p.arg),
+      };
+    case "permission_decision":
+      return {
+        ...base,
+        kind: "permission",
+        phase: "decision",
+        tool: String(p.tool ?? ""),
+        detail: String(p.decision ?? ""),
+      };
+    // A `compaction`-kind row (the enum admits it; SES-8 writes compaction as
+    // a session_meta payload) maps to the same variant — totality.
+    case "compaction":
+      return {
+        ...base,
+        kind: "compaction",
+        from_event: String(p.from_event ?? ""),
+        to_event: String(p.to_event ?? ""),
+      };
+    case "session_meta": {
+      const c = p.compaction as Record<string, unknown> | undefined;
+      if (c)
+        return {
+          ...base,
+          kind: "compaction",
+          from_event: String(c.from_event ?? ""),
+          to_event: String(c.to_event ?? ""),
+        };
+      const sw = p.model_switch as Record<string, unknown> | undefined;
+      if (sw)
+        return {
+          ...base,
+          kind: "model_switch",
+          from: String(sw.from ?? ""),
+          to: String(sw.to ?? ""),
+        };
+      const esc = p.routing_escalation as Record<string, unknown> | undefined;
+      if (esc)
+        return {
+          ...base,
+          kind: "escalation",
+          model: String(esc.modelId ?? ""),
+        };
+      const ob = p.obligation_check as Record<string, unknown> | undefined;
+      if (ob)
+        return {
+          ...base,
+          kind: "obligation",
+          clause_id: String(ob.clause_id ?? ""),
+          status: ob.status === "pass" ? "pass" : "fail",
+        };
+      if (p.forked_from !== undefined)
+        return { ...base, kind: "fork", from_event: String(p.forked_from) };
+      return meta();
+    }
+    default:
+      return meta();
+  }
+};
+
+const budgetDetail = (kind: string, p: Record<string, unknown>): string => {
+  if (kind === "overrun") {
+    const a = (p.attribution ?? {}) as Record<string, unknown>;
+    return `${String(p.threshold)}× budget (${String(a.used_tokens ?? "?")}/${String(a.budget_tokens ?? "?")} tok)`;
+  }
+  if (kind === "triage_requested")
+    return `awaiting triage: ${(Array.isArray(p.options) ? p.options : []).join("|")}`;
+  const reason = typeof p.reason === "string" ? ` (${p.reason})` : "";
+  return `${String(p.action ?? "")} by ${String(p.actor ?? "")}${reason}`;
+};
+
+export const sessionView = (db: Database, sessionId: string): UiSessionView => {
+  const empty_verb = "obligato chat";
+  const row = db
+    .query(
+      "SELECT id, repo, status, runner, started_at, ended_at FROM session WHERE id = ?",
+    )
+    .get(sessionId) as {
+    id: string;
+    repo: string;
+    status: UiSessionHeader["status"];
+    runner: UiSessionHeader["runner"];
+    started_at: string;
+    ended_at: string | null;
+  } | null;
+  if (!row) return { empty_verb, session: null, items: [] };
+  const root = db
+    .query(
+      "SELECT payload FROM session_event WHERE session_id = ? AND kind = 'session_meta' AND parent_id IS NULL ORDER BY rowid LIMIT 1",
+    )
+    .get(sessionId) as { payload: string } | null;
+  const rootPayload = root
+    ? (JSON.parse(root.payload) as Record<string, unknown>)
+    : {};
+  const agg = db
+    .query(
+      `SELECT COUNT(*) AS steps,
+              COALESCE(SUM(tokens_in + tokens_out), 0) AS tokens,
+              COALESCE(SUM(cost_micro_usd), 0) AS cost,
+              COUNT(*) - COUNT(cost_micro_usd) AS unpriced
+       FROM step_event WHERE session_id = ?`,
+    )
+    .get(sessionId) as {
+    steps: number;
+    tokens: number;
+    cost: number;
+    unpriced: number;
+  };
+  const events = db
+    .query(
+      "SELECT id, kind, payload, at, parent_id FROM session_event WHERE session_id = ? AND kind != 'head_moved' ORDER BY rowid",
+    )
+    .all(sessionId) as EventRow[];
+  const items: UiSessionItem[] = [];
+  let rootSeen = false;
+  for (const e of events) {
+    // The root session_meta is the header, not an item (UX-50).
+    if (!rootSeen && e.kind === "session_meta" && e.parent_id === null) {
+      rootSeen = true;
+      continue;
+    }
+    items.push(sessionItem(e, items.length + 1));
+  }
+  const budget = db
+    .query(
+      "SELECT id, kind, payload, at FROM budget_event WHERE step_id = ? ORDER BY rowid",
+    )
+    .all(sessionId) as {
+    id: string;
+    kind: string;
+    payload: string;
+    at: string;
+  }[];
+  for (const b of budget)
+    items.push({
+      seq: items.length + 1,
+      id: b.id,
+      at: b.at,
+      kind: "budget",
+      event: b.kind as "overrun" | "triage_requested" | "triage_resolved",
+      detail: budgetDetail(
+        b.kind,
+        JSON.parse(b.payload) as Record<string, unknown>,
+      ),
+    });
+  return {
+    empty_verb,
+    session: {
+      id: row.id,
+      repo: row.repo,
+      status: row.status,
+      runner: row.runner,
+      model: typeof rootPayload.model === "string" ? rootPayload.model : null,
+      auth_kind:
+        typeof rootPayload.auth_kind === "string"
+          ? rootPayload.auth_kind
+          : null,
+      started_at: row.started_at,
+      ended_at: row.ended_at,
+      steps: agg.steps,
+      tokens: agg.tokens,
+      // PROV-3: an unpriced step makes the total unknown, never a partial sum.
+      cost_micro_usd: agg.unpriced > 0 ? null : agg.cost,
+      unpriced_steps: agg.unpriced,
+    },
+    items,
+  };
+};
+
+// UX-51: palette search — substring match per entity kind, every hit naming
+// the CLI verb that acts on it (UX-5). LIKE wildcards in the query are
+// escaped so a query matches literally.
+const SEARCH_CAP = 50;
+
+export const searchView = (db: Database, q: string): UiSearchView => {
+  const empty_verb = "obligato chat";
+  const query = q.trim();
+  if (query === "") return { empty_verb, query, hits: [] };
+  const like = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const hits: UiSearchHit[] = [];
+  const collect = (
+    sql: string,
+    kind: UiSearchHit["kind"],
+    command: (id: string) => string,
+  ): void => {
+    const rows = db.query(sql).all({ $q: like }) as {
+      id: string;
+      label: string;
+    }[];
+    for (const r of rows) {
+      if (hits.length >= SEARCH_CAP) return;
+      hits.push({ kind, id: r.id, label: r.label, command: command(r.id) });
+    }
+  };
+  const lim = `LIMIT ${SEARCH_CAP}`;
+  collect(
+    `SELECT id, repo AS label FROM session WHERE id LIKE $q ESCAPE '\\' OR repo LIKE $q ESCAPE '\\' ORDER BY rowid ${lim}`,
+    "session",
+    (id) => `obligato session show ${id}`,
+  );
+  collect(
+    `SELECT id, suite_id AS label FROM eval_run WHERE id LIKE $q ESCAPE '\\' OR suite_id LIKE $q ESCAPE '\\' ORDER BY rowid ${lim}`,
+    "eval_run",
+    () => "obligato eval report",
+  );
+  collect(
+    `SELECT id, rationale AS label FROM proposal WHERE id LIKE $q ESCAPE '\\' OR rationale LIKE $q ESCAPE '\\' ORDER BY rowid ${lim}`,
+    "proposal",
+    (id) => `obligato loop review ${id}`,
+  );
+  collect(
+    `SELECT id, clause_ids AS label FROM divergence_report WHERE id LIKE $q ESCAPE '\\' OR clause_ids LIKE $q ESCAPE '\\' ORDER BY rowid ${lim}`,
+    "divergence",
+    (id) => `obligato divergence show ${id}`,
+  );
+  collect(
+    `SELECT logical_id AS id, type || ' ' || tier AS label FROM artifact WHERE logical_id LIKE $q ESCAPE '\\' ORDER BY rowid ${lim}`,
+    "clause",
+    () => "obligato drift list",
+  );
+  return { empty_verb, query, hits };
 };
