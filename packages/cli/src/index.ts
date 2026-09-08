@@ -803,6 +803,8 @@ export const COMMANDS: DispatchTable = {
   index: async (argv) =>
     (await import("./commands/reindex.js")).indexCommand(argv),
   db: async (argv) => (await import("./commands/db.js")).dbCommand(argv),
+  metrics: async (argv) =>
+    (await import("./commands/metrics.js")).metricsCommand(argv),
 };
 
 const help = (): void => {
@@ -834,6 +836,7 @@ const help = (): void => {
         ["agents", "register <manifest> | list — custom agent onboarding"],
         ["index", "rebuild — reconcile the artifact index from files"],
         ["db", "stats | backup <dest> — store size, row counts, snapshot"],
+        ["metrics", "north-star + secondary metrics (--since/--until/--otel)"],
         ["", ""],
         ["(no command)", "in a terminal: interactive launcher (UX-7)"],
       ]),

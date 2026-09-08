@@ -4,6 +4,7 @@ import {
   DoctorReport,
   IndexRebuildResult,
   InitResult,
+  MetricsReport,
   RunResult,
 } from "@obligato/schemas";
 import type { ZodType } from "zod";
@@ -43,4 +44,5 @@ export const JSON_OUTPUT: Record<string, JsonOutput> = {
   auth: { skip: "mutates credential state; no data view (PROV)" },
   ui: { skip: "long-running localhost server, not a one-shot view (UX-11)" },
   chat: { skip: "interactive TUI; non-TTY routes to run (UX-14)" },
+  metrics: { schema: MetricsReport },
 };

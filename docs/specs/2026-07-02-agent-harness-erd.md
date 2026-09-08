@@ -496,7 +496,7 @@ The RTR-5 write-surface rule is structural here: the bandit's entire write acces
 | `SESSION` | Trace (`trace_id` stored on the row) |
 | `STEP_EVENT` | Span — attributes: `obligato.sdlc_step`, `obligato.model`, `obligato.effort`, `obligato.agent`, token counts, `obligato.cost_micro_usd`, `obligato.budget.overrun` |
 | `INTERVENTION_EVENT`, `DRIFT_EVENT`, routing escalations | Span events on the enclosing step span |
-| Metrics | `obligato.fpar`, `obligato.tpac`, `obligato.overhead_ratio`, `obligato.routing.regret`, counters: `obligato.drift.count`, `obligato.interventions.count`, `obligato.eval.gate.{pass,reject}` |
+| Metrics | Gauges from the TEL-8 report (each omitted when null): `obligato.fpar`, `obligato.tpac` (micro-USD), `obligato.tokens_per_accepted`, `obligato.correction_rate`, `obligato.overhead_ratio`, `obligato.eval.gate.pass_rate`; counters: `obligato.routing.regret` (regret events), `obligato.drift.count`, `obligato.interventions.count`, `obligato.eval.gate.pass` (`helps`), `obligato.eval.gate.reject` (`hurts` + `no_effect`), `obligato.eval.gate.underpowered`, `obligato.tasks.accepted`, `obligato.sessions.count`, `obligato.sessions.degraded` |
 
 Exporter is OTLP, disabled unless an endpoint is configured; all attributes pass the TEL-3 content-stripping rules (numeric/categorical only — no prompts, paths, or code).
 
