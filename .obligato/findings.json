@@ -75,9 +75,9 @@
       "clauses": [
         "TEL-6"
       ],
-      "summary": "TEL-6 metrics half (north-star/secondary as OTel metrics) unimplemented — traces/spans only",
+      "summary": "TEL-6 metrics half (north-star/secondary as OTel metrics) unimplemented \u2014 traces/spans only",
       "root_cause": "unrecorded_deferral",
-      "fix": "TEL-6 metrics half landed: exportMetricsOtel posts the ERD §8 gauges from the TEL-8 report (null metrics omitted, never 0); TEL-6 obligation test extended with the /v1/metrics capture and gauge-name set equality",
+      "fix": "TEL-6 metrics half landed: exportMetricsOtel posts the ERD \u00a78 gauges from the TEL-8 report (null metrics omitted, never 0); TEL-6 obligation test extended with the /v1/metrics capture and gauge-name set equality",
       "fix_commit": "97549a3bb8973eff99bd1c5f760a20dd428f7c4d",
       "status": "fixed",
       "id": "F-096"
@@ -90,7 +90,7 @@
         "UX-22",
         "SPEC-8"
       ],
-      "summary": "Both blind readers committed to all-or-nothing promotion (invalid id rejects the whole batch, non-zero exit) but promoteInferred silently skips non-inferred ids — partial promotion of a curated selection; F-120 class: agreed reading, unimplemented surface",
+      "summary": "Both blind readers committed to all-or-nothing promotion (invalid id rejects the whole batch, non-zero exit) but promoteInferred silently skips non-inferred ids \u2014 partial promotion of a curated selection; F-120 class: agreed reading, unimplemented surface",
       "root_cause": "spec_gap",
       "fix": "UX-22 pins strict all-or-nothing; promoteInferred gains validate-then-throw (no mutation on a bad batch); collapsed module counts pinned authority-split (reader B)",
       "status": "fixed",
@@ -118,7 +118,7 @@
       "clauses": [
         "UX-19"
       ],
-      "summary": "doctor store probe used openDb, which creates the missing store and reports it passing — a diagnostic that mutates state and misdirects a fresh clone",
+      "summary": "doctor store probe used openDb, which creates the missing store and reports it passing \u2014 a diagnostic that mutates state and misdirects a fresh clone",
       "root_cause": "spec_gap",
       "fix": "UX-19 pinned read-only probing (missing store fails naming kelson init, never created); existsSync guard + missing-store fixture",
       "status": "fixed",
@@ -146,7 +146,7 @@
       "clauses": [
         "UX-23"
       ],
-      "summary": "a runTask/createWorkspace failure left the replay eval_run row with finished_at NULL — forever-running in the eval view",
+      "summary": "a runTask/createWorkspace failure left the replay eval_run row with finished_at NULL \u2014 forever-running in the eval view",
       "root_cause": "spec_gap",
       "fix": "UX-23 pins finished_at stamping on failure; runReplay stamps in finally; missing-snapshot fixture added",
       "status": "fixed",
@@ -160,7 +160,7 @@
       "clauses": [
         "UX-22"
       ],
-      "summary": "docs/guides/brownfield.md still said drift promote ships with the TUI — stale after this diff shipped it as a static command",
+      "summary": "docs/guides/brownfield.md still said drift promote ships with the TUI \u2014 stale after this diff shipped it as a static command",
       "root_cause": "process_gap",
       "fix": "guide line updated to name kelson drift list/promote",
       "status": "fixed",
@@ -173,7 +173,7 @@
       "clauses": [],
       "root_cause": "process_gap",
       "source": "session",
-      "summary": "board.mjs task create reused archived-completed id C1-11, reviving it and nulling completed_at — create path never checked the completed/archived namespace",
+      "summary": "board.mjs task create reused archived-completed id C1-11, reviving it and nulling completed_at \u2014 create path never checked the completed/archived namespace",
       "fix": "restored C1-11 from HEAD into archive; --title now dies on any existing id, active or archived",
       "id": "F-168",
       "status": "fixed",
@@ -198,7 +198,7 @@
       "clauses": [
         "LOOP-4"
       ],
-      "summary": "LOOP-4 protected enumeration gained the edit budget in spec while PROTECTED_TARGETS and the LOOP-4 obligation matrix were unchanged — spec edit shipped without its paired code/test on a false unbuilt-Phase-4 premise",
+      "summary": "LOOP-4 protected enumeration gained the edit budget in spec while PROTECTED_TARGETS and the LOOP-4 obligation matrix were unchanged \u2014 spec edit shipped without its paired code/test on a false unbuilt-Phase-4 premise",
       "root_cause": "unverified_claim",
       "fix": "PROTECTED_TARGETS gained edit-budget; LOOP-4 matrix extended to 5 targets in the same change",
       "status": "fixed",
@@ -212,7 +212,7 @@
       "clauses": [
         "LOOP-11"
       ],
-      "summary": "LOOP-11 mandated a required rejections_seen_through field while the shipped strict Proposal schema had no such field — every proposal the live implementation emitted would be spec-non-conformant; no obligation test, no ERD ripple",
+      "summary": "LOOP-11 mandated a required rejections_seen_through field while the shipped strict Proposal schema had no such field \u2014 every proposal the live implementation emitted would be spec-non-conformant; no obligation test, no ERD ripple",
       "root_cause": "unverified_claim",
       "fix": "schema field + migration 0011 + createProposal required arg + assembleRejectionHistory/emitProposalCycle + LOOP-10/LOOP-11 obligation tests + ERD field note in the same change",
       "status": "fixed",
@@ -243,7 +243,7 @@
         "PROV-11",
         "PROV-1"
       ],
-      "summary": "writeOverlay assumed ~/.obligato exists and threw ENOENT on a never-configured HOME — both the new openai-compatible login and the existing ollama login crashed on a fresh machine; obligation tests never saw it because makeTestRepo pre-creates home/.obligato",
+      "summary": "writeOverlay assumed ~/.obligato exists and threw ENOENT on a never-configured HOME \u2014 both the new openai-compatible login and the existing ollama login crashed on a fresh machine; obligation tests never saw it because makeTestRepo pre-creates home/.obligato",
       "root_cause": "test_blindspot",
       "fix": "mkdirSync(recursive) in writeOverlay (single choke point for both providers); PROV-11 test case (a) now rmSyncs the pre-created dir so a revert fails the suite; caught by the operator-surface E2E, not the fixture suite",
       "status": "fixed",
@@ -257,7 +257,7 @@
       "clauses": [
         "LOOP-1"
       ],
-      "summary": "pre-commit stamp-head mis-stamped F-150..F-155 with the rename commit sha: the .kelson->.obligato path rename made its added-line heuristic read every existing row as new — F-169 diff-shape class recurring on the renamed board file, corrupting fix_commit provenance the postmortem/LOOP-6 miners read",
+      "summary": "pre-commit stamp-head mis-stamped F-150..F-155 with the rename commit sha: the .kelson->.obligato path rename made its added-line heuristic read every existing row as new \u2014 F-169 diff-shape class recurring on the renamed board file, corrupting fix_commit provenance the postmortem/LOOP-6 miners read",
       "root_cause": "design_bug",
       "fix": "six rows restamped to their true fix commit 402fb5d via board.mjs stamp; stamp-head rename-robustness queued as its own task (C1-20)",
       "status": "fixed",
@@ -271,7 +271,7 @@
       "clauses": [
         "LOOP-1"
       ],
-      "summary": "the F-174 restamp silently never landed: board.mjs stamp only wrote rows whose fix_commit was null, so correcting a mis-stamp no-opd on all six rows while printing the success line — the staged diff then carried a false fix claim (F-174 text said restamped; the same file disproved it). The repo gotcha class exactly: a scripted mutation must verify its own effect",
+      "summary": "the F-174 restamp silently never landed: board.mjs stamp only wrote rows whose fix_commit was null, so correcting a mis-stamp no-opd on all six rows while printing the success line \u2014 the staged diff then carried a false fix claim (F-174 text said restamped; the same file disproved it). The repo gotcha class exactly: a scripted mutation must verify its own effect",
       "root_cause": "design_bug",
       "fix": "stamp now treats explicitly named ids as authoritative: overwrites, reports each old->new correction, and re-loads to assert every named row carries the sha (dies otherwise); restamp re-run and verified in worktree and index",
       "status": "fixed",
@@ -286,7 +286,7 @@
         "PACK-3",
         "PACK-5"
       ],
-      "summary": "CI merge-base checks (pack version-bump lint, changelog append-only) were broken on their primary trigger: actions/checkout depth-1 has no common ancestor between a PR head and origin/main, so git merge-base printed nothing and the scripts died on usage — never seen before because the repo had never raised a PR (push-to-main degenerates merge-base to HEAD, vacuously passing)",
+      "summary": "CI merge-base checks (pack version-bump lint, changelog append-only) were broken on their primary trigger: actions/checkout depth-1 has no common ancestor between a PR head and origin/main, so git merge-base printed nothing and the scripts died on usage \u2014 never seen before because the repo had never raised a PR (push-to-main degenerates merge-base to HEAD, vacuously passing)",
       "root_cause": "test_blindspot",
       "fix": "fetch-depth: 0 on the checks job checkout; surfaced and verified by PR #1, the repo first PR",
       "status": "fixed",
@@ -303,9 +303,9 @@
         "AGT-15",
         "PROV-8"
       ],
-      "summary": "post-compaction reconstruction dropped the session_meta root (substitution began the chain with the synthetic summary), so assembleContext threw session-has-no-session_meta-root on ANY step after a compact — manual session compact + continue was a guaranteed crash; SES-8s own obligation test had pinned the broken shape (asserted chain[0].payload.compacted) and nothing ever assembled context after compacting",
+      "summary": "post-compaction reconstruction dropped the session_meta root (substitution began the chain with the synthetic summary), so assembleContext threw session-has-no-session_meta-root on ANY step after a compact \u2014 manual session compact + continue was a guaranteed crash; SES-8s own obligation test had pinned the broken shape (asserted chain[0].payload.compacted) and nothing ever assembled context after compacting",
       "root_cause": "test_blindspot",
-      "fix": "reconstructFrom keeps chain[0] (root) in front of the summary; compactSession records from = first real event AFTER the root and refuses a root-only chain (nothing to compact); SES-8 clause + obligation amended with root-survival pin and an assembleContext regression arm. Note: id assigned explicitly — branch-parallel auto-numbering had allocated F-173, already taken on the open PR #1 branch (C1-21)",
+      "fix": "reconstructFrom keeps chain[0] (root) in front of the summary; compactSession records from = first real event AFTER the root and refuses a root-only chain (nothing to compact); SES-8 clause + obligation amended with root-survival pin and an assembleContext regression arm. Note: id assigned explicitly \u2014 branch-parallel auto-numbering had allocated F-173, already taken on the open PR #1 branch (C1-21)",
       "status": "fixed",
       "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
     },
@@ -321,7 +321,7 @@
       ],
       "summary": "auto-compaction at the done-gate demotion tail folded the gates chain-derived state: obligation_check session_meta events (failingClauses evidence) and the AGT-12 routing_escalation tail marker were substituted away with the transcript, so a failing session could pass the done-gate with an empty VerificationReport and an escalated retry silently ran on the normal model; the general case blinded any later done-gate to pre-compaction failures",
       "root_cause": "design_bug",
-      "fix": "substitution now folds message-bearing events only — covered session_meta bookkeeping survives in order (zero context cost: toMessages skips session_meta); the demotion tail and no-model-call resumed steps are exempt from the trigger (clause-pinned); digest counts folded message events and collapses newlines; obligation arms h/i added (discriminating override + demote-compact-done regression)",
+      "fix": "substitution now folds message-bearing events only \u2014 covered session_meta bookkeeping survives in order (zero context cost: toMessages skips session_meta); the demotion tail and no-model-call resumed steps are exempt from the trigger (clause-pinned); digest counts folded message events and collapses newlines; obligation arms h/i added (discriminating override + demote-compact-done regression)",
       "status": "fixed",
       "fix_commit": "09e56d3237250450b35217e6ed5bed2b4806c0bc"
     },
@@ -333,7 +333,7 @@
       "clauses": [
         "PERM-5"
       ],
-      "summary": "board task C1-9 titled the work PERM-4 (a different live clause — ask provenance) while the clause landed as PERM-5, and clauses[] was empty — proto-LOOP-1 miners would attribute the diff to the wrong stable id; board.mjs cannot retitle (the F-168 guard reads --title as create-only), so the fix was a verified hand edit",
+      "summary": "board task C1-9 titled the work PERM-4 (a different live clause \u2014 ask provenance) while the clause landed as PERM-5, and clauses[] was empty \u2014 proto-LOOP-1 miners would attribute the diff to the wrong stable id; board.mjs cannot retitle (the F-168 guard reads --title as create-only), so the fix was a verified hand edit",
       "root_cause": "process_gap",
       "fix": "C1-9 retitled with clauses [PERM-5]; board.mjs retitle gap folded into C1-21 scope",
       "status": "fixed",
@@ -347,7 +347,7 @@
       "clauses": [
         "PERM-5"
       ],
-      "summary": "divergence-skip left one genuine two-reading edge: --allow write: (empty glob after the colon) — grant-all-writes vs match-only-empty-arg; the implemented reading fails closed but the clause did not pin it",
+      "summary": "divergence-skip left one genuine two-reading edge: --allow write: (empty glob after the colon) \u2014 grant-all-writes vs match-only-empty-arg; the implemented reading fails closed but the clause did not pin it",
       "root_cause": "spec_gap",
       "fix": "clause parenthetical pins present-but-empty arg glob = matches only an empty primary argument, never glob-absent",
       "status": "fixed",
@@ -374,9 +374,9 @@
       "source": "clause-auditor",
       "severity": "violation",
       "clauses": [],
-      "summary": "the new cross-branch id-numbering ref scan interpolated a git refname into an execSync shell string (git show ${ref}:${p}); git allows $ ( ) { } ; in refnames, so a hostile branch/remote ref like a$(touch${IFS}OWNED) fetched into refs/remotes executes on the next un-idded finding — a command-injection into the tool that owns the LOOP-1 evidence log. Auditor reproduced it end-to-end through the CLI",
+      "summary": "the new cross-branch id-numbering ref scan interpolated a git refname into an execSync shell string (git show ${ref}:${p}); git allows $ ( ) { } ; in refnames, so a hostile branch/remote ref like a$(touch${IFS}OWNED) fetched into refs/remotes executes on the next un-idded finding \u2014 a command-injection into the tool that owns the LOOP-1 evidence log. Auditor reproduced it end-to-end through the CLI",
       "root_cause": "design_bug",
-      "fix": "execFileSync argv form for both for-each-ref and git show — no shell parses any refname; obligation arm creates a valid-but-shell-dangerous ref via update-ref and asserts no file appears (verified discriminating: old shell form injects, argv form safe)",
+      "fix": "execFileSync argv form for both for-each-ref and git show \u2014 no shell parses any refname; obligation arm creates a valid-but-shell-dangerous ref via update-ref and asserts no file appears (verified discriminating: old shell form injects, argv form safe)",
       "status": "fixed",
       "fix_commit": "c2bc1664e1542f6f20b3096b15d6538085363dd9"
     },
@@ -590,7 +590,7 @@
       "clauses": [
         "UX-28"
       ],
-      "summary": "WidgetTree roundtrip arbitrary drew -0: JSON.stringify(-0) is 0, toEqual distinguishes — seed-dependent gate failure (one run fail, rerun pass), the documented delta-arb z0 edge unapplied to the new sparkline arb",
+      "summary": "WidgetTree roundtrip arbitrary drew -0: JSON.stringify(-0) is 0, toEqual distinguishes \u2014 seed-dependent gate failure (one run fail, rerun pass), the documented delta-arb z0 edge unapplied to the new sparkline arb",
       "root_cause": "test_blindspot",
       "fix": "normalize -0 in the sparkline values arbitrary, matching the file z0 precedent; counterexample values:[-0] recorded in comment",
       "status": "fixed",
@@ -605,7 +605,7 @@
         "UX-29",
         "UX-4"
       ],
-      "summary": "chat NO_COLOR used truthiness while every sibling surface (components/theme.ts, sink.ts) uses presence — NO_COLOR=\"\" painted on chat only; partial-precedent import of the UX-4 mechanism",
+      "summary": "chat NO_COLOR used truthiness while every sibling surface (components/theme.ts, sink.ts) uses presence \u2014 NO_COLOR=\"\" painted on chat only; partial-precedent import of the UX-4 mechanism",
       "root_cause": "spec_gap",
       "fix": "presence semantics pinned in UX-29 (any value incl. empty), resolveColor uses !== undefined, NO_COLOR=\"\" obligation arm added",
       "status": "fixed",
@@ -619,7 +619,7 @@
       "clauses": [
         "UX-29"
       ],
-      "summary": "grep-gate scope mismatch: clause said recursive, obligation+test scanned flat — a future src/chat/ subdir would silently escape the gate",
+      "summary": "grep-gate scope mismatch: clause said recursive, obligation+test scanned flat \u2014 a future src/chat/ subdir would silently escape the gate",
       "root_cause": "test_blindspot",
       "fix": "clause pins recursive explicitly; test uses readdirSync recursive with a non-empty file-list assertion",
       "status": "fixed",
@@ -647,9 +647,9 @@
       "clauses": [
         "UX-28"
       ],
-      "summary": "obligation ≥2-deep round-trip arm was only probabilistic (generator draw) — deterministic panel³ fixture was parse-only",
+      "summary": "obligation \u22652-deep round-trip arm was only probabilistic (generator draw) \u2014 deterministic panel\u00b3 fixture was parse-only",
       "root_cause": "test_blindspot",
-      "fix": "panel³ fixture routed through JSON.parse(JSON.stringify) + deep-equal in the obligation test",
+      "fix": "panel\u00b3 fixture routed through JSON.parse(JSON.stringify) + deep-equal in the obligation test",
       "status": "fixed",
       "id": "F-201",
       "fix_commit": "33949a562b1b3386c3944a19aadd6b979ebeb147"
@@ -659,7 +659,7 @@
       "source": "clause-auditor",
       "severity": "warning",
       "clauses": [],
-      "summary": "packages/ui tsconfigs never enabled strict/exactOptionalPropertyTypes — ui compiled schema source non-strict (ADR-0003 our-sources-strict out of compliance), surfaced by the ui-build failure on the hand-written recursive type",
+      "summary": "packages/ui tsconfigs never enabled strict/exactOptionalPropertyTypes \u2014 ui compiled schema source non-strict (ADR-0003 our-sources-strict out of compliance), surfaced by the ui-build failure on the hand-written recursive type",
       "root_cause": "process_gap",
       "fix": "strict + exactOptionalPropertyTypes added to tsconfig.app.json and tsconfig.node.json; zero source changes needed",
       "status": "fixed",
@@ -688,7 +688,7 @@
         "UX-30",
         "UX-31"
       ],
-      "summary": "tail-follow obligation arm and test landed under UX-31 though UX-30 owns the requirement — traceability misfile",
+      "summary": "tail-follow obligation arm and test landed under UX-31 though UX-30 owns the requirement \u2014 traceability misfile",
       "root_cause": "process_gap",
       "fix": "arm moved to UX-30 obligation line; test relocated to UX-30.test.ts with a cross-reference note left in UX-31",
       "status": "fixed",
@@ -702,7 +702,7 @@
       "clauses": [
         "UX-32"
       ],
-      "summary": "rail width gate evaluated only on reducer dispatch — OpenTUI re-lays-out on terminal resize with zero dispatch, so an open rail survived a shrink below 100 cols and a grow-back never restored it (F-088/F-203 non-user-event class, third recurrence)",
+      "summary": "rail width gate evaluated only on reducer dispatch \u2014 OpenTUI re-lays-out on terminal resize with zero dispatch, so an open rail survived a shrink below 100 cols and a grow-back never restored it (F-088/F-203 non-user-event class, third recurrence)",
       "root_cause": "design_bug",
       "fix": "renderer.on(resize, redraw) in app.ts; clause pins resize re-evaluation; live-resize obligation arm via the harness resize API",
       "status": "fixed",
@@ -716,7 +716,7 @@
       "clauses": [
         "UX-33"
       ],
-      "summary": "avg/max scope two-readable (all steps vs 14-step window) and the fixture used 3 steps — a window-scoped implementation passed every test",
+      "summary": "avg/max scope two-readable (all steps vs 14-step window) and the fixture used 3 steps \u2014 a window-scoped implementation passed every test",
       "root_cause": "spec_gap",
       "fix": "clause pins all-priced-steps-never-the-window; 16-step discriminating fixture whose window and all-steps avg differ",
       "status": "fixed",
@@ -730,7 +730,7 @@
       "clauses": [
         "UX-34"
       ],
-      "summary": "--json obligation arm was discharged by the implementation own parse call — test shared the check with the code under test (F-031 class)",
+      "summary": "--json obligation arm was discharged by the implementation own parse call \u2014 test shared the check with the code under test (F-031 class)",
       "root_cause": "test_blindspot",
       "fix": "test validates parsed stdout against z.array(SessionTreeNode) independently",
       "status": "fixed",
@@ -803,7 +803,7 @@
         "UX-36",
         "UX-30"
       ],
-      "summary": "busy-first state derivation made paused unreachable in production — asks arrive with busy still true (paused dispatch precedes turn_done), so both the viz pane and the ticker churned thinking through every permission ask (F-088/F-100 class: state decoration with zero discriminating coverage)",
+      "summary": "busy-first state derivation made paused unreachable in production \u2014 asks arrive with busy still true (paused dispatch precedes turn_done), so both the viz pane and the ticker churned thinking through every permission ask (F-088/F-100 class: state decoration with zero discriminating coverage)",
       "root_cause": "design_bug",
       "fix": "shared chatState derivation, ask checked before busy, feeding both viz pane and ticker; clause pins precedence; reducer-driven paused obligation arm",
       "status": "fixed",
@@ -818,7 +818,7 @@
         "UX-32",
         "UX-36"
       ],
-      "summary": "viz truth-table arms lived in UX-36.test.ts with the pointer recorded only on the UX-36 side — UX-32 readers found a stale test file",
+      "summary": "viz truth-table arms lived in UX-36.test.ts with the pointer recorded only on the UX-36 side \u2014 UX-32 readers found a stale test file",
       "root_cause": "process_gap",
       "fix": "pointer added to UX-32 obligation per the UX-30/31 precedent",
       "status": "fixed",
@@ -832,7 +832,7 @@
       "clauses": [
         "UX-37"
       ],
-      "summary": "slice-6 design-doc line still promised a retry countdown + styled panels; landing annotation missing (countdown dropped — no retry-after plumbing; viz error-shockwave state half-recorded)",
+      "summary": "slice-6 design-doc line still promised a retry countdown + styled panels; landing annotation missing (countdown dropped \u2014 no retry-after plumbing; viz error-shockwave state half-recorded)",
       "root_cause": "unrecorded_deferral",
       "fix": "design doc slice-6 landing annotation records the drop + folds the shockwave state into UX-36 deferral",
       "status": "fixed",
@@ -858,7 +858,7 @@
       "clauses": [
         "UX-37"
       ],
-      "summary": "whole-message regex rows can misclassify reducer-internal errors echoing user text (unknown model x429 → rate-limited headline)",
+      "summary": "whole-message regex rows can misclassify reducer-internal errors echoing user text (unknown model x429 \u2192 rate-limited headline)",
       "root_cause": "spec_gap",
       "fix": "hazard recorded accepted in UX-37 (cosmetic; internal messages are one-liners)",
       "status": "fixed",
@@ -872,7 +872,7 @@
       "clauses": [
         "UX-38"
       ],
-      "summary": "esc-suppressed-while-ask-menu-mounted pinned in clause text but unenforced — the suppression lived in the exit-thunk closure outside the exported guard; deleting it left the suite green",
+      "summary": "esc-suppressed-while-ask-menu-mounted pinned in clause text but unenforced \u2014 the suppression lived in the exit-thunk closure outside the exported guard; deleting it left the suite green",
       "root_cause": "test_blindspot",
       "fix": "askMounted folded into handleEscape as a REQUIRED parameter; suppression arm added to UX-38.test.ts",
       "status": "fixed",
@@ -886,7 +886,7 @@
       "clauses": [
         "UX-35"
       ],
-      "summary": "themed SyntaxStyle wiring unasserted — reverting surface.ts to SyntaxStyle.create() passed every arm (renderer arm checked marker concealment, not styling)",
+      "summary": "themed SyntaxStyle wiring unasserted \u2014 reverting surface.ts to SyntaxStyle.create() passed every arm (renderer arm checked marker concealment, not styling)",
       "root_cause": "test_blindspot",
       "fix": "wiring arm added: mounted MarkdownRenderable syntaxStyle.getStyle(markup.strong).bold asserted; obligation names it",
       "status": "fixed",
@@ -900,7 +900,7 @@
       "clauses": [
         "UX-38"
       ],
-      "summary": "knownDispatch optional-with-default on a meaning-changing parameter — future 2-arg createChat callers would silently treat every dispatch command as unknown",
+      "summary": "knownDispatch optional-with-default on a meaning-changing parameter \u2014 future 2-arg createChat callers would silently treat every dispatch command as unknown",
       "root_cause": "design_bug",
       "fix": "parameter made required (F-076/F-085 pattern); typechecker-enumerated 33-site sweep via mechanical agent",
       "status": "fixed",
@@ -914,7 +914,7 @@
       "clauses": [
         "UX-36"
       ],
-      "summary": "ask-resume double-fired onToolStart for the same call — pre-permission fire re-ran on resume, orphaning a phantom running row whose elapsed went negative after the tick reset; hit every permission-asked tool",
+      "summary": "ask-resume double-fired onToolStart for the same call \u2014 pre-permission fire re-ran on resume, orphaning a phantom running row whose elapsed went negative after the tick reset; hit every permission-asked tool",
       "root_cause": "silent_divergence",
       "fix": "onToolStart moved to fire on execution-or-denial resolution (ask-pause fires nothing); semantics + single-fire loop fixture pinned in UX-36",
       "status": "fixed",
@@ -928,7 +928,7 @@
       "clauses": [
         "UX-36"
       ],
-      "summary": "open activity items survived turn_done/error with no closing rule — tick reset rendered negative elapsed and a frozen spinner",
+      "summary": "open activity items survived turn_done/error with no closing rule \u2014 tick reset rendered negative elapsed and a frozen spinner",
       "root_cause": "spec_gap",
       "fix": "turn boundaries close open items at the pre-reset tick with ok:false; clause + discriminating arm added",
       "status": "fixed",
@@ -943,7 +943,7 @@
         "AGT-19",
         "UX-36"
       ],
-      "summary": "todo text schema admitted embedded newlines — serialization is line-delimited, so one item could forge phantom parsed items",
+      "summary": "todo text schema admitted embedded newlines \u2014 serialization is line-delimited, so one item could forge phantom parsed items",
       "root_cause": "spec_gap",
       "fix": "schema refined newline-free; pinned on AGT-19 with the line-forgery test arm",
       "status": "fixed",
@@ -957,7 +957,7 @@
       "clauses": [
         "UX-36"
       ],
-      "summary": "clipLine mangled at the exact-fit segment boundary — room went negative and slice(0,-1) overflowed the 26-cell pane",
+      "summary": "clipLine mangled at the exact-fit segment boundary \u2014 room went negative and slice(0,-1) overflowed the 26-cell pane",
       "root_cause": "test_blindspot",
       "fix": "reserved-cell fit check; multi-segment exact-boundary arm added",
       "status": "fixed",
@@ -1019,17 +1019,20 @@
       "source": "session",
       "status": "deferred:tel-8-tpac-attribution",
       "id": "F-240",
+      "fix_commit": null
+    },
+    {
       "task": "E1-3",
-      "source": "implementation",
       "severity": "warning",
       "clauses": [
         "UX-13",
         "UX-42",
         "UX-43"
       ],
-      "summary": "inbox/launcher resolve the store repo-first (UX-13 resolver) while loop/chat/session/doctor CLI verbs default to the user store — a repo carrying a CC-hook repo store shows an inbox blind to loop proposals and native sessions written to ~/.obligato",
       "root_cause": "spec_gap",
-      "fix": "recorded at landing; needs one store-resolution clause covering every CLI verb (spec-sync) or UX-13 narrowed to ui — until then `obligato inbox --db` is the escape hatch",
+      "summary": "inbox/launcher resolve the store repo-first (UX-13 resolver) while loop/chat/session/doctor CLI verbs default to the user store \u2014 a repo carrying a CC-hook repo store shows an inbox blind to loop proposals and native sessions written to ~/.obligato",
+      "fix": "recorded at landing; needs one store-resolution clause covering every CLI verb (spec-sync) or UX-13 narrowed to ui \u2014 until then `obligato inbox --db` is the escape hatch",
+      "source": "implementation",
       "status": "open",
       "id": "F-227",
       "fix_commit": null
@@ -1062,7 +1065,7 @@
       "fix": "UX-7 amended with the UX-43 carve-out (home when the queue is non-empty, menu otherwise) and its obligation re-scoped to the zero-item render",
       "status": "fixed",
       "id": "F-233",
-      "fix_commit": null
+      "fix_commit": "c1866307221b910ca47357f283617a53a464816d"
     },
     {
       "task": "E1-3",
@@ -1072,12 +1075,12 @@
         "UX-42",
         "AGT-11"
       ],
-      "summary": "budget_pause verb `obligato chat --continue <session>` did not act: no CLI surface calls BudgetMonitor.resolve and runTurn short-circuits paused/blocked sessions — AGT-11 operator-resolve surface is unbuilt",
+      "summary": "budget_pause verb `obligato chat --continue <session>` did not act: no CLI surface calls BudgetMonitor.resolve and runTurn short-circuits paused/blocked sessions \u2014 AGT-11 operator-resolve surface is unbuilt",
       "root_cause": "unverified_claim",
       "fix": "verb changed to the honest inspect verb `obligato session tree <session>`; UX-42 records the missing resolve surface as a deferral, upgraded when it lands",
       "status": "fixed",
       "id": "F-234",
-      "fix_commit": null
+      "fix_commit": "c1866307221b910ca47357f283617a53a464816d"
     },
     {
       "task": "E1-3",
@@ -1089,10 +1092,10 @@
       ],
       "summary": "inbox rows rendered through table() overflowed 80 columns (~165 cells for a proposal_review row)",
       "root_cause": "design_bug",
-      "fix": "two lines per item: kvGrid row with the summary clipped to 80 − keyWidth − 2 cells, then the whole verb indented; width arm added to the UX-42 test",
+      "fix": "two lines per item: kvGrid row with the summary clipped to 80 \u2212 keyWidth \u2212 2 cells, then the whole verb indented; width arm added to the UX-42 test",
       "status": "fixed",
       "id": "F-235",
-      "fix_commit": null
+      "fix_commit": "c1866307221b910ca47357f283617a53a464816d"
     },
     {
       "task": "E1-3",
@@ -1102,12 +1105,12 @@
         "UX-42",
         "SES-6"
       ],
-      "summary": "paused_session derived table-wide (latest permission_request without a decision) while the runtime derives pending asks from the head chain — a fork rewound past the ask left a phantom item",
+      "summary": "paused_session derived table-wide (latest permission_request without a decision) while the runtime derives pending asks from the head chain \u2014 a fork rewound past the ask left a phantom item",
       "root_cause": "design_bug",
       "fix": "derivation moved onto the head chain via a recursive parent_id walk in SQL; fork-past-ask negative added to the UX-42 test",
       "status": "fixed",
       "id": "F-236",
-      "fix_commit": null
+      "fix_commit": "c1866307221b910ca47357f283617a53a464816d"
     },
     {
       "task": "E1-3",
@@ -1116,12 +1119,12 @@
       "clauses": [
         "UX-42"
       ],
-      "summary": "UX-42 test left arms unexercised: blocked budget positive, escalate/re_spec negatives, proposed→gate and approved→apply verbs",
+      "summary": "UX-42 test left arms unexercised: blocked budget positive, escalate/re_spec negatives, proposed\u2192gate and approved\u2192apply verbs",
       "root_cause": "test_blindspot",
       "fix": "arms added with expected verbs per seeded id",
       "status": "fixed",
       "id": "F-237",
-      "fix_commit": null
+      "fix_commit": "c1866307221b910ca47357f283617a53a464816d"
     },
     {
       "task": "E1-3",
@@ -1135,7 +1138,7 @@
       "fix": "fifth view added to the enumeration (mechanical ripple)",
       "status": "fixed",
       "id": "F-238",
-      "fix_commit": null
+      "fix_commit": "c1866307221b910ca47357f283617a53a464816d"
     },
     {
       "task": "E1-3",
@@ -1144,7 +1147,7 @@
       "clauses": [],
       "summary": "E1-3 marked completed while CI was red; the failure was a runner-level Bun segfault, not the diff",
       "root_cause": "env_skew",
-      "fix": "no action — confirmed flaky runner, fix in flight on main; task stays completed",
+      "fix": "no action \u2014 confirmed flaky runner, fix in flight on main; task stays completed",
       "status": "resolved",
       "id": "F-239",
       "fix_commit": null
