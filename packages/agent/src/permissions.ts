@@ -26,6 +26,28 @@ const globToRegExp = (glob: string): RegExp => {
 const matches = (glob: string, value: string): boolean =>
   globToRegExp(glob).test(value);
 
+// AGT-20: hook matchers reuse the PERM-1 glob (F-085).
+export const matchesGlob = matches;
+
+// PERM-6: shipped guard layer — destructive bash shapes resolve `ask` when no
+// operator rule matched. Globs over the bash primary argument (PERM-1 `*`
+// crosses everything, so `rm -rf /*` covers every absolute recursive rm).
+export const DEFAULT_GUARDS: PermissionRule[] = [
+  "rm -rf /*",
+  "rm -rf ~*",
+  "git push*--force*",
+  "git push* -f*",
+  "git reset --hard*",
+  "git clean*-f*",
+  "sudo *",
+  "curl*|*sh*",
+  "wget*|*sh*",
+  "chmod -R 777*",
+  "mkfs*",
+  "dd if=*",
+  ":(){*",
+].map((arg) => ({ tool: "bash", arg, action: "ask" as const }));
+
 const literalChars = (glob: string | undefined): number =>
   glob === undefined ? 0 : glob.replace(/[*?]/g, "").length;
 
@@ -67,6 +89,16 @@ export const evaluate = (
   if (best) return { action: best.action, rule: best };
   return { action: DEFAULT_ALLOW.has(tool) ? "allow" : "ask", rule: null };
 };
+
+// PERM-6: guards join the operator's rules under PERM-1's own ranking — a
+// guard outranks a bare `bash` allow (arg specificity), a strictly more
+// specific operator glob outranks the guard, a same-glob tie resolves ask,
+// deny trumps. PERM-5's granular allow stays on plain `evaluate` (no guards).
+export const evaluateGuarded = (
+  rules: PermissionRule[],
+  tool: string,
+  arg: string,
+): PermissionVerdict => evaluate([...rules, ...DEFAULT_GUARDS], tool, arg);
 
 export const decide = (
   rules: PermissionRule[],

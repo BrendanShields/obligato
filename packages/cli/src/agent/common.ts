@@ -6,6 +6,7 @@ import {
   CORE_TOOLS,
   instantiate,
   loadConfig,
+  loadHooks,
   loadRegistry as loadModelRegistry,
   loadRoutingContext,
   loadRules,
@@ -101,6 +102,9 @@ export const setupAgent = (
       model,
       tools: CORE_TOOLS,
       rules: loadRules(root),
+      // AGT-20: lifecycle hooks, loaded once; createAgentSession re-reads
+      // the same file for session_start (its own single-load path).
+      hooks: loadHooks(root),
       ctx: { cwd: root, exec: localExec(root) },
       authKind,
       resolveModel,

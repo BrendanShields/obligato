@@ -90,6 +90,30 @@ export const RunResult = z.object({
   schema_version: SchemaVersion,
 });
 
+// AGT-20: operator lifecycle hooks (`.obligato/hooks.json`). `matcher` is a
+// PERM-1 tool glob, meaningful for tool events only.
+export const HookEvent = z.enum([
+  "session_start",
+  "pre_tool",
+  "post_tool",
+  "session_end",
+]);
+
+export const HookDefinition = z.object({
+  event: HookEvent,
+  matcher: z.string().min(1).optional(),
+  command: z.string().min(1),
+  timeout_ms: z.number().int().positive().optional(),
+});
+
+export const HooksFile = z.object({
+  schema_version: SchemaVersion,
+  hooks: z.array(HookDefinition),
+});
+
+export type HookEvent = z.infer<typeof HookEvent>;
+export type HookDefinition = z.infer<typeof HookDefinition>;
+export type HooksFile = z.infer<typeof HooksFile>;
 export type PermissionAction = z.infer<typeof PermissionAction>;
 export type PermissionRule = z.infer<typeof PermissionRule>;
 export type SessionEventKind = z.infer<typeof SessionEventKind>;

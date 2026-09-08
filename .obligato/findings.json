@@ -977,6 +977,36 @@
       "status": "fixed",
       "id": "F-224",
       "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
+    },
+    {
+      "task": "E1-1",
+      "source": "implementation",
+      "severity": "violation",
+      "clauses": [
+        "AGT-20",
+        "SEC-1"
+      ],
+      "summary": "api executor loaded a benchmark snapshot hooks.json and hooks spawn on the host — a community snapshot could run commands outside the SEC-1 sandbox",
+      "root_cause": "design_bug",
+      "fix": "executor passes hooks: [] at creation and turn (eval sessions run hook-less as they run rule-less); AGT-20 text + obligation source-scan arm pin it",
+      "status": "fixed",
+      "id": "F-229",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-1",
+      "source": "divergence",
+      "severity": "warning",
+      "clauses": [
+        "PERM-6",
+        "PERM-1"
+      ],
+      "summary": "guard precedence as briefed (operator rules win in full) would let a bare {tool: bash, action: allow} silence every guard; PERM-1 tie rule also contradicts a same-glob allow winning",
+      "root_cause": "spec_gap",
+      "fix": "PERM-6 pinned to PERM-1 ranking: guard outranks a bare allow, strictly more specific operator glob wins, same-glob tie resolves ask, deny trumps; discriminating obligation arm added",
+      "status": "fixed",
+      "id": "F-230",
+      "fix_commit": null
     }
   ]
 }

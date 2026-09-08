@@ -57,6 +57,10 @@ export const apiExecutor: ExecutorFn = async (ctx) => {
       exec: ctx.workspace.exec,
     }),
     auth_kind: authKindOf(credential),
+    // AGT-20: eval sessions run hook-less, as they run rule-less — hooks
+    // spawn on the host, so a snapshot's hooks.json would cross the SEC-1
+    // sandbox boundary.
+    hooks: [],
   });
   appendEvent(db, {
     session_id: sessionId,
@@ -73,6 +77,7 @@ export const apiExecutor: ExecutorFn = async (ctx) => {
       model,
       tools: (await import("./tools.ts")).CORE_TOOLS,
       rules: [],
+      hooks: [],
       ctx: { cwd: ctx.workspace.dir, exec: ctx.workspace.exec },
       // PROV-7: a subscription-auth eval run surfaces the re-mint path on 401.
       authKind: authKindOf(credential),

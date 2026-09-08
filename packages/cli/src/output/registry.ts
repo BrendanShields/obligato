@@ -2,6 +2,7 @@ import {
   BenchReport,
   DivergenceListResult,
   DoctorReport,
+  HooksListResult,
   IndexRebuildResult,
   InitResult,
   RunResult,
@@ -43,4 +44,5 @@ export const JSON_OUTPUT: Record<string, JsonOutput> = {
   auth: { skip: "mutates credential state; no data view (PROV)" },
   ui: { skip: "long-running localhost server, not a one-shot view (UX-11)" },
   chat: { skip: "interactive TUI; non-TTY routes to run (UX-14)" },
+  hooks: { schema: HooksListResult },
 };
