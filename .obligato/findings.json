@@ -991,7 +991,7 @@
       "fix": "executor passes hooks: [] at creation and turn (eval sessions run hook-less as they run rule-less); AGT-20 text + obligation source-scan arm pin it",
       "status": "fixed",
       "id": "F-229",
-      "fix_commit": null
+      "fix_commit": "4ae755dfdd61870c2512c9f1c936d2f175dd415c"
     },
     {
       "task": "E1-1",
@@ -1006,7 +1006,7 @@
       "fix": "PERM-6 pinned to PERM-1 ranking: guard outranks a bare allow, strictly more specific operator glob wins, same-glob tie resolves ask, deny trumps; discriminating obligation arm added",
       "status": "fixed",
       "id": "F-230",
-      "fix_commit": null
+      "fix_commit": "4ae755dfdd61870c2512c9f1c936d2f175dd415c"
     }
   ]
 }
