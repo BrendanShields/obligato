@@ -1036,7 +1036,7 @@
       "fix": "PERM-6 exact-literal rule in evaluateGuarded: a wildcard-free operator/session arg equal to the call primary arg outranks any guard; ranking pinned exact-literal > (tool,arg) literalChars > tie→ask; PERM-2 wording corrected; guard-prefix fixtures in PERM-6 and PERM-2 tests",
       "status": "fixed",
       "id": "F-241",
-      "fix_commit": null
+      "fix_commit": "4d187c9f09a2a7f59049f420c578aec0b7d56962"
     }
   ]
 }
