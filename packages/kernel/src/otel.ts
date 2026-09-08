@@ -1,5 +1,10 @@
 import type { Database } from "bun:sqlite";
 import { Session, type SharedStepEvent, StepEvent } from "@obligato/schemas";
+import {
+  computeMetrics,
+  type MetricsWindow,
+  metricsGauges,
+} from "./metrics.ts";
 import { stripStepEvent } from "./privacy.ts";
 
 // TEL-6: OFF by default — this module performs network IO only when the
@@ -107,4 +112,58 @@ export const exportSessionOtel = async (
   if (!res.ok)
     throw new Error(`OTLP export failed: ${res.status} ${await res.text()}`);
   return { traces: 1, spans: steps.length, payload };
+};
+
+export interface OtelMetricsExportResult {
+  gauges: number;
+  payload: unknown;
+}
+
+// TEL-6 metrics half (ERD §8): one OTLP/HTTP JSON resourceMetrics payload,
+// one gauge per non-null TEL-8 metric (metricsGauges is the single name
+// source), empty data-point attributes — nothing free-text can ride along.
+export const exportMetricsOtel = async (
+  db: Database,
+  endpoint: string,
+  window: MetricsWindow = {},
+): Promise<OtelMetricsExportResult> => {
+  const report = computeMetrics(db, window);
+  const gauges = metricsGauges(report);
+  const timeUnixNano = `${Date.now()}000000`;
+  const payload = {
+    resourceMetrics: [
+      {
+        resource: { attributes: [attr("service.name", "obligato")] },
+        scopeMetrics: [
+          {
+            scope: { name: "obligato" },
+            metrics: gauges.map((g) => ({
+              name: g.name,
+              gauge: {
+                dataPoints: [
+                  {
+                    timeUnixNano,
+                    attributes: [],
+                    ...(g.kind === "int"
+                      ? { asInt: String(g.value) }
+                      : { asDouble: g.value }),
+                  },
+                ],
+              },
+            })),
+          },
+        ],
+      },
+    ],
+  };
+  const res = await fetch(`${endpoint.replace(/\/$/, "")}/v1/metrics`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok)
+    throw new Error(
+      `OTLP metrics export failed: ${res.status} ${await res.text()}`,
+    );
+  return { gauges: gauges.length, payload };
 };

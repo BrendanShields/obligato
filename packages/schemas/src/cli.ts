@@ -9,7 +9,7 @@ import {
 } from "./eval.ts";
 import { ReplayRecord } from "./loop.ts";
 import { AgentRegistryEntry } from "./routing.ts";
-import { IsoUtc, SchemaVersion, Ulid } from "./scalars.ts";
+import { IsoUtc, MicroUsd, SchemaVersion, Ulid } from "./scalars.ts";
 
 // UX-1: machine output for `obligato init`.
 export const InitResult = z.object({
@@ -223,3 +223,77 @@ export const DbBackupResult = z.object({
   schema_version: SchemaVersion,
 });
 export type DbBackupResult = z.infer<typeof DbBackupResult>;
+
+// TEL-8: rates are fractions or null — a 0 denominator is null, never 0.
+const Rate = z.number().min(0).max(1).nullable();
+const Count = z.number().int().nonnegative();
+
+export const MetricsTaskCounts = z.object({
+  open: Count,
+  in_progress: Count,
+  delivered: Count,
+  accepted: Count,
+  corrected: Count,
+  abandoned: Count,
+});
+export type MetricsTaskCounts = z.infer<typeof MetricsTaskCounts>;
+
+// TEL-8: cost is null when any of the model's window steps is unpriced
+// (PROV-3 — a partial sum would read as a total).
+export const MetricsCostByModel = z.object({
+  model: z.string().min(1),
+  steps: Count,
+  tokens: Count,
+  cost_micro_usd: MicroUsd.nullable(),
+  unpriced_steps: Count,
+});
+export type MetricsCostByModel = z.infer<typeof MetricsCostByModel>;
+
+// UX-1/UX-41/TEL-8: machine output for `obligato metrics`. Bounds are the
+// operator's strings verbatim (a bare date is a legal prefix bound).
+export const MetricsReport = z.object({
+  window: z.object({
+    since: z.string().min(1).nullable(),
+    until: z.string().min(1).nullable(),
+  }),
+  tasks: MetricsTaskCounts,
+  fpar: Rate,
+  // means over accepted tasks — fractional by construction; null when no
+  // step contributes (unmeasured, not free)
+  tpac_micro_usd: z.number().nonnegative().nullable(),
+  tpac_steps: Count,
+  tpac_unpriced_steps: Count,
+  tokens_per_accepted: z.number().nonnegative().nullable(),
+  // both counts travel so every surface labels the rate from them (F-085)
+  correction: z.object({ corrected: Count, delivered: Count, rate: Rate }),
+  spec_drift_incidents: Count,
+  interventions: z.object({
+    correction: Count,
+    clarification: Count,
+    approval: Count,
+  }),
+  gate: z.object({
+    helps: Count,
+    hurts: Count,
+    no_effect: Count,
+    underpowered: Count,
+    pass_rate: Rate,
+  }),
+  routing_regret_events: Count,
+  overhead: z.object({
+    eval_spend_micro_usd: MicroUsd,
+    product_spend_micro_usd: MicroUsd,
+    unpriced_steps: Count,
+    ratio: z.number().nonnegative().nullable(),
+  }),
+  cost_by_model: z.array(MetricsCostByModel),
+  sessions: z.object({
+    total: Count,
+    complete: Count,
+    incomplete: Count,
+    degraded: Count,
+    by_runner: z.object({ cc: Count, native: Count, unknown: Count }),
+  }),
+  schema_version: SchemaVersion,
+});
+export type MetricsReport = z.infer<typeof MetricsReport>;

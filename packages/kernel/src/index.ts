@@ -10,6 +10,7 @@ export * from "./excavate.ts";
 export * from "./flaky.ts";
 export * from "./generators.ts";
 export * from "./loop.ts";
+export * from "./metrics.ts";
 export * from "./monitor.ts";
 export * from "./obspec.ts";
 export * from "./otel.ts";

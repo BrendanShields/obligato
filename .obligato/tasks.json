@@ -234,9 +234,13 @@
     {
       "id": "E1-2",
       "title": "North-star metrics: kernel metrics module (FPAR, TPAC, correction rate, drift incidents, gate pass rate, regret, overhead), obligato metrics --json, TEL-6 OTel metrics export (closes F-096)",
-      "state": "in_progress",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "TEL-8",
+        "TEL-6",
+        "UX-41"
+      ],
+      "completed_at": "2026-09-08T12:44:13Z"
     },
     {
       "id": "E1-3",

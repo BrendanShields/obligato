@@ -19,6 +19,7 @@ import {
   InitResult,
   InterventionEvent,
   Lockfile,
+  MetricsReport,
   ModelRegistryEntry,
   PackLintResult,
   PackManifest,
@@ -130,6 +131,13 @@ const semver = fc
   .map(([a, b, c]) => `${a}.${b}.${c}`);
 const count = fc.integer({ min: 0, max: 1_000_000 });
 const isoDay = isoUtc.map((s) => s.slice(0, 10));
+const rate = fc.double({ min: 0, max: 1, noNaN: true });
+const nonNegDouble = fc.double({
+  min: 0,
+  max: 1e12,
+  noNaN: true,
+  noDefaultInfinity: true,
+});
 const delta = fc
   .tuple(
     fc.double({ noNaN: true, noDefaultInfinity: true }),
@@ -986,6 +994,73 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       id: ulid,
       label: nonEmpty,
       parent: fc.option(ulid, { nil: null }),
+    }),
+  ],
+  // TEL-8: rates are fractions-or-null; the two means are fractional;
+  // window bounds are the operator's strings (a bare date is legal).
+  MetricsReport: [
+    MetricsReport,
+    fc.record({
+      window: fc.record({
+        since: fc.option(isoUtc, { nil: null }),
+        until: fc.option(isoDay, { nil: null }),
+      }),
+      tasks: fc.record({
+        open: count,
+        in_progress: count,
+        delivered: count,
+        accepted: count,
+        corrected: count,
+        abandoned: count,
+      }),
+      fpar: fc.option(rate, { nil: null }),
+      tpac_micro_usd: fc.option(nonNegDouble, { nil: null }),
+      tpac_steps: count,
+      tpac_unpriced_steps: count,
+      tokens_per_accepted: fc.option(nonNegDouble, { nil: null }),
+      correction: fc.record({
+        corrected: count,
+        delivered: count,
+        rate: fc.option(rate, { nil: null }),
+      }),
+      spec_drift_incidents: count,
+      interventions: fc.record({
+        correction: count,
+        clarification: count,
+        approval: count,
+      }),
+      gate: fc.record({
+        helps: count,
+        hurts: count,
+        no_effect: count,
+        underpowered: count,
+        pass_rate: fc.option(rate, { nil: null }),
+      }),
+      routing_regret_events: count,
+      overhead: fc.record({
+        eval_spend_micro_usd: count,
+        product_spend_micro_usd: count,
+        unpriced_steps: count,
+        ratio: fc.option(nonNegDouble, { nil: null }),
+      }),
+      cost_by_model: fc.array(
+        fc.record({
+          model: nonEmpty,
+          steps: count,
+          tokens: count,
+          cost_micro_usd: fc.option(count, { nil: null }),
+          unpriced_steps: count,
+        }),
+        { maxLength: 3 },
+      ),
+      sessions: fc.record({
+        total: count,
+        complete: count,
+        incomplete: count,
+        degraded: count,
+        by_runner: fc.record({ cc: count, native: count, unknown: count }),
+      }),
+      schema_version: fc.constant(1),
     }),
   ],
 };
