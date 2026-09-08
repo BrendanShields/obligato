@@ -78,8 +78,8 @@
       "summary": "TEL-6 metrics half (north-star/secondary as OTel metrics) unimplemented — traces/spans only",
       "root_cause": "unrecorded_deferral",
       "fix": "deferral recorded here: metrics export lands when FPAR/TPAC aggregation queries exist as kernel functions",
-      "fix_commit": null,
-      "status": "open",
+      "fix_commit": "97549a3bb8973eff99bd1c5f760a20dd428f7c4d",
+      "status": "fixed",
       "id": "F-096"
     },
     {
