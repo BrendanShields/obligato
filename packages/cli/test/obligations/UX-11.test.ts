@@ -6,6 +6,7 @@ import { openDb } from "@obligato/kernel";
 import {
   UiBenchView,
   UiEvalView,
+  UiInboxView,
   UiLoopView,
   UiTelemetryView,
   UiTraceView,
@@ -18,6 +19,7 @@ const SCHEMAS = {
   "/api/bench": UiBenchView,
   "/api/loop": UiLoopView,
   "/api/trace": UiTraceView,
+  "/api/inbox": UiInboxView,
 } as const;
 
 const dir = mkdtempSync(join(tmpdir(), "obligato-ux11-"));

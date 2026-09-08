@@ -2,6 +2,8 @@
 // calling the shared dispatch table entry — the same function a typed
 // command hits — with the argv it assembled. Cancel executes nothing.
 
+import type { InboxItem } from "@obligato/schemas";
+
 export type CommandFn = (argv: string[]) => void | Promise<void>;
 export type DispatchTable = Record<string, CommandFn>;
 
@@ -119,20 +121,62 @@ export const buildArgv = (
   return argv;
 };
 
-export type LauncherState = "menu" | "fields" | "done" | "cancelled";
+// UX-43: an inbox verb becomes a wizard spec — one parser for the launcher
+// home. Leading `obligato` dropped; the first word is the COMMANDS key; the
+// rest ride as subcommand words in order, except a `<placeholder>` token,
+// which becomes a required field (positional, or bound to the `--flag` word
+// immediately before it, which is then consumed). A placeholder is the one
+// case where the verb cannot be dispatched verbatim, so the field asks for it.
+export const verbSpec = (item: InboxItem): WizardSpec => {
+  const words = item.verb.trim().split(/\s+/);
+  if (words[0] === "obligato") words.shift();
+  const command = words.shift() ?? "";
+  const subcommand: string[] = [];
+  const fields: WizardField[] = [];
+  for (const w of words) {
+    const m = /^<(.+)>$/.exec(w);
+    if (m === null) {
+      subcommand.push(w);
+      continue;
+    }
+    const prev = subcommand[subcommand.length - 1];
+    const flag = prev?.startsWith("--") === true ? prev.slice(2) : undefined;
+    if (flag !== undefined) subcommand.pop();
+    fields.push({
+      key: m[1] as string,
+      label: m[1] as string,
+      required: true,
+      ...(flag !== undefined ? { flag } : {}),
+    });
+  }
+  return {
+    command,
+    subcommand,
+    title: item.verb,
+    description: item.summary,
+    fields,
+  };
+};
+
+export type LauncherState = "home" | "menu" | "fields" | "done" | "cancelled";
 
 export interface LauncherModel {
   state: LauncherState;
   spec: WizardSpec | null;
   fieldIndex: number;
   answers: Record<string, string>;
+  // UX-43: the attention items the home screen lists (empty = no home).
+  inbox: InboxItem[];
 }
 
-export const createModel = (): LauncherModel => ({
-  state: "menu",
+// UX-43: `inbox` is REQUIRED so every launcher entry states what it read —
+// with zero items the model starts in the menu, byte-identical to before.
+export const createModel = (inbox: InboxItem[]): LauncherModel => ({
+  state: inbox.length > 0 ? "home" : "menu",
   spec: null,
   fieldIndex: 0,
   answers: {},
+  inbox,
 });
 
 export const selectSpec = (
@@ -142,6 +186,16 @@ export const selectSpec = (
   spec.fields.length === 0
     ? { ...m, spec, state: "done" }
     : { ...m, spec, state: "fields", fieldIndex: 0, answers: {} };
+
+// UX-43: selecting a home row is selecting its verb's spec — same completion
+// path as every wizard (UX-8).
+export const selectItem = (m: LauncherModel, item: InboxItem): LauncherModel =>
+  selectSpec(m, verbSpec(item));
+
+export const openMenu = (m: LauncherModel): LauncherModel => ({
+  ...m,
+  state: "menu",
+});
 
 export const answerField = (m: LauncherModel, value: string): LauncherModel => {
   const spec = m.spec;

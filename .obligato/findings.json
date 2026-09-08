@@ -1019,6 +1019,34 @@
       "source": "session",
       "status": "deferred:tel-8-tpac-attribution",
       "id": "F-240",
+      "task": "E1-3",
+      "source": "implementation",
+      "severity": "warning",
+      "clauses": [
+        "UX-13",
+        "UX-42",
+        "UX-43"
+      ],
+      "summary": "inbox/launcher resolve the store repo-first (UX-13 resolver) while loop/chat/session/doctor CLI verbs default to the user store — a repo carrying a CC-hook repo store shows an inbox blind to loop proposals and native sessions written to ~/.obligato",
+      "root_cause": "spec_gap",
+      "fix": "recorded at landing; needs one store-resolution clause covering every CLI verb (spec-sync) or UX-13 narrowed to ui — until then `obligato inbox --db` is the escape hatch",
+      "status": "open",
+      "id": "F-227",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "process",
+      "severity": "warning",
+      "clauses": [
+        "UX-42",
+        "UX-43"
+      ],
+      "summary": "divergence run on UX-42 and the clause-auditor pass were not executed by the E1-3 fork (worktree forks cannot spawn subagents); the clause text pins exact predicates instead and the parent is asked to run both on the PR before merge",
+      "root_cause": "process_gap",
+      "fix": "parent runs `divergence` on UX-42 and `clause-auditor` on the feat/inbox-launcher-home diff; fold any clarifying clause via spec-sync",
+      "status": "open",
+      "id": "F-228",
       "fix_commit": null
     }
   ]

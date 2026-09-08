@@ -130,3 +130,34 @@ export const UiTraceView = z.strictObject({
   edges: z.array(UiTraceEdge),
 });
 export type UiTraceView = z.infer<typeof UiTraceView>;
+
+// UX-42: the attention queue — one kernel view (`inboxView`) feeding the CLI,
+// the launcher home (UX-43) and GET /api/inbox. Every item carries exactly
+// one verb; aggregated kinds carry the collapsed count.
+export const InboxKind = z.enum([
+  "proposal_review",
+  "divergence",
+  "drift",
+  "budget_pause",
+  "auto_revert",
+  "quarantined",
+  "paused_session",
+]);
+export type InboxKind = z.infer<typeof InboxKind>;
+
+export const InboxItem = z.strictObject({
+  kind: InboxKind,
+  id: z.string().min(1),
+  summary: z.string().min(1),
+  // null when the source row carries no timestamp (benchmark_task quarantine)
+  age_seconds: z.number().int().nonnegative().nullable(),
+  verb: z.string().regex(/^obligato \S/),
+  count: z.number().int().positive().nullable(),
+});
+export type InboxItem = z.infer<typeof InboxItem>;
+
+export const UiInboxView = z.strictObject({
+  empty_verb: EmptyVerb,
+  items: z.array(InboxItem),
+});
+export type UiInboxView = z.infer<typeof UiInboxView>;

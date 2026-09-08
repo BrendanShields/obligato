@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Evals from "./views/Evals";
+import Inbox from "./views/Inbox";
 import Loop from "./views/Loop";
 import Telemetry from "./views/Telemetry";
 import Trace from "./views/Trace";
@@ -9,6 +10,7 @@ const VIEWS = {
   "#/evals": { title: "evals", el: <Evals /> },
   "#/loop": { title: "loop", el: <Loop /> },
   "#/trace": { title: "trace", el: <Trace /> },
+  "#/inbox": { title: "inbox", el: <Inbox /> },
 } as const;
 
 type Route = keyof typeof VIEWS;

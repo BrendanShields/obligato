@@ -6,6 +6,7 @@ import {
   InitResult,
   MetricsReport,
   RunResult,
+  UiInboxView,
 } from "@obligato/schemas";
 import type { ZodType } from "zod";
 
@@ -25,6 +26,7 @@ export const JSON_OUTPUT: Record<string, JsonOutput> = {
   doctor: { schema: DoctorReport },
   divergence: { schema: DivergenceListResult },
   index: { schema: IndexRebuildResult },
+  inbox: { schema: UiInboxView },
   db: {
     skip: "per-subcommand shapes: stats emits DbStatsResult, backup emits DbBackupResult; validated by UX-27 obligation",
   },
