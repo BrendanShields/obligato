@@ -16,7 +16,7 @@ import {
 import { z } from "zod";
 import { parseArgs } from "../args.js";
 import { treeDepth } from "../chat/view.js";
-import { kvGrid, table } from "../components/render.js";
+import { type Column, kvGrid, table } from "../components/render.js";
 import { write } from "../components/sink.js";
 import { SYM } from "../components/theme.js";
 import { emitJson } from "../output/json.js";
@@ -130,18 +130,14 @@ export const sessionCommand = (argv: string[]): void => {
         ]),
       );
       write("");
-      write(
-        table(
-          [
-            { header: "#", align: "right" },
-            { header: "kind" },
-            { header: "at" },
-            { header: "detail" },
-            { header: "cost", align: "right" },
-          ],
-          view.items.map(itemRow),
-        ),
-      );
+      const columns: Column[] = [
+        { header: "#", align: "right" },
+        { header: "kind" },
+        { header: "at" },
+        { header: "detail" },
+        { header: "cost", align: "right" },
+      ];
+      write(table(columns, clipRows(view.items.map(itemRow), columns)));
     }
     if (view.session === null) process.exitCode = 1;
     return;
@@ -189,10 +185,38 @@ const itemRow = (it: UiSessionItem): string[] => {
         return `${it.event} ${it.detail}`;
     }
   })();
-  // UX-4: the fixed columns take 35 cells; the detail column is capped so a
-  // row never exceeds 80 columns.
-  const clipped = detail.length > 44 ? `${detail.slice(0, 44)}…` : detail;
-  return [String(it.seq), it.kind, at, clipped, cost];
+  return [String(it.seq), it.kind, at, detail, cost];
+};
+
+const cellWidth = (s: string): number =>
+  Bun.stringWidth(s, { countAnsiEscapeCodes: false });
+
+// UX-4/UX-52: the detail column (index 3) is clipped width-aware — 80 minus
+// the other four columns' rendered widths and the four 2-cell gaps — so no
+// row exceeds 80 columns on any data (audit 2026-09-08: a fixed 44-cell cap
+// overflowed to 83 on a long model id beside a model_switch row).
+const DETAIL_COL = 3;
+const clipRows = (rows: string[][], columns: Column[]): string[][] => {
+  const fixed = [0, 1, 2, 4].reduce(
+    (sum, i) =>
+      sum +
+      Math.max(
+        cellWidth(columns[i]?.header ?? ""),
+        ...rows.map((r) => cellWidth(r[i] ?? "")),
+      ),
+    0,
+  );
+  const room = Math.max(1, 80 - fixed - 4 * 2);
+  return rows.map((r) => {
+    const detail = r[DETAIL_COL] ?? "";
+    if (cellWidth(detail) <= room) return r;
+    let kept = "";
+    for (const ch of detail) {
+      if (cellWidth(kept + ch) > room - 1) break;
+      kept += ch;
+    }
+    return [...r.slice(0, DETAIL_COL), `${kept}…`, ...r.slice(DETAIL_COL + 1)];
+  });
 };
 
 // EVP-10: `obligato promote <session> --suite <staging-dir>`.

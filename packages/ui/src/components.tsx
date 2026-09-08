@@ -38,6 +38,23 @@ export function StaleBadge({
   );
 }
 
+// UX-53: every view's empty branch goes through here — a stale EMPTY payload
+// after a failed refresh is never silent (badge above the UX-12 empty state).
+export function PolledEmpty({
+  poll,
+  verb,
+}: {
+  poll: { stale: boolean; updated_at: string | null; error: string | null };
+  verb: string;
+}) {
+  return (
+    <>
+      <StaleBadge poll={poll} />
+      <Empty verb={verb} />
+    </>
+  );
+}
+
 // UX-53: before the first payload — the designed pending state, never null.
 export function Pending({
   path,

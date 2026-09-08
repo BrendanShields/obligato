@@ -31,12 +31,41 @@ describe("UX-50: session timeline view — rowid stream across branches, budget 
       "permission",
       "permission",
       "model_switch",
+      "step",
+      "tool",
       "fork",
       "user",
       "budget",
     ]);
-    expect(view.items.map((i) => i.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const [user, step, tool, req, dec, sw, fork, onFork, budget] = view.items;
+    expect(view.items.map((i) => i.seq)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+    ]);
+    const [
+      user,
+      step,
+      tool,
+      req,
+      dec,
+      sw,
+      priced,
+      failedTool,
+      fork,
+      onFork,
+      budget,
+    ] = view.items;
+    expect(priced).toMatchObject({
+      kind: "step",
+      id: fx.pricedStep,
+      model: "claude-sonnet-4-5-20250929",
+      cost_micro_usd: 1234,
+      tool_calls: 1,
+    });
+    expect(failedTool).toMatchObject({
+      kind: "tool",
+      name: "bash",
+      ok: false,
+      detail: "boom",
+    });
     expect(user).toMatchObject({ kind: "user", preview: "hello" });
     expect(step).toMatchObject({
       kind: "step",
@@ -77,9 +106,14 @@ describe("UX-50: session timeline view — rowid stream across branches, budget 
       from_event: fx.step,
     });
     expect(onFork).toMatchObject({ kind: "user", id: fx.onFork });
-    // revert-check: interleave budget rows by `at` into the event stream →
-    // the budget item is no longer guaranteed last (the kinds list above).
+    // The overrun was recorded mid-stream: its `at` precedes the last session
+    // item's, yet it sorts last — concatenation, never timestamp interleave.
+    // revert-check: merge budget rows by `at` into the event stream → the
+    // budget item lands before the on-fork user and the kinds list above
+    // (and the strict `at` comparison below) fail.
     expect(budget).toMatchObject({ kind: "budget", event: "overrun" });
+    expect(budget !== undefined && onFork !== undefined).toBe(true);
+    expect((budget?.at ?? "") < (onFork?.at ?? "")).toBe(true);
     expect(budget?.kind === "budget" ? budget.detail : "").toContain(
       "1× budget",
     );

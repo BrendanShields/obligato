@@ -261,9 +261,14 @@
     },
     {
       "id": "E2-3",
-      "title": "Web: step timeline drill-down (T2.6) + command palette (T2.8) + inbox view; obligato session show <id> CLI timeline",
+      "title": "Web: step timeline drill-down (T2.6) + command palette (T2.8) + stale badge; obligato session show <id> CLI timeline",
       "state": "completed",
-      "clauses": [],
+      "clauses": [
+        "UX-50",
+        "UX-51",
+        "UX-52",
+        "UX-53"
+      ],
       "completed_at": "2026-09-08T12:51:32Z"
     },
     {

@@ -10,8 +10,8 @@ import {
 } from "recharts";
 import { fmtMicroUsd, fmtTokens, usePoll } from "../api";
 import {
-  Empty,
   Pending,
+  PolledEmpty,
   Section,
   Sparkline,
   StaleBadge,
@@ -67,7 +67,8 @@ export default function Telemetry() {
   const poll = usePoll<UiTelemetryView>("/api/telemetry");
   const { data } = poll;
   if (!data) return <Pending path="/api/telemetry" error={poll.error} />;
-  if (data.sessions_count === 0) return <Empty verb={data.empty_verb} />;
+  if (data.sessions_count === 0)
+    return <PolledEmpty poll={poll} verb={data.empty_verb} />;
   const maxSteps = Math.max(...data.models.map((m) => m.steps), 1);
   return (
     <div>

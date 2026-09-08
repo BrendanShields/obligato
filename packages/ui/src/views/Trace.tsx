@@ -3,7 +3,7 @@ import { Background, Controls, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMemo, useState } from "react";
 import { usePoll } from "../api";
-import { Empty, Pending, Section, StaleBadge } from "../components";
+import { Pending, PolledEmpty, Section, StaleBadge } from "../components";
 
 // layered layout: artifact types are the columns of the traceability DAG
 const TYPE_ORDER = [
@@ -52,7 +52,8 @@ export default function Trace() {
   }, [data]);
 
   if (!data) return <Pending path="/api/trace" error={poll.error} />;
-  if (data.nodes.length === 0) return <Empty verb={data.empty_verb} />;
+  if (data.nodes.length === 0)
+    return <PolledEmpty poll={poll} verb={data.empty_verb} />;
   const sel = data.nodes.find((n) => n.logical_id === selected);
   return (
     <Section title="traceability — clauses → obligations → artifacts (~ = open drift)">

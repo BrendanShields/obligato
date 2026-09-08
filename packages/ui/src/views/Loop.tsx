@@ -1,6 +1,6 @@
 import type { UiLoopView } from "@obligato/schemas";
 import { usePoll } from "../api";
-import { Empty, Pending, Section, StaleBadge } from "../components";
+import { Pending, PolledEmpty, Section, StaleBadge } from "../components";
 
 // columns mirror the LOOP state machine; every state names its verb (UX-P5)
 const COLUMNS: { states: string[]; title: string; verb: string }[] = [
@@ -29,7 +29,7 @@ export default function Loop() {
   const { data } = poll;
   if (!data) return <Pending path="/api/loop" error={poll.error} />;
   if (data.proposals.length === 0 && data.changelog.length === 0)
-    return <Empty verb={data.empty_verb} />;
+    return <PolledEmpty poll={poll} verb={data.empty_verb} />;
   return (
     <div>
       <StaleBadge poll={poll} />

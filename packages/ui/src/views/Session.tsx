@@ -1,8 +1,8 @@
 import type { UiSessionItem, UiSessionView } from "@obligato/schemas";
 import { fmtMicroUsd, fmtTokens, usePoll } from "../api";
 import {
-  Empty,
   Pending,
+  PolledEmpty,
   Section,
   StaleBadge,
   Status,
@@ -123,7 +123,8 @@ export default function Session({ id }: { id: string }) {
   const poll = usePoll<UiSessionView>(path);
   const { data } = poll;
   if (!data) return <Pending path={path} error={poll.error} />;
-  if (data.session === null) return <Empty verb={data.empty_verb} />;
+  if (data.session === null)
+    return <PolledEmpty poll={poll} verb={data.empty_verb} />;
   const s = data.session;
   let prev: string | null = null;
   return (

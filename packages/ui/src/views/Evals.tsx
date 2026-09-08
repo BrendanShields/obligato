@@ -1,6 +1,12 @@
 import type { UiBenchView, UiEvalRunRow, UiEvalView } from "@obligato/schemas";
 import { fmtMicroUsd, usePoll } from "../api";
-import { Empty, Pending, Section, StaleBadge, Status } from "../components";
+import {
+  Pending,
+  PolledEmpty,
+  Section,
+  StaleBadge,
+  Status,
+} from "../components";
 
 // CI dot-and-whisker: numbers always carry their interval (UX §7)
 function Whisker({
@@ -74,7 +80,8 @@ function BenchRuns() {
   const poll = usePoll<UiBenchView>("/api/bench");
   const { data } = poll;
   if (!data) return <Pending path="/api/bench" error={poll.error} />;
-  if (data.runs.length === 0) return <Empty verb={data.empty_verb} />;
+  if (data.runs.length === 0)
+    return <PolledEmpty poll={poll} verb={data.empty_verb} />;
   return (
     <div className="flex flex-col gap-3">
       <StaleBadge poll={poll} />
@@ -136,8 +143,7 @@ export default function Evals() {
   if (data.runs.length === 0)
     return (
       <>
-        <StaleBadge poll={poll} />
-        <Empty verb={data.empty_verb} />
+        <PolledEmpty poll={poll} verb={data.empty_verb} />
         <Section title="bench runs">
           <BenchRuns />
         </Section>

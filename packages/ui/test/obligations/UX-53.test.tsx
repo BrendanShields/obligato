@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { initialPoll, refreshState } from "../../src/api";
-import { Pending, StaleBadge } from "../../src/components";
+import { Pending, PolledEmpty, StaleBadge } from "../../src/components";
 
 describe("UX-53: a failed refresh keeps the last good payload and shows a stale badge; loading is never null", () => {
   it("reducer: success → fresh; failure with data → kept + stale; failure without → nulls; success clears stale", () => {
@@ -74,5 +76,29 @@ describe("UX-53: a failed refresh keeps the last good payload and shows a stale 
       <Pending path="/api/telemetry" error="ECONNREFUSED" />,
     );
     expect(failed).toContain("ECONNREFUSED");
+  });
+
+  it("a stale EMPTY payload is never silent: PolledEmpty renders badge + verb, and every view's empty branch goes through it", () => {
+    const html = renderToStaticMarkup(
+      <PolledEmpty
+        poll={{
+          stale: true,
+          updated_at: "2026-09-08T10:00:00.000Z",
+          error: "503",
+        }}
+        verb="obligato chat"
+      />,
+    );
+    expect(html).toContain("~ stale");
+    expect(html).toContain("obligato chat");
+    const views = join(import.meta.dir, "..", "..", "src", "views");
+    const files = readdirSync(views).filter((f) => f.endsWith(".tsx"));
+    expect(files.length).toBeGreaterThan(0);
+    for (const f of files) {
+      const src = readFileSync(join(views, f), "utf8");
+      // revert-check: return `<Empty verb=… />` from any view's empty branch
+      // → that file fails here (the badge would be dropped on a stale empty).
+      expect(`${f}: ${/<Empty\b/.test(src)}`).toBe(`${f}: false`);
+    }
   });
 });

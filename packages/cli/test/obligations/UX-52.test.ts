@@ -40,9 +40,29 @@ describe("UX-52: obligato session show renders the UX-50 view — header, one ro
     expect(sep).toBeGreaterThan(0);
     // revert-check: drop a row from the table map → row count ≠ items.length.
     expect(lines.length - sep - 1).toBe(parsed.items.length);
-    expect(parsed.items.length).toBe(9);
+    expect(parsed.items.length).toBe(11);
     // tool outcomes carry symbols (UX-4)
     expect(text.stdout).toContain("✓ read line1");
+    expect(text.stdout).toContain("✗ bash boom");
+  });
+
+  it("UX-4: no rendered line exceeds 80 cells on the long-model + model_switch fixture; the clipped row ends in …", async () => {
+    const text = await runCli(t, [
+      "session",
+      "show",
+      fx.sessionId,
+      "--db",
+      dbPath,
+    ]);
+    const lines = text.stdout.trimEnd().split("\n");
+    // revert-check: restore the fixed 44-cell cap → the priced-step row
+    // measures 83 cells (audit probe 2026-09-08) and this loop fails.
+    for (const line of lines)
+      expect(`${Bun.stringWidth(line)} ${line}`).toMatch(/^(\d|[1-7]\d|80) /);
+    expect(text.stdout).toContain("claude-sonnet-4-5-20250929");
+    expect(lines.some((l) => l.endsWith("…") || /…\s+\$0\.0012$/.test(l))).toBe(
+      true,
+    );
   });
 
   it("--json is the kernel view by identity", async () => {
