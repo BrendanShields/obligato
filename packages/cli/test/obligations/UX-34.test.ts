@@ -11,7 +11,11 @@ import {
 } from "@obligato/agent";
 import { openDb } from "@obligato/kernel";
 import { SessionTreeNode } from "@obligato/schemas";
+import { createTestRenderer } from "@opentui/core/testing";
 import { z } from "zod";
+import { memoizedTreeSource } from "../../src/chat/app.js";
+import { createChat, update } from "../../src/chat/model.js";
+import { createSurface } from "../../src/chat/surface.js";
 import { treePaneLines } from "../../src/chat/view.js";
 import { makeTestRepo, runCli } from "../agent-helpers.ts";
 
@@ -119,4 +123,54 @@ describe("UX-34: session tree — one builder for pane and CLI", () => {
     );
     expect(paneTexts).toEqual(lines);
   }, 20_000);
+});
+
+describe("UX-34 (amended): the tree pane source is memoized on the head id", () => {
+  it("50 calls under one head compute once; a head change computes once more", () => {
+    let head: string | null = "h1";
+    let computes = 0;
+    const source = memoizedTreeSource(
+      () => head,
+      () => {
+        computes++;
+        return [[{ role: "fg", text: `tree@${head}` }]];
+      },
+    );
+    for (let i = 0; i < 50; i++) source();
+    // revert-check: drop the cache → computes reads 50 here.
+    expect(computes).toBe(1);
+    head = "h2";
+    expect(source()[0]?.[0]?.text).toBe("tree@h2");
+    source();
+    expect(computes).toBe(2);
+  });
+
+  it("through the surface with the tree rail open, 50 delta updates leave the compute count at 1", async () => {
+    const setup = await createTestRenderer({ width: 120, height: 24 });
+    let calls = 0;
+    const surface = createSurface(
+      setup.renderer,
+      {},
+      memoizedTreeSource(
+        () => "h",
+        () => {
+          calls++;
+          return [[{ role: "fg", text: "root" }]];
+        },
+      ),
+    );
+    let m = update(createChat("mock-m", {}, []), {
+      type: "submit",
+      text: "/tree",
+    }).model;
+    m = update(m, { type: "submit", text: "go" }).model;
+    for (let i = 0; i < 50; i++) {
+      m = update(m, { type: "delta", text: "x" }).model;
+      surface.update(m);
+    }
+    await setup.renderOnce();
+    expect(setup.captureCharFrame()).toContain("root");
+    expect(calls).toBe(1);
+    setup.renderer.destroy();
+  });
 });

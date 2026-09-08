@@ -9,7 +9,8 @@ import {
 } from "./eval.ts";
 import { ReplayRecord } from "./loop.ts";
 import { AgentRegistryEntry } from "./routing.ts";
-import { IsoUtc, SchemaVersion, Ulid } from "./scalars.ts";
+import { IsoUtc, MicroUsd, SchemaVersion, Ulid } from "./scalars.ts";
+import { SessionStatus } from "./telemetry.ts";
 
 // UX-1: machine output for `obligato init`.
 export const InitResult = z.object({
@@ -223,3 +224,22 @@ export const DbBackupResult = z.object({
   schema_version: SchemaVersion,
 });
 export type DbBackupResult = z.infer<typeof DbBackupResult>;
+
+// UX-48: one native session as `obligato session list` reports it; cost is
+// null when any of its steps is unpriced (PROV-3, never coerced to 0).
+export const SessionListRow = z.object({
+  id: Ulid,
+  status: SessionStatus,
+  started_at: IsoUtc,
+  ended_at: IsoUtc.nullable(),
+  steps: z.number().int().nonnegative(),
+  cost_micro_usd: MicroUsd.nullable(),
+});
+export type SessionListRow = z.infer<typeof SessionListRow>;
+
+// UX-48: machine output for `obligato session list`.
+export const SessionListResult = z.object({
+  sessions: z.array(SessionListRow),
+  schema_version: SchemaVersion,
+});
+export type SessionListResult = z.infer<typeof SessionListResult>;

@@ -104,7 +104,12 @@ export interface StepDeps {
   // UX-36: fires when a call resolves to execution-or-denial (never on an
   // ask-pause — the answered re-request fires exactly once); arg is the
   // tool's primaryArg (the PERM-2 prompt string). Additive.
-  onToolStart?: (name: string, arg: string) => void;
+  // UX-47: the optional third argument is the call's input record (additive).
+  onToolStart?: (
+    name: string,
+    arg: string,
+    input?: Record<string, unknown>,
+  ) => void;
   // UX-31: output is additive — the chat transcript folds long tool results.
   onToolResult?: (name: string, ok: boolean, output?: string) => void;
   onStepCost?: (costMicroUsd: number | null) => void;
@@ -285,7 +290,7 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
     // so every fired start is completed by exactly one tool_result in this
     // pass (audit 2026-07-20: firing pre-ask double-fired across resume and
     // orphaned a phantom running row).
-    deps.onToolStart?.(call.name, arg);
+    deps.onToolStart?.(call.name, arg, call.input);
 
     // AGT-8: gate a write/edit to a governed file before it runs (spec-first
     // ART-4). A block is a denied tool result (PERM-3 shape), never a crash.
@@ -572,6 +577,11 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
           throw part.error instanceof Error
             ? part.error
             : Object.assign(new Error(String(part.error)), part.error);
+        } else if (part.type === "abort") {
+          // UX-44: the SDK emits `abort` and closes instead of throwing (ai
+          // 7.0.14); falling through would append a partial assistant
+          // message with zero usage. Throw so the step appends nothing.
+          throw new Error("step aborted");
         }
       }
       break;

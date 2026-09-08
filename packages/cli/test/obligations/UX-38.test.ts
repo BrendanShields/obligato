@@ -17,7 +17,7 @@ describe("UX-38: command menu — /help opens, unknown slash errors + opens, esc
     expect(r2.model.entries).toEqual(m0.entries);
   });
 
-  it("MENU_ITEMS is exactly the seven commands, every description non-empty", () => {
+  it("MENU_ITEMS is exactly the thirteen commands, every description non-empty", () => {
     expect(MENU_ITEMS.map((m) => m.command)).toEqual([
       "/help",
       "/model",
@@ -25,6 +25,12 @@ describe("UX-38: command menu — /help opens, unknown slash errors + opens, esc
       "/budget",
       "/tree",
       "/viz",
+      "/fork",
+      "/compact",
+      "/compare",
+      "/sessions",
+      "/find",
+      "/export",
       "/exit",
     ]);
     for (const m of MENU_ITEMS) expect(m.description.length).toBeGreaterThan(0);

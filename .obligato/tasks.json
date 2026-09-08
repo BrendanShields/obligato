@@ -223,6 +223,64 @@
         "UX-39"
       ],
       "completed_at": "2026-07-20T05:58:49Z"
+    },
+    {
+      "id": "E1-1",
+      "title": "Native hooks + guardrails: .obligato/hooks.json lifecycle hooks (pre/post tool, session start/end) with block semantics + KERN-1 degrade; shipped destructive-command guard rules; secret redaction on tool output (AGT/PERM/SEC clauses, obligato hooks list)",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "E1-2",
+      "title": "North-star metrics: kernel metrics module (FPAR, TPAC, correction rate, drift incidents, gate pass rate, regret, overhead), obligato metrics --json, TEL-6 OTel metrics export (closes F-096)",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "E1-3",
+      "title": "Attention queue: kernel inbox view (T3.5), obligato inbox --json, GET /api/inbox, launcher home rows (T2.1) dispatching through COMMANDS",
+      "state": "in_progress",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "E2-1",
+      "title": "Chat TUI pack: ctrl+c turn interrupt, input history, multi-line, slash autocomplete, /export, bell, edit/write diff widgets, /fork /compact /compare /sessions, transcript search, /inbox /stats /hooks /permissions, tree-pane memoization",
+      "state": "in_progress",
+      "clauses": [
+        "UX-44",
+        "UX-45",
+        "UX-46",
+        "UX-47",
+        "UX-48",
+        "UX-49",
+        "UX-34"
+      ],
+      "completed_at": null,
+      "notes": "part 1 landed (UX-44..49, UX-34 memo); part 2 (/inbox /stats /hooks /permissions) after wave-1 merge"
+    },
+    {
+      "id": "E2-2",
+      "title": "LSP code-intelligence build (AGT-17/18, continues C1-23): dormant runtime subsystem gated by efficiency pack; symbol tools + post-edit diagnostics",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "E2-3",
+      "title": "Web: step timeline drill-down (T2.6) + command palette (T2.8) + inbox view; obligato session show <id> CLI timeline",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
+    },
+    {
+      "id": "E3-1",
+      "title": "Multiverse: scrubber API (T3.2), eval --watch mission control (T3.3), route observe (T3.6), spec health (T3.8), promote --suggest (T3.9)",
+      "state": "open",
+      "clauses": [],
+      "completed_at": null
     }
   ]
 }

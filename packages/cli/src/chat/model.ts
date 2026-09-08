@@ -1,5 +1,6 @@
 import { loadRegistry } from "@obligato/agent";
 import type { DispatchTable } from "../wizards.js";
+import { diffText } from "./diff.js";
 import { CHAT_THEME } from "./theme.js";
 
 // UX-17: the /model listing IS the exported registry function — identity
@@ -15,6 +16,9 @@ export type ChatEntry =
       ok: boolean;
       output: string;
       expanded: boolean;
+      // UX-47: the tool call's input, copied from the activity item that the
+      // result completed — absent on a bare result.
+      call?: Record<string, unknown>;
     }
   | { kind: "info"; text: string }
   | { kind: "error"; headline: string; hint: string | null; detail: string[] };
@@ -62,8 +66,13 @@ export const classifyError = (
 // (divergence-pinned 2026-07-13).
 export const lineCount = (output: string): number => output.split("\n").length;
 
+// UX-47: the text the fold arithmetic and the expanded render measure — the
+// diff snippet for a successful edit/write with a call, else the output.
+export const foldText = (e: ChatEntry & { kind: "tool" }): string =>
+  diffText(e) ?? e.output;
+
 export const isFoldable = (e: ChatEntry): boolean =>
-  e.kind === "tool" && lineCount(e.output) > 4;
+  e.kind === "tool" && lineCount(foldText(e)) > 4;
 
 export const foldableIndices = (entries: ChatEntry[]): number[] =>
   entries.flatMap((e, i) => (isFoldable(e) ? [i] : []));
@@ -74,6 +83,8 @@ export interface ChatMetaInfo {
   contextWindow: number;
   repoName: string;
   branch: string | null;
+  // UX-46/UX-48: the store session id — export heading and session argv.
+  sessionId: string | null;
 }
 
 // PERM-4: rule is the matched-rule provenance recorded on the
@@ -108,6 +119,12 @@ export const askProvenanceLabel = (rule: AskRule): string =>
     ? "no rule matched — default ask"
     : `rule: ${rule.tool}${rule.arg !== undefined ? `(${rule.arg})` : ""} → ${rule.action}`;
 
+export interface SearchState {
+  query: string;
+  hits: number[];
+  at: number;
+}
+
 export interface ChatModel {
   entries: ChatEntry[];
   busy: boolean;
@@ -132,6 +149,13 @@ export interface ChatModel {
   // the AGT-19 advisory task list parsed from todo tool results.
   activity: ActivityItem[];
   todos: TodoItem[];
+  // UX-45: composer input — history browsing and backslash continuation.
+  history: string[];
+  historyIndex: number | null;
+  draft: string;
+  composing: string[];
+  // UX-49: transcript search, hits fixed at find time.
+  search: SearchState | null;
   meta: ChatMetaInfo;
 }
 
@@ -141,6 +165,8 @@ export interface ActivityItem {
   startTick: number;
   endTick: number | null;
   ok: boolean | null;
+  // UX-47: the call's input, when the loop plumbed it.
+  input?: Record<string, unknown>;
 }
 
 export interface TodoItem {
@@ -165,13 +191,21 @@ export const parseTodos = (output: string): TodoItem[] => {
   });
 };
 
+export type ChatKey = "tab" | "j" | "k" | "enter" | "up" | "down" | "n" | "N";
+
 export type ChatMsg =
   | { type: "submit"; text: string }
   | { type: "delta"; text: string }
-  | { type: "tool_start"; name: string; arg: string }
+  | {
+      type: "tool_start";
+      name: string;
+      arg: string;
+      input?: Record<string, unknown>;
+    }
   | { type: "tool_result"; name: string; ok: boolean; output: string }
   | { type: "toggle_fold"; index: number }
-  | { type: "key"; key: "tab" | "j" | "k" | "enter" }
+  // UX-45: `input` is the composer's current text — up/down/tab read it.
+  | { type: "key"; key: ChatKey; input?: string }
   | { type: "tick" }
   | { type: "step_cost"; costMicroUsd: number | null }
   | { type: "paused"; ask: PermissionAsk }
@@ -179,10 +213,13 @@ export type ChatMsg =
   | { type: "turn_done"; status: "done" | "paused"; reason?: string }
   | { type: "model_switched"; to: string }
   | { type: "info"; text: string }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  // UX-44: the shell's abort classification (its own signal, never the
+  // error shape) — the turn ended with nothing appended by the model call.
+  | { type: "interrupted" };
 
 export type ChatEffect =
-  | { type: "menu" }
+  | { type: "menu"; filter?: string }
   | { type: "send_user"; text: string }
   | {
       type: "answer_permission";
@@ -193,7 +230,22 @@ export type ChatEffect =
   | { type: "dispatch"; command: string; argv: string[] }
   | { type: "list_models" }
   | { type: "switch_model"; id: string }
+  | { type: "set_input"; text: string }
+  | { type: "export"; path: string | null }
+  | { type: "bell" }
   | { type: "exit" };
+
+// UX-48: the session-family slash names and the argv each builds for the
+// one `session` CLI function; `null` sid = the command needs no session.
+const SESSION_ARGV: Record<
+  string,
+  { needsSid: boolean; argv: (sid: string, args: string[]) => string[] }
+> = {
+  "/fork": { needsSid: true, argv: (sid, a) => ["fork", sid, ...a] },
+  "/compact": { needsSid: true, argv: (sid) => ["compact", sid] },
+  "/compare": { needsSid: true, argv: (sid, a) => ["compare", sid, ...a] },
+  "/sessions": { needsSid: false, argv: (_sid, a) => ["list", ...a] },
+};
 
 // UX-14: slash commands dispatch through the same functions as typed CLI
 // commands (F-085) — this map IS the identity, checked by the obligation test.
@@ -202,6 +254,10 @@ export const slashTargets = (
 ): Record<string, DispatchTable[string]> => {
   const targets: Record<string, DispatchTable[string]> = {};
   if (commands.route) targets["/route"] = commands.route;
+  // UX-48: four session slashes, one target — the `session` CLI function.
+  if (commands.session)
+    for (const slash of Object.keys(SESSION_ARGV))
+      targets[slash] = commands.session;
   return targets;
 };
 
@@ -225,6 +281,27 @@ export const MENU_ITEMS: { command: string; description: string }[] = [
   {
     command: "/viz",
     description: "toggle the agent visualizer rail pane (UX-36)",
+  },
+  {
+    command: "/fork",
+    description: "fork this session at an event (default: head) — UX-48",
+  },
+  {
+    command: "/compact",
+    description: "compact this session's chain to a summary (SES-8)",
+  },
+  {
+    command: "/compare",
+    description: "compare two branch heads of this session (SES-7)",
+  },
+  { command: "/sessions", description: "list native sessions newest first" },
+  {
+    command: "/find",
+    description: "search the transcript; n/N cycle hits (UX-49)",
+  },
+  {
+    command: "/export",
+    description: "write the transcript as markdown (UX-46)",
   },
   { command: "/exit", description: "leave the chat" },
 ];
@@ -251,11 +328,17 @@ export const createChat = (
   knownDispatch,
   activity: [],
   todos: [],
+  history: [],
+  historyIndex: null,
+  draft: "",
+  composing: [],
+  search: null,
   meta: {
     authKind: "none",
     contextWindow: 0,
     repoName: "",
     branch: null,
+    sessionId: null,
     ...meta,
   },
 });
@@ -281,6 +364,89 @@ const toggleFold = (model: ChatModel, index: number): ChatModel => {
   return { ...model, entries };
 };
 
+const withInfo = (model: ChatModel, text: string): ChatModel => ({
+  ...model,
+  entries: [...model.entries, { kind: "info", text }],
+});
+
+// UX-45: exactly one trailing backslash continues the message.
+const CONTINUES = /(^|[^\\])\\$/;
+
+// UX-45: history append with consecutive-duplicate suppression.
+const pushHistory = (history: string[], text: string): string[] =>
+  history[history.length - 1] === text ? history : [...history, text];
+
+// UX-49: the entry's plain text, rendered expanded so folded tool output is
+// searchable — the UX-31 line strings joined.
+export const entryText = (e: ChatEntry): string =>
+  plainEntryLines(e, true).join("\n");
+
+const findHits = (entries: ChatEntry[], query: string): number[] => {
+  const q = query.toLowerCase();
+  return entries.flatMap((e, i) =>
+    entryText(e).toLowerCase().includes(q) ? [i] : [],
+  );
+};
+
+// UX-45: history browsing — every predicate pinned in the clause.
+const historyKey = (
+  model: ChatModel,
+  key: "up" | "down",
+  input: string | undefined,
+): { model: ChatModel; effects: ChatEffect[] } => {
+  const none = { model, effects: [] as ChatEffect[] };
+  if (model.focus !== "input" || model.composing.length > 0) return none;
+  const browsing = model.historyIndex !== null;
+  const idx = model.historyIndex ?? 0;
+  const unmodified = browsing && input === model.history[idx];
+  if (key === "up") {
+    if (!browsing) {
+      if (model.history.length === 0 || input !== "") return none;
+      const at = model.history.length - 1;
+      return {
+        model: { ...model, draft: input, historyIndex: at },
+        effects: [{ type: "set_input", text: model.history[at] as string }],
+      };
+    }
+    if (!unmodified || idx <= 0) return none;
+    return {
+      model: { ...model, historyIndex: idx - 1 },
+      effects: [{ type: "set_input", text: model.history[idx - 1] as string }],
+    };
+  }
+  if (!browsing || !unmodified) return none;
+  if (idx + 1 < model.history.length)
+    return {
+      model: { ...model, historyIndex: idx + 1 },
+      effects: [{ type: "set_input", text: model.history[idx + 1] as string }],
+    };
+  return {
+    model: { ...model, historyIndex: null },
+    effects: [{ type: "set_input", text: model.draft }],
+  };
+};
+
+// UX-45: tab slash completion over MENU_ITEMS.
+const completeSlash = (
+  model: ChatModel,
+  input: string,
+): { model: ChatModel; effects: ChatEffect[] } => {
+  const matches = MENU_ITEMS.filter((m) => m.command.startsWith(input));
+  if (matches.length === 1)
+    return {
+      model,
+      effects: [
+        {
+          type: "set_input",
+          text: `${(matches[0] as { command: string }).command} `,
+        },
+      ],
+    };
+  if (matches.length > 1)
+    return { model, effects: [{ type: "menu", filter: input }] };
+  return { model, effects: [] };
+};
+
 export const update = (
   model: ChatModel,
   msg: ChatMsg,
@@ -289,69 +455,106 @@ export const update = (
     case "submit": {
       const text = msg.text.trim();
       if (text === "") return { model, effects: [] };
+      // UX-45: every non-empty submit enters history (busy-rejected ones too —
+      // an interrupted operator recalls the rejected line) and ends browsing.
+      const base: ChatModel = {
+        ...model,
+        history: pushHistory(model.history, text),
+        historyIndex: null,
+        draft: "",
+      };
       // UX-17 (audit re-pin): the TUI serializes turns — a control command or
       // message submitted mid-generation is rejected with a message, never
       // applied mid-step (which would orphan a switch off the chain).
       if (model.busy)
         return {
-          model: {
-            ...model,
-            entries: [
-              ...model.entries,
-              {
-                kind: "info",
-                text: "busy — wait for the current turn to finish",
-              },
-            ],
-          },
+          model: withInfo(
+            base,
+            "busy — ctrl-c interrupts, or wait for the current turn to finish",
+          ),
           effects: [],
         };
+      // UX-45: backslash continuation accumulates; a closing line joins.
+      if (CONTINUES.test(text))
+        return {
+          model: { ...base, composing: [...base.composing, text.slice(0, -1)] },
+          effects: [],
+        };
+      if (base.composing.length > 0) {
+        const joined = [...base.composing, text].join("\n");
+        return sendUser({ ...base, composing: [] }, joined);
+      }
       if (text === "/exit")
         return {
-          model: { ...model, exited: true },
+          model: { ...base, exited: true },
           effects: [{ type: "exit" }],
         };
       // UX-38: /help opens the ephemeral command menu — nothing appends, so
       // repeated invocations leave the transcript unchanged by construction.
-      if (text === "/help") return { model, effects: [{ type: "menu" }] };
+      if (text === "/help") return { model: base, effects: [{ type: "menu" }] };
       // UX-32: /budget and /tree toggle the rail — same tab closes, other
       // tab switches. Chat-local view state (recorded: no CLI twin exists
       // for /budget; /tree's CLI twin shares the UX-34 builder).
       if (text === "/budget" || text === "/tree" || text === "/viz") {
         const tab = text.slice(1) as "budget" | "tree" | "viz";
         return {
-          model: { ...model, rail: model.rail === tab ? null : tab },
+          model: { ...base, rail: base.rail === tab ? null : tab },
           effects: [],
         };
       }
       if (text === "/model")
-        return { model, effects: [{ type: "list_models" }] };
+        return { model: base, effects: [{ type: "list_models" }] };
       if (text.startsWith("/model ")) {
         const id = text.slice("/model ".length).trim();
         // UX-17: selecting the already-active model appends nothing.
-        if (id === model.modelId)
+        if (id === base.modelId)
           return {
-            model: {
-              ...model,
-              entries: [
-                ...model.entries,
-                { kind: "info", text: `${id} is already the active model` },
-              ],
-            },
+            model: withInfo(base, `${id} is already the active model`),
             effects: [],
           };
-        return { model, effects: [{ type: "switch_model", id }] };
+        return { model: base, effects: [{ type: "switch_model", id }] };
+      }
+      // UX-49: /find sets or clears the search; hits fixed at find time.
+      if (text === "/find")
+        return { model: { ...base, search: null }, effects: [] };
+      if (text.startsWith("/find ")) {
+        const query = text.slice("/find ".length).trim();
+        const hits = findHits(base.entries, query);
+        if (hits.length === 0)
+          return {
+            model: withInfo(
+              { ...base, search: null },
+              `no matches for "${query}"`,
+            ),
+            effects: [],
+          };
+        return {
+          model: {
+            ...base,
+            search: { query, hits, at: 0 },
+            focus: "transcript",
+          },
+          effects: [],
+        };
+      }
+      // UX-46: /export hands the shell a path (or null = default).
+      if (text === "/export" || text.startsWith("/export ")) {
+        const path = text.slice("/export".length).trim();
+        return {
+          model: base,
+          effects: [{ type: "export", path: path === "" ? null : path }],
+        };
       }
       if (text.startsWith("/")) {
         const [command = "", ...args] = text.slice(1).split(/\s+/);
         // UX-38: an unknown slash appends the UX-37-classified error AND
         // opens the menu — the operator sees what exists instead of guessing.
-        if (!model.knownDispatch.includes(`/${command}`))
+        if (!base.knownDispatch.includes(`/${command}`))
           return {
             model: {
-              ...model,
+              ...base,
               entries: [
-                ...model.entries,
+                ...base.entries,
                 {
                   kind: "error",
                   ...classifyError(`unknown command /${command}`),
@@ -360,24 +563,43 @@ export const update = (
             },
             effects: [{ type: "menu" }],
           };
+        // UX-48: session slashes build the full argv from the session id.
+        const session = SESSION_ARGV[`/${command}`];
+        if (session) {
+          const sid = base.meta.sessionId;
+          if (session.needsSid && sid === null)
+            return {
+              model: {
+                ...base,
+                entries: [
+                  ...base.entries,
+                  {
+                    kind: "error",
+                    ...classifyError(
+                      `/${command} needs a session id — none is known`,
+                    ),
+                  },
+                ],
+              },
+              effects: [],
+            };
+          return {
+            model: base,
+            effects: [
+              {
+                type: "dispatch",
+                command,
+                argv: session.argv(sid ?? "", args),
+              },
+            ],
+          };
+        }
         return {
-          model,
+          model: base,
           effects: [{ type: "dispatch", command, argv: args }],
         };
       }
-      return {
-        model: {
-          ...model,
-          busy: true,
-          tickCount: 0,
-          entries: [
-            ...model.entries,
-            { kind: "user", text },
-            { kind: "assistant", text: "" },
-          ],
-        },
-        effects: [{ type: "send_user", text }],
-      };
+      return sendUser(base, text);
     }
     case "delta": {
       const entries = [...model.entries];
@@ -400,6 +622,7 @@ export const update = (
               startTick: model.tickCount,
               endTick: null,
               ok: null,
+              ...(msg.input !== undefined ? { input: msg.input } : {}),
             },
           ],
         },
@@ -411,9 +634,11 @@ export const update = (
       // never dropped (older loop callers lack onToolStart).
       const activity = [...model.activity];
       const openIdx = activity.findLastIndex((a) => a.endTick === null);
+      let call: Record<string, unknown> | undefined;
       if (openIdx >= 0) {
         const open = activity[openIdx] as ActivityItem;
         activity[openIdx] = { ...open, endTick: model.tickCount, ok: msg.ok };
+        call = open.input;
       } else {
         activity.push({
           name: msg.name,
@@ -440,6 +665,8 @@ export const update = (
               ok: msg.ok,
               output: msg.output,
               expanded: false,
+              // UX-47: the completing result carries its call for the diff.
+              ...(call !== undefined ? { call } : {}),
             },
             { kind: "assistant", text: "" },
           ],
@@ -450,7 +677,12 @@ export const update = (
     case "toggle_fold":
       return { model: toggleFold(model, msg.index), effects: [] };
     case "key": {
-      if (msg.key === "tab")
+      if (msg.key === "up" || msg.key === "down")
+        return historyKey(model, msg.key, msg.input);
+      if (msg.key === "tab") {
+        // UX-45: a slash-prefixed input completes instead of toggling focus.
+        if (model.focus === "input" && msg.input?.startsWith("/") === true)
+          return completeSlash(model, msg.input);
         return {
           model: {
             ...model,
@@ -458,9 +690,23 @@ export const update = (
           },
           effects: [],
         };
+      }
       // UX-31: j/k/enter act only while transcript-focused; other keys reach
       // the input via the shell (never dispatched here when input-focused).
       if (model.focus !== "transcript") return { model, effects: [] };
+      // UX-49: n/N cycle the active search's hits.
+      if (msg.key === "n" || msg.key === "N") {
+        if (model.search === null) return { model, effects: [] };
+        const n = model.search.hits.length;
+        const at =
+          msg.key === "n"
+            ? (model.search.at + 1) % n
+            : (model.search.at - 1 + n) % n;
+        return {
+          model: { ...model, search: { ...model.search, at } },
+          effects: [],
+        };
+      }
       const folds = foldableIndices(model.entries);
       if (folds.length === 0) return { model, effects: [] };
       const selected = Math.min(model.selected, folds.length - 1);
@@ -500,7 +746,8 @@ export const update = (
         effects: [],
       };
     case "paused":
-      return { model: { ...model, ask: msg.ask }, effects: [] };
+      // UX-44: a permission pause is a turn boundary — bell.
+      return { model: { ...model, ask: msg.ask }, effects: [{ type: "bell" }] };
     case "answer": {
       if (!model.ask) return { model, effects: [] };
       const { requestId } = model.ask;
@@ -534,28 +781,15 @@ export const update = (
                 ]
               : model.entries,
         },
-        effects: [],
+        effects: [{ type: "bell" }],
       };
     case "model_switched":
       return {
-        model: {
-          ...model,
-          modelId: msg.to,
-          entries: [
-            ...model.entries,
-            { kind: "info", text: `model → ${msg.to}` },
-          ],
-        },
+        model: withInfo({ ...model, modelId: msg.to }, `model → ${msg.to}`),
         effects: [],
       };
     case "info":
-      return {
-        model: {
-          ...model,
-          entries: [...model.entries, { kind: "info", text: msg.text }],
-        },
-        effects: [],
-      };
+      return { model: withInfo(model, msg.text), effects: [] };
     case "error":
       return {
         model: {
@@ -569,42 +803,77 @@ export const update = (
             { kind: "error", ...classifyError(msg.message) },
           ],
         },
-        effects: [],
+        effects: [{ type: "bell" }],
+      };
+    case "interrupted":
+      // UX-44: the aborted call appended nothing; the streamed partial text
+      // stays on screen (view only).
+      return {
+        model: withInfo(
+          {
+            ...model,
+            busy: false,
+            tickCount: 0,
+            activity: closeOpen(model.activity, model.tickCount),
+          },
+          "interrupted — in-flight model output discarded; resend to continue",
+        ),
+        effects: [{ type: "bell" }],
       };
   }
 };
 
+// The user-message send path: append user + empty assistant, go busy.
+const sendUser = (
+  model: ChatModel,
+  text: string,
+): { model: ChatModel; effects: ChatEffect[] } => ({
+  model: {
+    ...model,
+    busy: true,
+    tickCount: 0,
+    entries: [
+      ...model.entries,
+      { kind: "user", text },
+      { kind: "assistant", text: "" },
+    ],
+  },
+  effects: [{ type: "send_user", text }],
+});
+
 const g = CHAT_THEME.glyphs;
+
+// UX-31 shapes as plain strings (no color roles) — one projection serving
+// renderChat and the UX-49 search text; `expanded` overrides the fold state.
+export const plainEntryLines = (e: ChatEntry, expanded?: boolean): string[] => {
+  if (e.kind === "user") return [`${g.user} ${e.text}`];
+  if (e.kind === "tool") {
+    const status = e.ok ? g.ok : g.err;
+    const body = foldText(e);
+    if (!isFoldable(e))
+      return [
+        `  ${status} ${e.name}`,
+        ...(body === "" ? [] : body.split("\n")),
+      ];
+    const n = lineCount(body);
+    return (expanded ?? e.expanded)
+      ? [`  ${g.unfold} ${e.name} ${status} ${n} lines`, ...body.split("\n")]
+      : [`  ${g.fold} ${e.name} ${status} ${n} lines (enter expands)`];
+  }
+  if (e.kind === "info") return [e.text];
+  if (e.kind === "error")
+    return [
+      `${g.err} ${e.headline}`,
+      ...(e.hint !== null ? [`  ${e.hint}`] : []),
+      ...e.detail.map((d) => `  ${d}`),
+    ];
+  return e.text === "" ? [] : [e.text];
+};
 
 // Plain-text projection (UX-31 shapes, no color roles) — the structured
 // view lives in view.ts; this stays for headless assertions and debugging.
 export const renderChat = (model: ChatModel): string => {
-  const lines = model.entries.flatMap((e) => {
-    if (e.kind === "user") return [`${g.user} ${e.text}`];
-    if (e.kind === "tool") {
-      const status = e.ok ? g.ok : g.err;
-      if (!isFoldable(e))
-        return [
-          `  ${status} ${e.name}`,
-          ...(e.output === "" ? [] : e.output.split("\n")),
-        ];
-      const n = lineCount(e.output);
-      return e.expanded
-        ? [
-            `  ${g.unfold} ${e.name} ${status} ${n} lines`,
-            ...e.output.split("\n"),
-          ]
-        : [`  ${g.fold} ${e.name} ${status} ${n} lines (enter expands)`];
-    }
-    if (e.kind === "info") return [e.text];
-    if (e.kind === "error")
-      return [
-        `${g.err} ${e.headline}`,
-        ...(e.hint !== null ? [`  ${e.hint}`] : []),
-        ...e.detail.map((d) => `  ${d}`),
-      ];
-    return e.text === "" ? [] : [e.text];
-  });
+  const lines = model.entries.flatMap((e) => plainEntryLines(e));
   const cost = model.costUnknown
     ? `≥$${(model.costMicroUsd / 1_000_000).toFixed(4)} (some steps unpriced)`
     : `$${(model.costMicroUsd / 1_000_000).toFixed(4)}`;

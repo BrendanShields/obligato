@@ -2,9 +2,11 @@
 // color ROLES (never hex; resolution happens at the render edge via
 // resolveColor, UX-29). Headlessly testable; no OpenTUI imports.
 
+import { diffLineRole, diffText } from "./diff.js";
 import {
   type ChatModel,
   foldableIndices,
+  foldText,
   isFoldable,
   lineCount,
 } from "./model.js";
@@ -22,6 +24,7 @@ export interface ChatMeta {
   contextWindow: number;
   repoName: string;
   branch: string | null;
+  sessionId?: string | null;
 }
 
 export type EmptyStateElement =
@@ -95,6 +98,17 @@ export const costText = (args: {
   return args.costUnknown ? `${marked} (some steps unpriced)` : marked;
 };
 
+// UX-49: the entry index of the active search's current hit, if any.
+const currentHit = (model: ChatModel): number | undefined =>
+  model.search === null ? undefined : model.search.hits[model.search.at];
+
+const selectedFoldable = (model: ChatModel): number | undefined => {
+  const folds = foldableIndices(model.entries);
+  return model.focus === "transcript" && folds.length > 0
+    ? folds[Math.min(model.selected, folds.length - 1)]
+    : undefined;
+};
+
 // UX-31: transcript as role-tagged lines. The selection accents only while
 // transcript-focused (divergence-pinned). Per-entry form exported for the
 // UX-35 composer's identity path (one fold implementation, F-085).
@@ -102,33 +116,46 @@ export const transcriptEntryLines = (
   model: ChatModel,
   index: number,
 ): ViewLine[] => {
-  const folds = foldableIndices(model.entries);
-  const selectedEntry =
-    model.focus === "transcript" && folds.length > 0
-      ? folds[Math.min(model.selected, folds.length - 1)]
-      : undefined;
   const e = model.entries[index];
   if (e === undefined) return [];
-  return entryLines(e, index, selectedEntry);
+  return entryLines(
+    e,
+    index,
+    selectedFoldable(model),
+    index === currentHit(model),
+  );
 };
 
 export const transcriptLines = (model: ChatModel): ViewLine[] => {
-  const folds = foldableIndices(model.entries);
-  const selectedEntry =
-    model.focus === "transcript" && folds.length > 0
-      ? folds[Math.min(model.selected, folds.length - 1)]
-      : undefined;
+  const selectedEntry = selectedFoldable(model);
+  const hit = currentHit(model);
   return model.entries.flatMap((e, i): ViewLine[] =>
-    entryLines(e, i, selectedEntry),
+    entryLines(e, i, selectedEntry, i === hit),
   );
+};
+
+// UX-47: a tool body line — diff-typed bodies color by prefix, else dim.
+const bodyLines = (e: ChatModel["entries"][number] & { kind: "tool" }) => {
+  const body = foldText(e);
+  const isDiff = diffText(e) !== null;
+  return body
+    .split("\n")
+    .map(
+      (line): ViewLine => [
+        isDiff
+          ? { role: diffLineRole(line), text: `  ${line}` }
+          : { role: "dim", text: `  ${line}` },
+      ],
+    );
 };
 
 const entryLines = (
   e: ChatModel["entries"][number],
   i: number,
   selectedEntry: number | undefined,
+  hit: boolean,
 ): ViewLine[] => {
-  return ((): ViewLine[] => {
+  const lines = ((): ViewLine[] => {
     if (e.kind === "user")
       return [
         [
@@ -171,11 +198,9 @@ const entryLines = (
     if (!isFoldable(e))
       return [
         [{ role: "tool", text: `  ${status.text} ${e.name}` }],
-        ...e.output
-          .split("\n")
-          .map((line): ViewLine => [{ role: "dim", text: `  ${line}` }]),
+        ...(foldText(e) === "" ? [] : bodyLines(e)),
       ];
-    const n = lineCount(e.output);
+    const n = lineCount(foldText(e));
     const summaryText = e.expanded
       ? `  ${g.unfold} ${e.name} ${status.text} ${n} lines`
       : `  ${g.fold} ${e.name} ${status.text} ${n} lines (enter expands)`;
@@ -183,18 +208,16 @@ const entryLines = (
       i === selectedEntry
         ? [{ role: "accent", text: summaryText }]
         : [{ role: "tool", text: summaryText }];
-    return e.expanded
-      ? [
-          summary,
-          ...e.output
-            .split("\n")
-            .map((line): ViewLine => [{ role: "dim", text: `  ${line}` }]),
-        ]
-      : [summary];
+    return e.expanded ? [summary, ...bodyLines(e)] : [summary];
   })();
+  // UX-49: the current hit's every segment carries the accent role.
+  return hit
+    ? lines.map((line) => line.map((s) => ({ ...s, role: "accent" as const })))
+    : lines;
 };
 
 // UX-30/31: ticker — spinner segment only while busy; state word otherwise.
+// UX-49: `match k/n · ` prefixes the right text while a search is active.
 export const tickerLine = (
   model: ChatModel,
 ): { left: string; right: string } => {
@@ -211,8 +234,19 @@ export const tickerLine = (
       : derived === "paused"
         ? "paused"
         : "ready";
-  return { left: `${cost} ${g.sep} ${state}`, right: `/help ${g.sep} esc` };
+  const match =
+    model.search === null
+      ? ""
+      : `match ${model.search.at + 1}/${model.search.hits.length} ${g.sep} `;
+  return {
+    left: `${cost} ${g.sep} ${state}`,
+    right: `${match}/help ${g.sep} esc`,
+  };
 };
+
+// UX-45: the prompt glyph — continuation while a multi-line message composes.
+export const promptGlyph = (model: ChatModel): string =>
+  model.composing.length > 0 ? g.cont : g.user;
 
 // UX-33: linear min–max scaling over the window's priced values;
 // max === min maps every priced step to index 0; null renders the sep glyph.
@@ -313,6 +347,43 @@ export const headerLine = (
   left: "obligato chat",
   right: `${model.modelId} ${g.sep} ${model.meta.authKind}`,
 });
+
+// UX-46: the transcript as a markdown document — pure; the shell writes it.
+export const transcriptMarkdown = (model: ChatModel): string => {
+  const cost = costText({
+    authKind: model.meta.authKind,
+    costMicroUsd: model.costMicroUsd,
+    costUnknown: model.costUnknown,
+  });
+  const head = [
+    `# obligato chat — ${model.meta.sessionId ?? "unknown"}`,
+    "",
+    `model: ${model.modelId}  `,
+    `repo: ${model.meta.repoName}  `,
+    `cost: ${cost}`,
+    "",
+  ];
+  const body = model.entries.flatMap((e): string[] => {
+    if (e.kind === "user") return [`**you:** ${e.text}`, ""];
+    if (e.kind === "assistant") return e.text === "" ? [] : [e.text, ""];
+    if (e.kind === "info") return [`_${e.text}_`, ""];
+    if (e.kind === "error")
+      return [
+        `**error:** ${e.headline}`,
+        ...(e.hint !== null ? [`    ${e.hint}`] : []),
+        ...e.detail.map((d) => `    ${d}`),
+        "",
+      ];
+    return [
+      `\`${e.name}\` ${e.ok ? g.ok : g.err}`,
+      "```",
+      ...foldText(e).split("\n"),
+      "```",
+      "",
+    ];
+  });
+  return `${[...head, ...body].join("\n")}\n`;
+};
 
 // UX-36 (rewritten 2026-07-20): the agent cockpit — tasks / activity / tools
 // sections derived purely from reducer state. Same model projection + tick →

@@ -26,11 +26,12 @@ describe("UX-29: chat theme tokens — single module, pinned Quiet Pro, NO_COLOR
     expect(CHAT_THEME.colors).toEqual(PINNED_COLORS);
   });
 
-  it("glyph-role key set is exactly the enumerated eleven; spin/bar non-empty", () => {
+  it("glyph-role key set is exactly the enumerated twelve; spin/bar non-empty", () => {
     expect(Object.keys(CHAT_THEME.glyphs).sort()).toEqual(
       [
         "asst",
         "bar",
+        "cont",
         "cur",
         "err",
         "fold",
@@ -63,7 +64,7 @@ describe("UX-29: chat theme tokens — single module, pinned Quiet Pro, NO_COLOR
     // are the recorded prose-safe exclusions (clause wording).
     const { sep: _s, spin: _sp, bar: _b, ...markers } = CHAT_THEME.glyphs;
     const glyphs = Object.values(markers);
-    expect(glyphs.length).toBe(8);
+    expect(glyphs.length).toBe(9);
     const files = (readdirSync(dir, { recursive: true }) as string[]).filter(
       (f) => f.endsWith(".ts") && !f.endsWith("theme.ts"),
     );

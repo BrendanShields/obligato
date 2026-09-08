@@ -22,7 +22,8 @@ export type GlyphRole =
   | "ok"
   | "info"
   | "cur"
-  | "sep";
+  | "sep"
+  | "cont";
 
 export interface ChatTheme {
   colors: Record<ColorRole, string>;
@@ -51,6 +52,8 @@ export const CHAT_THEME: ChatTheme = {
     info: "◆",
     cur: "▌",
     sep: "·",
+    // UX-45: prompt glyph while a backslash-continued message is composing.
+    cont: "┆",
     spin: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
     bar: ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"],
   },

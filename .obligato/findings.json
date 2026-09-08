@@ -977,6 +977,21 @@
       "status": "fixed",
       "id": "F-224",
       "fix_commit": "b79b5c2b73eb1120e7435d1c6788e79e9884e4a3"
+    },
+    {
+      "task": "E2-1",
+      "source": "self-review",
+      "severity": "warning",
+      "clauses": [
+        "UX-44",
+        "UX-45"
+      ],
+      "summary": "Divergence skill could not run for slice 7 — the slice was built by a worktree fork barred from spawning subagents; UX-44/UX-45 predicates were pinned in-clause instead and the auditor is asked to judge them",
+      "root_cause": "process_gap",
+      "fix": "recorded in both clauses and the cockpit design entry; parent session to run the clause-auditor (and divergence on UX-45 if it judges the pins insufficient) on the PR",
+      "status": "open",
+      "id": "F-232",
+      "fix_commit": null
     }
   ]
 }
