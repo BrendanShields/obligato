@@ -57,3 +57,4 @@ jobs:
         run: |
           curl -sL -o /tmp/tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
           java -cp /tmp/tla2tools.jar tlc2.TLC -deadlock -workers auto specs/tla/ObligatoLoop.tla -config specs/tla/ObligatoLoop.cfg
+
