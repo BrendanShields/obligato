@@ -228,7 +228,15 @@
       "id": "E1-1",
       "title": "Native hooks + guardrails: .obligato/hooks.json lifecycle hooks (pre/post tool, session start/end) with block semantics + KERN-1 degrade; shipped destructive-command guard rules; secret redaction on tool output (AGT/PERM/SEC clauses, obligato hooks list)",
       "state": "completed",
-      "clauses": [],
+      "clauses": [
+        "AGT-20",
+        "AGT-21",
+        "AGT-22",
+        "AGT-15",
+        "PERM-6",
+        "SEC-8",
+        "UX-40"
+      ],
       "completed_at": "2026-09-08T12:47:59Z"
     },
     {

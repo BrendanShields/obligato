@@ -71,6 +71,44 @@ describe("AGT-22: a hook that fails to run (timeout / non-0,2 exit / spawn error
     expect(sessionStatus(f.db, f.sessionId)).toBe("degraded");
   }, 30_000);
 
+  it("spawn-class failures: output past the 10 MiB cap reports spawn_error:ENOBUFS (tool executed, degraded); a nonexistent cwd reports spawn_error:ENOENT with a null exit code", async () => {
+    const dir = tmp();
+    const f = fixture(
+      [bashCall("h22d", "touch ran.marker"), textResponse("ok")],
+      {
+        hooks: [
+          hook(
+            "pre_tool",
+            hookScript(dir, "flood", "head -c 11000000 /dev/zero"),
+            {
+              matcher: "bash",
+            },
+          ),
+        ],
+      },
+    );
+    f.deps.rules = [{ tool: "bash", action: "allow" }];
+    await runTurn(f.deps);
+    expect(existsSync(join(f.dir, "ran.marker"))).toBe(true);
+    // revert-check: classify SIGTERM as timeout → reason reads "timeout".
+    expect(hookErrors(f.db, f.sessionId)).toEqual([
+      expect.objectContaining({
+        event: "pre_tool",
+        reason: "spawn_error:ENOBUFS",
+      }),
+    ]);
+    expect(sessionStatus(f.db, f.sessionId)).toBe("degraded");
+
+    const { runHook } = await import("../../src/hooks.ts");
+    const r = runHook(
+      { event: "pre_tool", command: "true" },
+      { event: "pre_tool", session_id: "01ARZ3NDEKTSV4RRFFQ69G5FAV" },
+      join(dir, "missing-cwd"),
+    );
+    expect(r.failure).toBe("spawn_error:ENOENT");
+    expect(r.exitCode).toBeNull();
+  }, 30_000);
+
   it("a failing session_start hook degrades at creation and records hook_errors on the root", async () => {
     const dir = tmp();
     const f = fixture([textResponse("ok")], {

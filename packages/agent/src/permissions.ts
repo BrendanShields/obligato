@@ -90,6 +90,16 @@ export const evaluate = (
   return { action: DEFAULT_ALLOW.has(tool) ? "allow" : "ask", rule: null };
 };
 
+// PERM-2 × PERM-6: the cheapest structural test for guard provenance — the
+// recorded rule object equals one of the shipped guards by tool, arg, action.
+export const isGuardRule = (rule: unknown): boolean => {
+  if (rule === null || typeof rule !== "object") return false;
+  const r = rule as { tool?: unknown; arg?: unknown; action?: unknown };
+  return DEFAULT_GUARDS.some(
+    (g) => g.tool === r.tool && g.arg === r.arg && g.action === r.action,
+  );
+};
+
 // PERM-6: guards join the operator's rules under PERM-1's own ranking — a
 // guard outranks a bare `bash` allow (arg specificity), a strictly more
 // specific operator glob outranks the guard, a same-glob tie resolves ask,

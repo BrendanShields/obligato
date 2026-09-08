@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { runTurn } from "../../src/loop.ts";
+import { answerPermission, runTurn } from "../../src/loop.ts";
 import { DEFAULT_GUARDS, evaluateGuarded } from "../../src/permissions.ts";
 import { listEvents } from "../../src/sessions.ts";
 import { fixture, textResponse, toolCallResponse } from "../helpers.ts";
@@ -124,5 +124,49 @@ describe("PERM-6: shipped destructive-command guards rank under PERM-1 with oper
       arg: "rm -rf /*",
       action: "ask",
     });
+  }, 30_000);
+
+  it("PERM-2 × PERM-6: always-allow on a guard ask persists an arg-literal rule — the identical command proceeds without a new request, a different guarded command still asks", async () => {
+    const same = "rm -rf /nonexistent-obligato-guard-dir; touch same.marker";
+    const other = "git push --force origin main";
+    const call = (id: string, command: string) =>
+      toolCallResponse([{ id, name: "bash", input: { command } }]);
+    const f = fixture([
+      call("p6e1", same),
+      call("p6e2", same),
+      call("p6e3", other),
+      textResponse("ok"),
+    ]);
+    f.deps.rules = [{ tool: "bash", action: "allow" }];
+    expect((await runTurn(f.deps)).status).toBe("paused");
+    const first = listEvents(f.db, f.sessionId).find(
+      (e) => e.kind === "permission_request",
+    );
+    answerPermission(f.db, f.sessionId, first?.id as string, "allow", true);
+    const scoped = listEvents(f.db, f.sessionId).find(
+      (e) => e.kind === "session_meta" && e.payload.scoped_rule !== undefined,
+    );
+    // revert-check: drop the arg from the scoped rule → the bare allow loses to
+    // the guard again and the second identical call raises a third request.
+    expect(scoped?.payload.scoped_rule).toEqual({
+      tool: "bash",
+      arg: same,
+      action: "allow",
+    });
+    const second = await runTurn(f.deps);
+    expect(second.status).toBe("paused");
+    const events = listEvents(f.db, f.sessionId);
+    const requests = events.filter((e) => e.kind === "permission_request");
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.payload.arg).toBe(other);
+    // Both identical calls executed under the scoped rule.
+    const executed = events.filter(
+      (e) =>
+        e.kind === "tool_result" &&
+        ["p6e1", "p6e2"].includes(String(e.payload.tool_call_id)) &&
+        e.payload.is_error === false,
+    );
+    expect(executed).toHaveLength(2);
+    expect(existsSync(join(f.dir, "same.marker"))).toBe(true);
   }, 30_000);
 });
