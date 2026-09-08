@@ -47,8 +47,10 @@ const collector = Bun.serve({
 
 // Hand-seeded metrics fixture: 2 accepted + 1 corrected (all delivered) →
 // FPAR 2/3, correction 1/3; one 1234-µUSD step on each accepted task →
-// TPAC 1234; tokens 150 each → 150 per accepted; planted marker in the
-// free-text-capable step fields.
+// TPAC 1234; tokens 150 each → 150 per accepted. The marker is planted in
+// `model` — the one free-text field computeMetrics reads (cost_by_model) —
+// so a regression that adds per-model gauge attributes fails the no-marker
+// assertion; agent_id/span_id carry it too for the trace half.
 const seedMetricsFixture = (db: ReturnType<typeof openDb>): void => {
   const sessionId = seedSessionWithSteps(db);
   const at = "2026-09-01T02:00:00.000Z";
@@ -65,8 +67,15 @@ const seedMetricsFixture = (db: ReturnType<typeof openDb>): void => {
   for (const taskId of accepted)
     db.query(
       `INSERT INTO step_event (id, task_id, session_id, sdlc_step, model, effort, agent_id, tokens_in, tokens_out, tokens_cache_read, tokens_cache_write, unit_prices, cost_micro_usd, budget_tokens, overrun, span_id, schema_version)
-       VALUES (?, ?, ?, 'build', 'claude-sonnet-5', 'medium', ?, 100, 50, 0, 0, '{}', 1234, 20000, 'none', ?, 1)`,
-    ).run(ulid(), taskId, sessionId, `src/${MARKER}/x.ts`, `prompt: ${MARKER}`);
+       VALUES (?, ?, ?, 'build', ?, 'medium', ?, 100, 50, 0, 0, '{}', 1234, 20000, 'none', ?, 1)`,
+    ).run(
+      ulid(),
+      taskId,
+      sessionId,
+      `model-${MARKER}`,
+      `src/${MARKER}/x.ts`,
+      `prompt: ${MARKER}`,
+    );
 };
 afterAll(() => collector.stop());
 

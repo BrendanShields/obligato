@@ -1015,9 +1015,14 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       }),
       fpar: fc.option(rate, { nil: null }),
       tpac_micro_usd: fc.option(nonNegDouble, { nil: null }),
+      tpac_steps: count,
       tpac_unpriced_steps: count,
       tokens_per_accepted: fc.option(nonNegDouble, { nil: null }),
-      correction_rate: fc.option(rate, { nil: null }),
+      correction: fc.record({
+        corrected: count,
+        delivered: count,
+        rate: fc.option(rate, { nil: null }),
+      }),
       spec_drift_incidents: count,
       interventions: fc.record({
         correction: count,
@@ -1035,6 +1040,7 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       overhead: fc.record({
         eval_spend_micro_usd: count,
         product_spend_micro_usd: count,
+        unpriced_steps: count,
         ratio: fc.option(nonNegDouble, { nil: null }),
       }),
       cost_by_model: fc.array(

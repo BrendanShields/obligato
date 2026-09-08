@@ -258,11 +258,14 @@ export const MetricsReport = z.object({
   }),
   tasks: MetricsTaskCounts,
   fpar: Rate,
-  // means over accepted tasks — fractional by construction
+  // means over accepted tasks — fractional by construction; null when no
+  // step contributes (unmeasured, not free)
   tpac_micro_usd: z.number().nonnegative().nullable(),
+  tpac_steps: Count,
   tpac_unpriced_steps: Count,
   tokens_per_accepted: z.number().nonnegative().nullable(),
-  correction_rate: Rate,
+  // both counts travel so every surface labels the rate from them (F-085)
+  correction: z.object({ corrected: Count, delivered: Count, rate: Rate }),
   spec_drift_incidents: Count,
   interventions: z.object({
     correction: Count,
@@ -280,6 +283,7 @@ export const MetricsReport = z.object({
   overhead: z.object({
     eval_spend_micro_usd: MicroUsd,
     product_spend_micro_usd: MicroUsd,
+    unpriced_steps: Count,
     ratio: z.number().nonnegative().nullable(),
   }),
   cost_by_model: z.array(MetricsCostByModel),

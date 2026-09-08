@@ -115,8 +115,9 @@ const routing = (db: Db, regret: 0 | 1, at: string): void => {
 
 // Seeds the hand-known fixture; returns the ids the assertions need.
 const seed = (db: Db) => {
-  // Tasks: 3 accepted, 1 corrected (1 correction), 1 abandoned (never
-  // delivered), 1 still open. Delivered = 4 (the accepted + corrected).
+  // Tasks: 3 accepted, 1 corrected (1 correction), 2 abandoned — one
+  // delivered first (in the correction denominator), one never delivered —
+  // and 1 still open. Delivered = 5.
   const a1 = task(db, "accepted", { delivered: T(2), closed: T(3) });
   const a2 = task(db, "accepted", { delivered: T(2), closed: T(4) });
   const a3 = task(db, "accepted", { delivered: T(2), closed: T(5) });
@@ -125,6 +126,7 @@ const seed = (db: Db) => {
     closed: T(6),
     corrections: 1,
   });
+  task(db, "abandoned", { delivered: T(2), closed: T(6, 30) });
   task(db, "abandoned", { closed: T(7) });
   task(db, "open", {});
   // Sessions: S1 complete/native, S2 degraded/cc, S3 incomplete/null runner.
@@ -167,18 +169,22 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
       delivered: 0,
       accepted: 3,
       corrected: 1,
-      abandoned: 1,
+      abandoned: 2,
     });
-    // revert-check: return accepted/total instead of accepted/terminal → 3/6
-    // = 0.5 fails the 0.6 line below.
-    expect(m.fpar).toBe(3 / 5);
+    // revert-check: return accepted/total instead of accepted/terminal → 3/7
+    // fails the 3/6 line below.
+    expect(m.fpar).toBe(3 / 6);
     // (100 + 200 + 300 + 400) / 3 — the corrected task's 50 is excluded.
     expect(m.tpac_micro_usd).toBe(1000 / 3);
+    expect(m.tpac_steps).toBe(4);
     expect(m.tpac_unpriced_steps).toBe(0);
     // (15 + 15 + 20 + 40) / 3
     expect(m.tokens_per_accepted).toBe(90 / 3);
-    // 1 corrected of 4 delivered (the abandoned task never delivered).
-    expect(m.correction_rate).toBe(1 / 4);
+    // 1 corrected of 5 delivered: the delivered-then-abandoned task counts,
+    // the never-delivered one does not.
+    // revert-check: derive delivered from state (delivered + accepted +
+    // corrected) → 4, and the toEqual below fails on `delivered`.
+    expect(m.correction).toEqual({ corrected: 1, delivered: 5, rate: 1 / 5 });
     expect(m.spec_drift_incidents).toBe(2);
     expect(m.interventions).toEqual({
       correction: 1,
@@ -197,6 +203,7 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
     expect(m.overhead).toEqual({
       eval_spend_micro_usd: 150,
       product_spend_micro_usd: 1050,
+      unpriced_steps: 0,
       ratio: 150 / 1050,
     });
     expect(m.cost_by_model).toEqual([
@@ -233,6 +240,7 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
     // revert-check: COALESCE the null cost to 0 in the TPAC query → 1000/3
     // is reported and the toBeNull below fails.
     expect(m.tpac_micro_usd).toBeNull();
+    expect(m.tpac_steps).toBe(5);
     expect(m.tpac_unpriced_steps).toBe(1);
     expect(m.tokens_per_accepted).toBe(100 / 3);
     const m2 = m.cost_by_model.find((r) => r.model === "m2");
@@ -243,6 +251,29 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
       cost_micro_usd: null,
       unpriced_steps: 1,
     });
+    // The unpriced step's session is in window: the priced product sum
+    // still reports, the ratio does not.
+    // revert-check: compute the ratio over the priced sum regardless →
+    // 0 / 1050 = 0 is reported and toBeNull fails.
+    expect(m.overhead).toEqual({
+      eval_spend_micro_usd: 0,
+      product_spend_micro_usd: 1050,
+      unpriced_steps: 1,
+      ratio: null,
+    });
+    db.close();
+  });
+
+  it("an accepted task with no contributing steps is unmeasured: both means null, tpac_steps 0", () => {
+    const db = openDb(":memory:");
+    task(db, "accepted", { delivered: T(2), closed: T(3) });
+    const m = computeMetrics(db, {});
+    expect(m.tasks.accepted).toBe(1);
+    expect(m.tpac_steps).toBe(0);
+    // revert-check: divide the empty sums by accepted → 0 / 1 = 0 reads as a
+    // free accepted change and both toBeNull lines fail.
+    expect(m.tpac_micro_usd).toBeNull();
+    expect(m.tokens_per_accepted).toBeNull();
     db.close();
   });
 
@@ -254,7 +285,8 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
     expect(m.fpar).toBeNull();
     expect(m.tpac_micro_usd).toBeNull();
     expect(m.tokens_per_accepted).toBeNull();
-    expect(m.correction_rate).toBeNull();
+    expect(m.tpac_steps).toBe(0);
+    expect(m.correction).toEqual({ corrected: 0, delivered: 0, rate: null });
     expect(m.gate.pass_rate).toBeNull();
     expect(m.overhead.ratio).toBeNull();
     expect(m.tasks.accepted).toBe(0);
@@ -268,22 +300,36 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
   it("the window is half-open [since, until): until equal to a task's closed_at excludes exactly that task; a bare-date bound compares as a prefix", () => {
     const db = openDb(":memory:");
     seed(db);
-    // The abandoned task closed at exactly T(7) = until → excluded; c1 (T(6))
-    // stays. Terminal in window: 3 accepted + 1 corrected.
+    // A delivered-state task (no closed_at) is windowed by delivered_at —
+    // the COALESCE middle term; the open task by opened_at (T(1)).
+    task(db, "delivered", { delivered: T(8) });
+    // The never-delivered abandoned task closed at exactly T(7) = until →
+    // excluded; the delivered-then-abandoned one (T(6,30)) and c1 (T(6))
+    // stay. Terminal in window: 3 accepted + 1 corrected + 1 abandoned.
     const m = computeMetrics(db, { since: T(1), until: T(7) });
-    // revert-check: use `<=` for until → abandoned reads 1 and fpar 3/5
-    // fails the 3/4 line.
-    expect(m.tasks.abandoned).toBe(0);
+    // revert-check: use `<=` for until → abandoned reads 2 and fpar 3/6
+    // fails the 3/5 line.
+    expect(m.tasks.abandoned).toBe(1);
     expect(m.tasks.corrected).toBe(1);
     expect(m.tasks.accepted).toBe(3);
-    expect(m.fpar).toBe(3 / 4);
-    expect(m.correction_rate).toBe(1 / 4);
+    expect(m.fpar).toBe(3 / 5);
+    expect(m.correction).toEqual({ corrected: 1, delivered: 5, rate: 1 / 5 });
+    // revert-check: window on closed_at alone → the open task's NULL never
+    // compares true and `open` reads 0; the delivered task likewise vanishes
+    // from the T(9)-bounded window below.
+    expect(m.tasks.open).toBe(1);
+    expect(m.tasks.delivered).toBe(0);
+    const wider = computeMetrics(db, { since: T(1), until: T(9) });
+    expect(wider.tasks.delivered).toBe(1);
+    expect(wider.tasks.open).toBe(1);
     // A bare date as `until` excludes that whole day (prefix comparison).
     const none = computeMetrics(db, { until: "2026-09-01" });
     expect(none.tasks.accepted).toBe(0);
+    expect(none.tasks.open).toBe(0);
     expect(none.sessions.total).toBe(0);
     const all = computeMetrics(db, { since: "2026-09-01" });
     expect(all.tasks.accepted).toBe(3);
+    expect(all.tasks.delivered).toBe(1);
     db.close();
   });
 
@@ -294,6 +340,7 @@ describe("TEL-8: computeMetrics — north-star + secondary metrics over a hand-s
     const m = computeMetrics(db, { since: T(8) });
     expect(m.overhead.eval_spend_micro_usd).toBe(500);
     expect(m.overhead.product_spend_micro_usd).toBe(0);
+    expect(m.overhead.unpriced_steps).toBe(0);
     // revert-check: divide unguarded → Infinity fails the schema parse
     // inside computeMetrics before this line is reached.
     expect(m.overhead.ratio).toBeNull();

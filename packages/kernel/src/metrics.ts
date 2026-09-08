@@ -83,13 +83,14 @@ export const computeMetrics = (
     unpriced: number;
     tokens: number;
   };
+  // No contributing steps = unmeasured, never a free accepted change.
+  const measured = tasks.accepted > 0 && tpacRow.steps > 0;
   const tpacMicroUsd =
-    tasks.accepted === 0 || tpacRow.unpriced > 0
-      ? null
-      : tpacRow.cost / tasks.accepted;
-  const tokensPerAccepted = ratio(tpacRow.tokens, tasks.accepted);
+    measured && tpacRow.unpriced === 0 ? tpacRow.cost / tasks.accepted : null;
+  const tokensPerAccepted = measured ? tpacRow.tokens / tasks.accepted : null;
 
-  // Both terms restricted to delivered tasks (two-reading pin 2026-09-08).
+  // Both terms restricted to delivered tasks (two-reading pin 2026-09-08);
+  // delivered_at, not state — a delivered-then-abandoned task still counts.
   const corr = db
     .query(
       `SELECT COUNT(*) AS delivered,
@@ -97,7 +98,6 @@ export const computeMetrics = (
        FROM task WHERE delivered_at IS NOT NULL AND ${taskWin.sql}`,
     )
     .get(...taskWin.params) as { delivered: number; corrected: number };
-  const correctionRate = ratio(corr.corrected, corr.delivered);
 
   const driftWin = windowSql("detected_at", window);
   const drift = (
@@ -154,14 +154,13 @@ export const computeMetrics = (
   ).n;
 
   const sessWin = windowSql("s.started_at", window);
-  const productSpend = (
-    db
-      .query(
-        `SELECT COALESCE(SUM(e.cost_micro_usd), 0) AS n FROM step_event e
-         JOIN session s ON s.id = e.session_id WHERE ${sessWin.sql}`,
-      )
-      .get(...sessWin.params) as { n: number }
-  ).n;
+  const product = db
+    .query(
+      `SELECT COALESCE(SUM(e.cost_micro_usd), 0) AS n,
+              COUNT(*) - COUNT(e.cost_micro_usd) AS unpriced
+       FROM step_event e JOIN session s ON s.id = e.session_id WHERE ${sessWin.sql}`,
+    )
+    .get(...sessWin.params) as { n: number; unpriced: number };
 
   const costByModel = (
     db
@@ -222,17 +221,25 @@ export const computeMetrics = (
     tasks,
     fpar,
     tpac_micro_usd: tpacMicroUsd,
+    tpac_steps: tpacRow.steps,
     tpac_unpriced_steps: tpacRow.unpriced,
     tokens_per_accepted: tokensPerAccepted,
-    correction_rate: correctionRate,
+    correction: {
+      corrected: corr.corrected,
+      delivered: corr.delivered,
+      rate: ratio(corr.corrected, corr.delivered),
+    },
     spec_drift_incidents: drift,
     interventions,
     gate: { ...gate, pass_rate: ratio(gate.helps, verdicts) },
     routing_regret_events: regret,
     overhead: {
       eval_spend_micro_usd: evalSpend + benchSpend,
-      product_spend_micro_usd: productSpend,
-      ratio: ratio(evalSpend + benchSpend, productSpend),
+      product_spend_micro_usd: product.n,
+      unpriced_steps: product.unpriced,
+      // A ratio over a partial denominator would read as measured (PROV-3).
+      ratio:
+        product.unpriced > 0 ? null : ratio(evalSpend + benchSpend, product.n),
     },
     cost_by_model: costByModel,
     sessions,
@@ -254,7 +261,7 @@ export const metricsGauges = (
   gauge("obligato.fpar", report.fpar);
   gauge("obligato.tpac", report.tpac_micro_usd);
   gauge("obligato.tokens_per_accepted", report.tokens_per_accepted);
-  gauge("obligato.correction_rate", report.correction_rate);
+  gauge("obligato.correction_rate", report.correction.rate);
   gauge("obligato.overhead_ratio", report.overhead.ratio);
   gauge("obligato.eval.gate.pass_rate", report.gate.pass_rate);
   counter("obligato.routing.regret", report.routing_regret_events);

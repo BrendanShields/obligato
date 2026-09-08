@@ -77,7 +77,7 @@
       ],
       "summary": "TEL-6 metrics half (north-star/secondary as OTel metrics) unimplemented — traces/spans only",
       "root_cause": "unrecorded_deferral",
-      "fix": "deferral recorded here: metrics export lands when FPAR/TPAC aggregation queries exist as kernel functions",
+      "fix": "TEL-6 metrics half landed: exportMetricsOtel posts the ERD §8 gauges from the TEL-8 report (null metrics omitted, never 0); TEL-6 obligation test extended with the /v1/metrics capture and gauge-name set equality",
       "fix_commit": "97549a3bb8973eff99bd1c5f760a20dd428f7c4d",
       "status": "fixed",
       "id": "F-096"
@@ -988,7 +988,7 @@
       "root_cause": "unrecorded_deferral",
       "summary": "EVAL-7 cap half unimplemented: no kernel computation of the harness overhead ratio existed before TEL-8; the 15%/30-day spend cap and eval-work queueing are still not enforced anywhere",
       "fix": "deferral recorded here: TEL-8 computeMetrics reports overhead_ratio (the reported-as-first-class-metric half); the cap/queue half lands with a spend ledger the loop consults before scheduling eval work",
-      "source": "implementation",
+      "source": "session",
       "status": "deferred:eval-7-cap",
       "id": "F-225",
       "fix_commit": null
@@ -1002,9 +1002,23 @@
       "root_cause": "unrecorded_deferral",
       "summary": "Two PRD section-3 secondary metrics are not computable from the store: retry rate (no table records agent-internal re-attempts) and token-quantified routing regret (routing_decision carries only the RTR-2 regret flag, no counterfactual cost)",
       "fix": "deferral recorded here and in TEL-8's clause text: TEL-8 omits retry rate and reports routing_regret_events (a count); both land when the loop persists retry events and a per-decision counterfactual cost",
-      "source": "implementation",
+      "source": "session",
       "status": "deferred:tel-8-secondary",
       "id": "F-226",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-2",
+      "severity": "warning",
+      "clauses": [
+        "TEL-8"
+      ],
+      "root_cause": "unrecorded_deferral",
+      "summary": "PRD section-3 TPAC attributes a task's own eval/obligation runs (PIPE-7, verify stage) to its TPAC; TEL-8 sums step_event rows only because obligation runs record no per-task cost",
+      "fix": "narrowing recorded in TEL-8's clause text and here; lands when AGT-7 obligation runs persist a per-task cost row",
+      "source": "session",
+      "status": "deferred:tel-8-tpac-attribution",
+      "id": "F-233",
       "fix_commit": null
     }
   ]

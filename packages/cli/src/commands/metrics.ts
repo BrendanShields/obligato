@@ -6,6 +6,7 @@ import {
   openDb,
 } from "@obligato/kernel";
 import type { MetricsReport } from "@obligato/schemas";
+import { fail } from "../agent/common.js";
 import { parseArgs } from "../args.js";
 import { kvGrid, panel, table } from "../components/render.js";
 import { write } from "../components/sink.js";
@@ -24,19 +25,21 @@ const na = (n: number, noun: string): string => `n/a (${n} ${noun})`;
 export const renderMetrics = (r: MetricsReport): string => {
   const t = r.tasks;
   const closed = t.accepted + t.corrected + t.abandoned;
-  const verdicts =
-    r.gate.helps + r.gate.hurts + r.gate.no_effect + r.gate.underpowered;
-  const delivered = t.delivered + t.accepted + t.corrected;
   const windowLabel =
     r.window.since === null && r.window.until === null
       ? "all time"
       : `${r.window.since ?? "…"} → ${r.window.until ?? "…"}`;
+  // UX-41 null-arm precedence: no accepted → no steps → unpriced steps.
+  const unmeasured =
+    t.accepted === 0
+      ? na(0, "accepted")
+      : r.tpac_steps === 0
+        ? na(0, "steps")
+        : null;
   const tpac =
-    r.tpac_micro_usd === null
-      ? t.accepted === 0
-        ? na(0, "accepted")
-        : na(r.tpac_unpriced_steps, "unpriced steps")
-      : `${usd(r.tpac_micro_usd)} / accepted change${r.tpac_unpriced_steps > 0 ? ` (${r.tpac_unpriced_steps} unpriced)` : ""}`;
+    r.tpac_micro_usd !== null
+      ? `${usd(r.tpac_micro_usd)} / accepted change`
+      : (unmeasured ?? na(r.tpac_unpriced_steps, "unpriced steps"));
   const north: [string, string][] = [
     ["window", windowLabel],
     [
@@ -48,17 +51,20 @@ export const renderMetrics = (r: MetricsReport): string => {
     ["TPAC", tpac],
     [
       "tokens",
-      r.tokens_per_accepted === null
-        ? na(0, "accepted")
-        : `${ktok(r.tokens_per_accepted)} / accepted change`,
+      r.tokens_per_accepted !== null
+        ? `${ktok(r.tokens_per_accepted)} / accepted change`
+        : (unmeasured ?? na(0, "accepted")),
     ],
   ];
+  // Labels come from the report's own counts — never re-derived (F-085):
+  // a delivered-then-abandoned task is in the kernel denominator.
+  const c = r.correction;
   const secondary: [string, string][] = [
     [
       "correction",
-      r.correction_rate === null
+      c.rate === null
         ? na(0, "delivered")
-        : `${pct(r.correction_rate)} of ${delivered} delivered`,
+        : `${pct(c.rate)} (${c.corrected} of ${c.delivered} delivered)`,
     ],
     ["drift", `${r.spec_drift_incidents} incidents`],
     [
@@ -70,9 +76,11 @@ export const renderMetrics = (r: MetricsReport): string => {
     ["regret", `${r.routing_regret_events} routing regret events`],
     [
       "overhead",
-      r.overhead.ratio === null
-        ? na(0, "product spend")
-        : `${pct(r.overhead.ratio)} (${usd(r.overhead.eval_spend_micro_usd)} eval / ${usd(r.overhead.product_spend_micro_usd)} product)`,
+      r.overhead.ratio !== null
+        ? `${pct(r.overhead.ratio)} (${usd(r.overhead.eval_spend_micro_usd)} eval / ${usd(r.overhead.product_spend_micro_usd)} product)`
+        : r.overhead.unpriced_steps > 0
+          ? na(r.overhead.unpriced_steps, "unpriced steps")
+          : na(0, "product spend"),
     ],
   ];
   const s = r.sessions;
@@ -126,10 +134,8 @@ export const renderMetrics = (r: MetricsReport): string => {
 export const metricsCommand = async (argv: string[]): Promise<void> => {
   const { named } = parseArgs(argv);
   const dbPath = typeof named.db === "string" ? named.db : DEFAULT_DB_PATH;
-  if (!existsSync(dbPath)) {
-    console.error(`obligato: no store at ${dbPath} — run \`obligato init\``);
-    process.exit(1);
-  }
+  if (!existsSync(dbPath))
+    return fail(`no store at ${dbPath} — run \`obligato init\``);
   const window = {
     ...(typeof named.since === "string" ? { since: named.since } : {}),
     ...(typeof named.until === "string" ? { until: named.until } : {}),
