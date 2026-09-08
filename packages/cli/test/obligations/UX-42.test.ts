@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { afterAll, describe, expect, it } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { appendEvent, createAgentSession } from "@obligato/agent";
+import { appendEvent, createAgentSession, forkSession } from "@obligato/agent";
 import {
   BudgetMonitor,
   createProposal,
@@ -20,12 +20,14 @@ import {
   ulid,
 } from "@obligato/kernel";
 import { type InboxItem, UiInboxView } from "@obligato/schemas";
-import { INBOX_VIEW } from "../../src/commands/inbox.ts";
+import { INBOX_COLUMNS, INBOX_VIEW } from "../../src/commands/inbox.ts";
 import { createUiServer } from "../../src/ui/server.ts";
 import { makeTestRepo, runCli, type TestRepo } from "../agent-helpers.ts";
 
 const LOCK = { schema_version: 1, parent_hash: null, entries: [] };
 const LOCK_HASH = hashLockfile(LOCK);
+const LONG_RATIONALE =
+  "disable the pack because its TPAC regressed twelve percent on the seed suite";
 
 // One resolvable evidence link per proposal — createProposal refuses
 // unresolvable links (LOOP-8), so the step_event row is seeded first.
@@ -53,23 +55,40 @@ const evidenceLink = (db: Database): string => {
   return `ev:db/step_event/${id}`;
 };
 
-const proposal = (db: Database, t: TestRepo, pack: string): string =>
+const proposal = (
+  db: Database,
+  t: TestRepo,
+  pack: string,
+  rationale = `enable ${pack}`,
+): string =>
   createProposal(db, {
     targetPack: pack,
     diff: { kind: "lockfile", ops: [{ op: "enable", pack }] },
     evidence: [evidenceLink(db)],
-    rationale: `enable ${pack}`,
+    rationale,
     createdBy: "human",
     repoRoot: t.repo,
     rejectionsSeenThrough: null,
   }).id;
 
-const toMonitoring = (db: Database, id: string): void => {
+const toApproved = (db: Database, id: string): void => {
   transition(db, id, "gated", { actor: "auto" });
   transition(db, id, "approved", { actor: "human", reason: "fixture" });
+};
+
+const toMonitoring = (db: Database, id: string): void => {
+  toApproved(db, id);
   transition(db, id, "applied", { actor: "human" });
   transition(db, id, "monitoring", { actor: "auto" });
 };
+
+const session = (db: Database, t: TestRepo): string =>
+  startSession(db, {
+    repo: t.repo,
+    lockfile_hash: LOCK_HASH,
+    harness_version: "0.0.1",
+    runner: "native",
+  });
 
 const budgetPause = (db: Database, stepId: string): BudgetMonitor => {
   const m = new BudgetMonitor(db, {
@@ -86,7 +105,12 @@ const budgetPause = (db: Database, stepId: string): BudgetMonitor => {
   return m;
 };
 
-const nativeSession = (db: Database, t: TestRepo): string => {
+// A native session whose head chain ends in an unanswered ask; the user
+// event id is returned so a fork can rewind past the ask (SES-6).
+const nativeSession = (
+  db: Database,
+  t: TestRepo,
+): { sessionId: string; userId: string } => {
   const s = createAgentSession(db, {
     repo: t.repo,
     lockfile_hash: LOCK_HASH,
@@ -122,20 +146,33 @@ const nativeSession = (db: Database, t: TestRepo): string => {
       reason: "permission:bash",
     },
   });
-  return s.sessionId;
+  return { sessionId: s.sessionId, userId: user.id };
 };
 
 interface Seeded {
-  ids: Record<InboxItem["kind"], string>;
+  // Every positive id with the exact verb the clause pins for it.
+  expected: { kind: InboxItem["kind"]; id: string; verb: string }[];
   absent: string[];
   olderDivergence: string;
+  longSummaryId: string;
 }
 
-// Every positive kind once, plus one discriminating negative per predicate.
+// Every positive kind at least once, plus one discriminating negative per
+// predicate.
 const seed = (db: Database, t: TestRepo): Seeded => {
+  const expected: Seeded["expected"] = [];
   const absent: string[] = [];
-  const gated = proposal(db, t, "pack-gated");
+  const push = (kind: InboxItem["kind"], id: string, verb: string) =>
+    expected.push({ kind, id, verb });
+
+  const gated = proposal(db, t, "pack-gated", LONG_RATIONALE);
   transition(db, gated, "gated", { actor: "auto" });
+  push("proposal_review", gated, `obligato loop review ${gated}`);
+  const proposed = proposal(db, t, "pack-proposed");
+  push("proposal_review", proposed, `obligato loop gate ${proposed}`);
+  const approved = proposal(db, t, "pack-approved");
+  toApproved(db, approved);
+  push("proposal_review", approved, `obligato loop apply ${approved}`);
   const rejected = proposal(db, t, "pack-rejected");
   transition(db, rejected, "gated", { actor: "auto" });
   transition(db, rejected, "rejected", { actor: "human", reason: "no" });
@@ -151,6 +188,7 @@ const seed = (db: Database, t: TestRepo): Seeded => {
     actor: "auto",
     reason: "LOOP-3 regression auto-revert",
   });
+  push("auto_revert", autoReverted, `obligato loop release ${autoReverted}`);
   const humanReverted = proposal(db, t, "pack-human");
   toMonitoring(db, humanReverted);
   revertProposal(db, humanReverted, ctx, {
@@ -184,6 +222,8 @@ const seed = (db: Database, t: TestRepo): Seeded => {
     "2026-01-01T00:00:00Z",
     older,
   );
+  push("divergence", older, `obligato divergence show ${older}`);
+  push("divergence", newer, `obligato divergence show ${newer}`);
   const resolved = div("X-3");
   db.query("UPDATE divergence_report SET resolved = 1 WHERE id = ?").run(
     resolved,
@@ -208,22 +248,23 @@ const seed = (db: Database, t: TestRepo): Seeded => {
   drift("drift-open-2", "open");
   drift("drift-repaired", "repaired");
   absent.push("drift-repaired");
+  push("drift", "drift", "obligato drift list");
 
-  const pausedBudget = startSession(db, {
-    repo: t.repo,
-    lockfile_hash: LOCK_HASH,
-    harness_version: "0.0.1",
-    runner: "native",
-  });
+  const pausedBudget = session(db, t);
   budgetPause(db, pausedBudget);
-  const continued = startSession(db, {
-    repo: t.repo,
-    lockfile_hash: LOCK_HASH,
-    harness_version: "0.0.1",
-    runner: "native",
-  });
+  push("budget_pause", pausedBudget, `obligato session tree ${pausedBudget}`);
+  const blockedBudget = session(db, t);
+  budgetPause(db, blockedBudget).resolve("block", "auto", "budget_cap");
+  push("budget_pause", blockedBudget, `obligato session tree ${blockedBudget}`);
+  const continued = session(db, t);
   budgetPause(db, continued).resolve("continue", "human", "fixture");
   absent.push(continued);
+  const escalated = session(db, t);
+  budgetPause(db, escalated).resolve("escalate", "auto", "headless_default");
+  absent.push(escalated);
+  const respecced = session(db, t);
+  budgetPause(db, respecced).resolve("re_spec", "human", "fixture");
+  absent.push(respecced);
   const notASession = ulid();
   budgetPause(db, notASession);
   absent.push(notASession);
@@ -233,39 +274,41 @@ const seed = (db: Database, t: TestRepo): Seeded => {
      VALUES ('flaky-1', 'seed', '1.0.0', 'snap', 'do x', '[]', 1, 1, 'seed'),
             ('steady-1', 'seed', '1.0.0', 'snap', 'do y', '[]', 1, 0, 'seed')`,
   ).run();
+  push(
+    "quarantined",
+    "flaky-1",
+    "obligato eval suite promote flaky-1 --suite <suite-dir>",
+  );
   absent.push("steady-1");
 
   const paused = nativeSession(db, t);
+  push(
+    "paused_session",
+    paused.sessionId,
+    `obligato chat --continue ${paused.sessionId}`,
+  );
   const answered = nativeSession(db, t);
   const request = db
     .query(
       "SELECT id FROM session_event WHERE session_id = ? AND kind = 'permission_request'",
     )
-    .get(answered) as { id: string };
+    .get(answered.sessionId) as { id: string };
   appendEvent(db, {
-    session_id: answered,
+    session_id: answered.sessionId,
     parent_id: request.id,
     kind: "permission_decision",
     payload: { request_id: request.id, decision: "allow", tool: "bash" },
   });
-  absent.push(answered);
+  absent.push(answered.sessionId);
   const ended = nativeSession(db, t);
-  endSession(db, ended);
-  absent.push(ended);
+  endSession(db, ended.sessionId);
+  absent.push(ended.sessionId);
+  // SES-6: forked before the ask — the head chain no longer reaches it.
+  const forked = nativeSession(db, t);
+  forkSession(db, forked.sessionId, forked.userId);
+  absent.push(forked.sessionId);
 
-  return {
-    ids: {
-      proposal_review: gated,
-      divergence: older,
-      drift: "drift",
-      budget_pause: pausedBudget,
-      auto_revert: autoReverted,
-      quarantined: "flaky-1",
-      paused_session: paused,
-    },
-    absent,
-    olderDivergence: older,
-  };
+  return { expected, absent, olderDivergence: older, longSummaryId: gated };
 };
 
 const stripAge = (items: InboxItem[]) =>
@@ -282,7 +325,7 @@ describe("UX-42: obligato inbox — one kernel view, one verb per item, pinned p
     expect(INBOX_VIEW).toBe(inboxView);
   });
 
-  it("seeded store: one item per kind, verbs name ids, negatives absent, older-first, table names every row", async () => {
+  it("seeded store: every positive with its pinned verb, negatives absent, order, 80-column rendering", async () => {
     const t = makeTestRepo({});
     const dbPath = join(t.repo, ".obligato", "obligato.db");
     const db = openDb(dbPath);
@@ -292,34 +335,34 @@ describe("UX-42: obligato inbox — one kernel view, one verb per item, pinned p
     const r = await runCli(t, ["inbox", "--db", dbPath, "--json"]);
     expect(r.exitCode).toBe(0);
     const view = UiInboxView.parse(JSON.parse(r.stdout));
-    // First item per kind — for divergence that is the OLDER report (order).
-    const byKind = new Map<InboxItem["kind"], InboxItem>();
-    for (const i of view.items) if (!byKind.has(i.kind)) byKind.set(i.kind, i);
-    // Exactly one item per kind, except the two seeded unresolved divergences.
-    expect(view.items.filter((i) => i.kind !== "divergence")).toHaveLength(6);
-    expect(view.items.filter((i) => i.kind === "divergence")).toHaveLength(2);
-    for (const kind of INBOX_KIND_ORDER) {
-      const item = byKind.get(kind);
-      expect(item, kind).toBeDefined();
-      // revert-check: drop the verb's id interpolation for any kind → that
-      // kind's verb no longer names its id and this assertion fails.
-      expect(item?.verb.startsWith("obligato ")).toBe(true);
-      if (kind === "drift") expect(item?.verb).toBe("obligato drift list");
-      else expect(item?.verb).toContain(s.ids[kind]);
-      expect(item?.id).toBe(s.ids[kind]);
+    // Exactly the seeded positives, nothing more.
+    expect(view.items).toHaveLength(s.expected.length);
+    for (const e of s.expected) {
+      const item = view.items.find((i) => i.kind === e.kind && i.id === e.id);
+      // revert-check: drop the verb's id interpolation for any kind (or
+      // map `proposed`/`approved` to `review`) → that pinned verb differs.
+      expect(item?.verb, `${e.kind} ${e.id}`).toBe(e.verb);
     }
-    expect(byKind.get("proposal_review")?.verb).toBe(
-      `obligato loop review ${s.ids.proposal_review}`,
-    );
-    expect(byKind.get("auto_revert")?.verb).toBe(
-      `obligato loop release ${s.ids.auto_revert}`,
-    );
-    expect(byKind.get("drift")?.count).toBe(2);
-    expect(byKind.get("quarantined")?.age_seconds).toBeNull();
-    expect(byKind.get("budget_pause")?.summary).toContain("paused");
+    for (const kind of INBOX_KIND_ORDER)
+      expect(
+        view.items.some((i) => i.kind === kind),
+        kind,
+      ).toBe(true);
+    expect(view.items.find((i) => i.kind === "drift")?.count).toBe(2);
+    expect(
+      view.items.find((i) => i.kind === "quarantined")?.age_seconds,
+    ).toBeNull();
+    const budgets = view.items.filter((i) => i.kind === "budget_pause");
+    // revert-check: treat every triage_resolved as running → the blocked
+    // session is absent and this length is 1.
+    expect(budgets.map((b) => b.summary.split(" ")[1]).sort()).toEqual([
+      "blocked",
+      "paused",
+    ]);
     // Discriminating negatives: every excluded row's id appears nowhere.
     // revert-check: widen the auto_revert predicate to any quarantined
-    // proposal → the human-reverted id appears and this fails.
+    // proposal → the human-reverted id appears; derive paused_session
+    // table-wide → the forked session appears.
     for (const id of s.absent)
       expect(
         view.items.some((i) => i.id === id),
@@ -327,8 +370,7 @@ describe("UX-42: obligato inbox — one kernel view, one verb per item, pinned p
       ).toBe(false);
     // Kind order pinned; within divergence the older report comes first
     // even though it was inserted second.
-    const kinds = view.items.map((i) => i.kind);
-    const rank = kinds.map((k) => INBOX_KIND_ORDER.indexOf(k));
+    const rank = view.items.map((i) => INBOX_KIND_ORDER.indexOf(i.kind));
     expect(rank).toEqual([...rank].sort((a, b) => a - b));
     const divs = view.items.filter((i) => i.kind === "divergence");
     // revert-check: sort ascending by age → the newer report leads.
@@ -337,12 +379,22 @@ describe("UX-42: obligato inbox — one kernel view, one verb per item, pinned p
       true,
     );
 
-    const table = await runCli(t, ["inbox", "--db", dbPath]);
-    expect(table.exitCode).toBe(0);
-    for (const i of view.items) {
-      expect(table.stdout).toContain(i.summary);
-      expect(table.stdout).toContain(i.verb);
-    }
+    // Rendering: every line fits 80 cells, the long-rationale summary is
+    // clipped with …, every verb appears whole on its own line.
+    const rendered = await runCli(t, ["inbox", "--db", dbPath]);
+    expect(rendered.exitCode).toBe(0);
+    const lines = rendered.stdout.trimEnd().split("\n");
+    expect(lines).toHaveLength(view.items.length * 2);
+    // revert-check: render the summary unclipped → the long-rationale line
+    // exceeds 80 cells.
+    for (const line of lines)
+      expect(Bun.stringWidth(line), line).toBeLessThanOrEqual(INBOX_COLUMNS);
+    for (const i of view.items) expect(lines).toContain(`  ${i.verb}`);
+    const long = view.items.find((i) => i.id === s.longSummaryId) as InboxItem;
+    expect(long.summary.length).toBeGreaterThan(60);
+    const longLine = lines.find((l) => l.includes("pack-gated")) as string;
+    expect(longLine.endsWith("…")).toBe(true);
+    expect(rendered.stdout).not.toContain(long.summary);
 
     // The web route is the same function on the same store (modulo clock).
     const server = createUiServer({ dbPath, port: 0 });
@@ -351,6 +403,10 @@ describe("UX-42: obligato inbox — one kernel view, one verb per item, pinned p
     expect(res.status).toBe(200);
     const web = UiInboxView.parse(await res.json());
     expect(stripAge(web.items)).toEqual(stripAge(view.items));
+    // --json carries the untruncated summary.
+    expect(web.items.find((i) => i.id === s.longSummaryId)?.summary).toBe(
+      long.summary,
+    );
   });
 
   it("empty and missing stores: one line naming the verb, and no store file is created", async () => {

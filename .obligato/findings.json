@@ -1048,6 +1048,106 @@
       "status": "open",
       "id": "F-228",
       "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "UX-7",
+        "UX-43"
+      ],
+      "summary": "UX-7 still required bare `obligato` on a TTY to open the command menu unconditionally while UX-43 made the inbox home the first screen when items exist",
+      "root_cause": "spec_contradiction",
+      "fix": "UX-7 amended with the UX-43 carve-out (home when the queue is non-empty, menu otherwise) and its obligation re-scoped to the zero-item render",
+      "status": "fixed",
+      "id": "F-233",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-42",
+        "AGT-11"
+      ],
+      "summary": "budget_pause verb `obligato chat --continue <session>` did not act: no CLI surface calls BudgetMonitor.resolve and runTurn short-circuits paused/blocked sessions — AGT-11 operator-resolve surface is unbuilt",
+      "root_cause": "unverified_claim",
+      "fix": "verb changed to the honest inspect verb `obligato session tree <session>`; UX-42 records the missing resolve surface as a deferral, upgraded when it lands",
+      "status": "fixed",
+      "id": "F-234",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-4",
+        "UX-42"
+      ],
+      "summary": "inbox rows rendered through table() overflowed 80 columns (~165 cells for a proposal_review row)",
+      "root_cause": "design_bug",
+      "fix": "two lines per item: kvGrid row with the summary clipped to 80 − keyWidth − 2 cells, then the whole verb indented; width arm added to the UX-42 test",
+      "status": "fixed",
+      "id": "F-235",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-42",
+        "SES-6"
+      ],
+      "summary": "paused_session derived table-wide (latest permission_request without a decision) while the runtime derives pending asks from the head chain — a fork rewound past the ask left a phantom item",
+      "root_cause": "design_bug",
+      "fix": "derivation moved onto the head chain via a recursive parent_id walk in SQL; fork-past-ask negative added to the UX-42 test",
+      "status": "fixed",
+      "id": "F-236",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-42"
+      ],
+      "summary": "UX-42 test left arms unexercised: blocked budget positive, escalate/re_spec negatives, proposed→gate and approved→apply verbs",
+      "root_cause": "test_blindspot",
+      "fix": "arms added with expected verbs per seeded id",
+      "status": "fixed",
+      "id": "F-237",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [
+        "UX-42"
+      ],
+      "summary": "interface-design.md still enumerated four web views after the inbox view landed",
+      "root_cause": "silent_divergence",
+      "fix": "fifth view added to the enumeration (mechanical ripple)",
+      "status": "fixed",
+      "id": "F-238",
+      "fix_commit": null
+    },
+    {
+      "task": "E1-3",
+      "source": "clause-auditor",
+      "severity": "warning",
+      "clauses": [],
+      "summary": "E1-3 marked completed while CI was red; the failure was a runner-level Bun segfault, not the diff",
+      "root_cause": "env_skew",
+      "fix": "no action — confirmed flaky runner, fix in flight on main; task stays completed",
+      "status": "resolved",
+      "id": "F-239",
+      "fix_commit": null
     }
   ]
 }

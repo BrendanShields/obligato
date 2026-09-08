@@ -98,8 +98,11 @@ export const inboxView = (db: Database, nowIso: string): UiInboxView => {
 
   // budget_pause: RPOL-6 §3.1 durable suspensions — the last triage event per
   // step is `triage_requested` (paused) or a `block` resolution (blocked).
-  // Only native-session budgets (step_id = session id, AGT-11) have a resume
-  // verb; other step budgets have no operator surface today (recorded).
+  // Only native-session budgets (step_id = session id, AGT-11) are listed;
+  // other step budgets have no operator surface today (recorded). The verb
+  // INSPECTS: no CLI surface calls BudgetMonitor.resolve yet (F-234), and
+  // runTurn short-circuits a paused/blocked session, so `chat --continue`
+  // would not act — upgraded when the resolve surface lands.
   for (const r of db
     .query(
       `SELECT b.step_id, b.kind, b.payload, b.at FROM budget_event b
@@ -129,7 +132,7 @@ export const inboxView = (db: Database, nowIso: string): UiInboxView => {
       id: r.step_id,
       summary: `budget ${state} on session ${short(r.step_id)}`,
       age_seconds: ageOf(now, r.at),
-      verb: `obligato chat --continue ${r.step_id}`,
+      verb: `obligato session tree ${r.step_id}`,
       count: null,
     });
   }
@@ -174,21 +177,38 @@ export const inboxView = (db: Database, nowIso: string): UiInboxView => {
       count: null,
     });
 
-  // paused_session: PERM-2 — the session's latest permission_request has no
-  // permission_decision naming it, and the session row is still open.
+  // paused_session: PERM-2 — on the session's HEAD CHAIN (latest head_moved
+  // by rowid, walked up parent_id — the chain SES-2 reconstructs, so a fork
+  // rewound past the ask leaves no phantom item, F-236), the latest
+  // permission_request has no permission_decision naming it, and the session
+  // row is still open. One recursive walk seeded per open session.
   for (const r of db
     .query(
-      `SELECT pr.session_id, pr.at, json_extract(pr.payload, '$.tool') AS tool
-         FROM session_event pr JOIN session s ON s.id = pr.session_id
-        WHERE pr.kind = 'permission_request' AND s.status = 'incomplete'
-          AND pr.rowid = (SELECT MAX(z.rowid) FROM session_event z
-                           WHERE z.session_id = pr.session_id
-                             AND z.kind = 'permission_request')
-          AND NOT EXISTS (SELECT 1 FROM session_event pd
+      `WITH RECURSIVE
+         head AS (
+           SELECT h.session_id, json_extract(h.payload, '$.head_event_id') AS id
+             FROM session_event h JOIN session s ON s.id = h.session_id
+            WHERE h.kind = 'head_moved' AND s.status = 'incomplete'
+              AND h.rowid = (SELECT MAX(x.rowid) FROM session_event x
+                              WHERE x.session_id = h.session_id
+                                AND x.kind = 'head_moved')),
+         chain(session_id, id, parent_id, kind, payload, at, ord) AS (
+           SELECT e.session_id, e.id, e.parent_id, e.kind, e.payload, e.at, e.rowid
+             FROM session_event e JOIN head ON e.id = head.id
+           UNION ALL
+           SELECT e.session_id, e.id, e.parent_id, e.kind, e.payload, e.at, e.rowid
+             FROM session_event e JOIN chain c ON e.id = c.parent_id)
+       SELECT pr.session_id, pr.at, json_extract(pr.payload, '$.tool') AS tool
+         FROM chain pr
+        WHERE pr.kind = 'permission_request'
+          AND pr.ord = (SELECT MAX(z.ord) FROM chain z
+                         WHERE z.session_id = pr.session_id
+                           AND z.kind = 'permission_request')
+          AND NOT EXISTS (SELECT 1 FROM chain pd
                            WHERE pd.session_id = pr.session_id
                              AND pd.kind = 'permission_decision'
                              AND json_extract(pd.payload, '$.request_id') = pr.id)
-        ORDER BY pr.rowid`,
+        ORDER BY pr.ord`,
     )
     .all() as { session_id: string; at: string; tool: string | null }[])
     items.push({

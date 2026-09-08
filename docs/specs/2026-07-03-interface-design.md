@@ -11,7 +11,7 @@ parked post-v1 (UX §8). This project builds both interface layers:
 
 - **TUI** — the operational cockpit: guided init, easier command running, structured
   output. Lives in `packages/cli` on OpenTUI (ADR-0003).
-- **Web UI** — the visual surface: read-only, aesthetic, four data views. Promotes
+- **Web UI** — the visual surface: read-only, aesthetic, four data views (five since UX-42's inbox, 2026-09-08). Promotes
   UX §8 out of post-v1. New `packages/ui`.
 
 Decisions made during brainstorm: both surfaces; web UI strictly read-only;
@@ -67,7 +67,7 @@ yellow attention, cyan identifiers), symbols always accompanying color. Left nav
 every entity cross-links (eval run ↔ ledger entry, proposal ↔ evidence run,
 clause ↔ obligation test).
 
-**Views (all four in v1):**
+**Views (all four in v1; the fifth landed with UX-42):**
 
 1. **Telemetry dashboard** (home) — stat tiles (sessions, tokens, cost with units,
    model mix); time-series of tokens/cost per day; recent-sessions table with
@@ -83,6 +83,9 @@ clause ↔ obligation test).
 4. **Traceability graph** — interactive DAG: clauses → obligation tests → artifacts,
    edges colored by drift status; node click opens a side panel (clause text,
    obligation, file path, last-verified hash); filter by clause family.
+5. **Attention inbox** (added 2026-09-08, UX-42) — every item awaiting a human
+   with its one verb as a copyable command (UX-P5); `GET /api/inbox`, the same
+   kernel view as `obligato inbox` and the launcher home (UX-43).
 
 **Visualization deps:** exactly two — one lightweight React charting lib for
 time-series/CI plots and React Flow (or similar) for the DAG. Versions from the
