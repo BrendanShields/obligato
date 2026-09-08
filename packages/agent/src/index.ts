@@ -1,5 +1,7 @@
 export * from "./context.ts";
 export * from "./executor.ts";
+export * from "./guardrails.ts";
+export * from "./hooks.ts";
 export * from "./llm/auth.ts";
 export * from "./llm/config.ts";
 export * from "./llm/models.ts";

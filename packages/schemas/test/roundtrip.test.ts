@@ -15,6 +15,9 @@ import {
   DriftEvent,
   DriftListResult,
   EvalReportResult,
+  HookDefinition,
+  HooksFile,
+  HooksListResult,
   IndexRebuildResult,
   InitResult,
   InterventionEvent,
@@ -170,6 +173,23 @@ const benchTaskRow = fc.record({
     noNaN: true,
   }),
 });
+
+// AGT-20: matcher/timeout optional — requiredKeys keeps the absent forms in
+// the domain (the PermissionRule arg precedent).
+const hookDefinition = fc.record(
+  {
+    event: fc.constantFrom(
+      "session_start",
+      "pre_tool",
+      "post_tool",
+      "session_end",
+    ),
+    matcher: nonEmpty,
+    command: nonEmpty,
+    timeout_ms: fc.integer({ min: 1, max: 60_000 }),
+  },
+  { requiredKeys: ["event", "command"] },
+);
 
 const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
   SharedStepEvent: [
@@ -986,6 +1006,22 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       id: ulid,
       label: nonEmpty,
       parent: fc.option(ulid, { nil: null }),
+    }),
+  ],
+  HookDefinition: [HookDefinition, hookDefinition],
+  HooksFile: [
+    HooksFile,
+    fc.record({
+      schema_version: fc.constant(1),
+      hooks: fc.array(hookDefinition, { maxLength: 4 }),
+    }),
+  ],
+  HooksListResult: [
+    HooksListResult,
+    fc.record({
+      path: nonEmpty,
+      hooks: fc.array(hookDefinition, { maxLength: 4 }),
+      schema_version: fc.constant(1),
     }),
   ],
 };

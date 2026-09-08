@@ -1,10 +1,27 @@
 import type { Database } from "bun:sqlite";
-import { openTask, startSession, storeSnapshot, ulid } from "@obligato/kernel";
 import {
+  markSessionDegraded,
+  openTask,
+  startSession,
+  storeSnapshot,
+  ulid,
+} from "@obligato/kernel";
+import {
+  type HookDefinition,
+  type HookEvent,
   SessionEvent,
   type SessionEventKind,
   type SessionTreeNode,
 } from "@obligato/schemas";
+import { withHookContext } from "./context.ts";
+import {
+  type HookResult,
+  hookErrorRecord,
+  hookRunRecord,
+  loadHooks,
+  matchingHooks,
+  runHook,
+} from "./hooks.ts";
 
 export class SessionNotPausedError extends Error {
   constructor(actual: string) {
@@ -289,6 +306,46 @@ export const continueSession = (
   return { sessionId, head };
 };
 
+// AGT-20/22: one recorder for tool and session_end hook runs — a hook_run
+// event on the chain, or (AGT-22) a hook_error plus the KERN-1 degrade mark.
+// Returns the new head.
+export const recordHookRun = (
+  db: Database,
+  sessionId: string,
+  parentId: string,
+  result: HookResult,
+  blocked: boolean,
+  tool?: string,
+): string => {
+  if (result.failure !== null) {
+    markSessionDegraded(db, sessionId);
+    return appendEvent(db, {
+      session_id: sessionId,
+      parent_id: parentId,
+      kind: "session_meta",
+      payload: { hook_error: hookErrorRecord(result) },
+    }).id;
+  }
+  return appendEvent(db, {
+    session_id: sessionId,
+    parent_id: parentId,
+    kind: "session_meta",
+    payload: { hook_run: hookRunRecord(result, blocked, tool) },
+  }).id;
+};
+
+// AGT-20: run every matching hook for a session-level event (no tool), in
+// file order. Callers record the results.
+export const runSessionHooks = (
+  hooks: HookDefinition[],
+  event: HookEvent,
+  sessionId: string,
+  cwd: string,
+): HookResult[] =>
+  matchingHooks(hooks, event).map((hook) =>
+    runHook(hook, { event, session_id: sessionId }, cwd),
+  );
+
 // SES-4: native sessions get a kernel session row (TEL-5 markers, LOOP-7
 // lockfile pinning) plus a task row for step-event attribution.
 export const createAgentSession = (
@@ -305,8 +362,11 @@ export const createAgentSession = (
     // EVP-10: where session-start git-bundle snapshots are stored (a promotable
     // session needs one). Omit to use the kernel default.
     snapshot_store_dir?: string;
+    // AGT-20: lifecycle hooks; omitted = the repo's own hooks.json.
+    hooks?: HookDefinition[];
   },
 ): AgentSession => {
+  const hooks = args.hooks ?? loadHooks(args.repo);
   const sessionId = startSession(db, {
     runner: "native",
     repo: args.repo,
@@ -322,6 +382,13 @@ export const createAgentSession = (
   } catch {
     snapshot = null;
   }
+  // AGT-20: session_start hooks run before the root exists; their records
+  // ride on the root payload (a later event would fork the chain — every
+  // creator parents the first message at the root). AGT-22 degrade applies.
+  const started = runSessionHooks(hooks, "session_start", sessionId, args.repo);
+  const healthy = started.filter((r) => r.failure === null);
+  const failed = started.filter((r) => r.failure !== null);
+  if (failed.length > 0) markSessionDegraded(db, sessionId);
   const root = appendEvent(db, {
     session_id: sessionId,
     parent_id: null,
@@ -329,10 +396,23 @@ export const createAgentSession = (
     payload: {
       task_id: taskId,
       model: args.model,
-      system: args.system,
+      // AGT-15: the optional fourth part, applied once, here.
+      system: withHookContext(
+        args.system,
+        healthy
+          .map((r) => r.stdout.trim())
+          .filter((s) => s.length > 0)
+          .join("\n\n"),
+      ),
       runner: "native",
       auth_kind: args.auth_kind,
       snapshot,
+      ...(healthy.length > 0
+        ? { hook_runs: healthy.map((r) => hookRunRecord(r, false)) }
+        : {}),
+      ...(failed.length > 0
+        ? { hook_errors: failed.map((r) => hookErrorRecord(r)) }
+        : {}),
     },
   });
   return { sessionId, taskId, rootEventId: root.id };

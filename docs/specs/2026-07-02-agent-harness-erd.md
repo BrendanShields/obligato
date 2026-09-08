@@ -301,7 +301,7 @@ erDiagram
         string session_id FK
         string parent_id FK "nullable; chain forms the session tree (SES-2)"
         string kind "user_message|assistant_message|tool_call|tool_result|permission_request|permission_decision|compaction|head_moved|session_meta"
-        json payload "kind-specific; assistant_message carries step_event_id ref, usage, model, cost"
+        json payload "kind-specific; assistant_message carries step_event_id ref, usage, model, cost; tool_result may carry redactions[] (SEC-8); session_meta bookkeeping keys include hook_run / hook_error (AGT-20/22)"
         string at "UTC ISO-8601"
         int schema_version
     }
