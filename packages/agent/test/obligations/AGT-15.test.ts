@@ -59,6 +59,41 @@ describe("AGT-15: one system-prompt builder — identity + environment + convent
     expect(p).not.toContain("git: branch");
   });
 
+  it("hook context: a session_start hook's stdout is the fourth part; no hooks or silent hooks leave the prompt byte-identical", async () => {
+    const { openDb } = await import("@obligato/kernel");
+    const { withHookContext } = await import("../../src/context.ts");
+    const { createAgentSession, listEvents } = await import(
+      "../../src/sessions.ts"
+    );
+    const dir = workspace({ git: false });
+    const base = build(dir);
+    expect(withHookContext(base, "")).toBe(base);
+    expect(withHookContext(base, "  \n")).toBe(base);
+    const create = (hooks: { event: "session_start"; command: string }[]) => {
+      const db = openDb(":memory:");
+      const s = createAgentSession(db, {
+        repo: dir,
+        lockfile_hash: "sha256:".padEnd(71, "0"),
+        harness_version: "0.0.1",
+        model: "mock-model",
+        system: base,
+        auth_kind: "none",
+        hooks,
+      });
+      return String(listEvents(db, s.sessionId)[0]?.payload.system);
+    };
+    const withHook = create([
+      { event: "session_start", command: 'echo "X marks the context"' },
+    ]);
+    // revert-check: skip withHookContext in createAgentSession → withHook equals base.
+    expect(withHook.startsWith(base)).toBe(true);
+    expect(
+      withHook.endsWith("Session hook context:\nX marks the context"),
+    ).toBe(true);
+    expect(create([])).toBe(base);
+    expect(create([{ event: "session_start", command: "true" }])).toBe(base);
+  });
+
   it("the CLI setup and the api executor invoke the same exported builder (F-085 identity)", async () => {
     const { PROMPT_BUILDER } = await import("../../../cli/src/agent/common.js");
     expect(PROMPT_BUILDER).toBe(buildSystemPrompt);

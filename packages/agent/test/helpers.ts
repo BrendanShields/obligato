@@ -3,7 +3,7 @@ import { mkdtempSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb } from "@obligato/kernel";
-import type { ModelRegistryEntry } from "@obligato/schemas";
+import type { HookDefinition, ModelRegistryEntry } from "@obligato/schemas";
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import type { StepDeps } from "../src/loop.ts";
 import { appendEvent, createAgentSession } from "../src/sessions.ts";
@@ -69,18 +69,21 @@ export interface Fixture {
 
 export const fixture = (
   responses: unknown[][],
-  opts: { dbPath?: string; task?: string } = {},
+  // AGT-20: `hooks` seeds the session (session_start runs at creation, with
+  // the temp dir as the repo) and the deps (tool/session_end events).
+  opts: { dbPath?: string; task?: string; hooks?: HookDefinition[] } = {},
 ): Fixture => {
   // realpath: macOS tmpdir is a symlink; tool containment compares prefixes.
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "obligato-agent-")));
   const db = openDb(opts.dbPath ?? ":memory:");
   const { sessionId, taskId, rootEventId } = createAgentSession(db, {
-    repo: "test-repo",
+    repo: opts.hooks ? dir : "test-repo",
     lockfile_hash: "sha256:".padEnd(71, "0"),
     harness_version: "0.0.1",
     model: TEST_ENTRY.id,
     system: "You are a test agent.",
     auth_kind: "none",
+    ...(opts.hooks ? { hooks: opts.hooks } : {}),
   });
   appendEvent(db, {
     session_id: sessionId,
@@ -96,6 +99,7 @@ export const fixture = (
     model,
     tools: CORE_TOOLS,
     rules: [],
+    ...(opts.hooks ? { hooks: opts.hooks } : {}),
     ctx: { cwd: dir, exec: localExec(dir) },
   };
   return { db, dir, deps, sessionId, taskId, model };

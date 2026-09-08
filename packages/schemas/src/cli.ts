@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { HookDefinition } from "./agent.ts";
 import { Authority, DriftDirection } from "./artifacts.ts";
 import {
   Delta,
@@ -223,3 +224,12 @@ export const DbBackupResult = z.object({
   schema_version: SchemaVersion,
 });
 export type DbBackupResult = z.infer<typeof DbBackupResult>;
+
+// UX-1/UX-40: machine output for `obligato hooks list` — the file's entries
+// verbatim; an empty list for a missing file.
+export const HooksListResult = z.object({
+  path: z.string().min(1),
+  hooks: z.array(HookDefinition),
+  schema_version: SchemaVersion,
+});
+export type HooksListResult = z.infer<typeof HooksListResult>;

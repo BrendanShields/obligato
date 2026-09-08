@@ -101,6 +101,14 @@ export const buildSystemPrompt = (args: {
   return parts.join("\n\n");
 };
 
+// AGT-15 (amendment, AGT-20): the optional fourth part — session_start hook
+// stdout. Empty/blank input is the identity, so a hook-less session records
+// the three-part prompt byte-for-byte.
+export const withHookContext = (system: string, hookStdout: string): string => {
+  const text = hookStdout.trim();
+  return text === "" ? system : `${system}\n\nSession hook context:\n${text}`;
+};
+
 export interface AssembledContext {
   // ai v7 requires system content via `instructions` (system-role entries in
   // `messages` are rejected); a SystemModelMessage carries providerOptions —

@@ -8,14 +8,17 @@ import {
   ulid,
 } from "@obligato/kernel";
 import type {
+  HookDefinition,
   ModelRegistryEntry,
   PermissionRule,
   SessionEvent,
 } from "@obligato/schemas";
 import { type LanguageModel, streamText, type ToolSet, tool } from "ai";
 import { assembleContext } from "./context.ts";
+import { redactSecrets } from "./guardrails.ts";
+import { hookMessage, matchingHooks, runHook } from "./hooks.ts";
 import { costOf, type Usage } from "./llm/registry.ts";
-import { evaluate } from "./permissions.ts";
+import { evaluate, evaluateGuarded, isGuardRule } from "./permissions.ts";
 import {
   escalateStep,
   newSessionBudget,
@@ -33,6 +36,8 @@ import {
   listEvents,
   pendingToolCalls,
   reconstruct,
+  recordHookRun,
+  runSessionHooks,
   sessionModelOf,
 } from "./sessions.ts";
 import {
@@ -63,6 +68,9 @@ export interface StepDeps {
   // when resolution is `ask`, before the blanket headlessAsk. Entries always
   // carry action "allow"; PERM-1 defaults never grant (real matches only).
   headlessAllows?: PermissionRule[];
+  // AGT-20..22: operator lifecycle hooks (pre/post tool, session_end here;
+  // session_start runs in createAgentSession). Absent/empty = no hooks.
+  hooks?: HookDefinition[];
   // PROV-6/7: how the session authenticates — drives the 401 re-mint hint.
   authKind?: "subscription" | "api_key" | "none";
   // UX-17: lets a step honor a chain-recorded model switch at the next model
@@ -162,10 +170,15 @@ export const validatePauseReason = (reason: string): string => {
 const sessionRules = (chain: SessionEvent[]): PermissionRule[] =>
   chain
     .filter((e) => e.kind === "session_meta" && e.payload.scoped_rule)
-    .map((e) => ({
-      tool: String((e.payload.scoped_rule as { tool: string }).tool),
-      action: "allow" as const,
-    }));
+    .map((e) => {
+      const r = e.payload.scoped_rule as { tool: string; arg?: string };
+      return {
+        tool: String(r.tool),
+        // PERM-2 × PERM-6: a guard-ask "always" carries the literal arg.
+        ...(r.arg !== undefined ? { arg: String(r.arg) } : {}),
+        action: "allow" as const,
+      };
+    });
 
 // PERM-2: the answer to a permission_request, appended to the chain. The
 // "always" form additionally appends the session-scoped allow rule event.
@@ -189,12 +202,23 @@ export const answerPermission = (
     payload: { request_id: requestId, decision, tool: request.payload.tool },
   }).id;
   if (always && decision === "allow") {
+    // PERM-2 × PERM-6: a guard-provenance ask persists an arg-literal allow —
+    // a wildcard-free glob is strictly more specific than the guard under the
+    // (tool, arg) ranking, so the identical command proceeds while a
+    // different guarded command still asks.
+    const arg = isGuardRule(request.payload.rule)
+      ? { arg: String(request.payload.arg) }
+      : {};
     head = appendEvent(db, {
       session_id: sessionId,
       parent_id: head,
       kind: "session_meta",
       payload: {
-        scoped_rule: { tool: String(request.payload.tool), action: "allow" },
+        scoped_rule: {
+          tool: String(request.payload.tool),
+          ...arg,
+          action: "allow",
+        },
       },
     }).id;
   }
@@ -227,7 +251,8 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
   for (const call of pendingToolCalls(chain)) {
     const toolImpl = deps.tools.find((t) => t.name === call.name);
     const arg = toolImpl ? toolImpl.primaryArg(call.input) : "";
-    const verdict = evaluate(rules, call.name, arg);
+    // PERM-6: operator rules, then the shipped guard layer, then defaults.
+    const verdict = evaluateGuarded(rules, call.name, arg);
     let action = verdict.action;
 
     if (action === "ask" && deps.headlessAsk !== undefined) {
@@ -287,11 +312,45 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
     // orphaned a phantom running row).
     deps.onToolStart?.(call.name, arg);
 
+    // AGT-21: pre_tool hooks run once the call resolved to execution, before
+    // the AGT-8 gate; the first exit-2 blocks and ends the pass (a hook that
+    // failed to run, AGT-22, is recorded + degrades and never blocks).
+    const hooks = deps.hooks ?? [];
+    let hookBlock: string | null = null;
+    if (action === "allow") {
+      for (const hook of matchingHooks(hooks, "pre_tool", call.name)) {
+        const result = runHook(
+          hook,
+          {
+            event: "pre_tool",
+            session_id: deps.sessionId,
+            tool: call.name,
+            input: call.input,
+          },
+          deps.ctx.cwd,
+        );
+        const blocked = result.failure === null && result.exitCode === 2;
+        head = recordHookRun(
+          deps.db,
+          deps.sessionId,
+          head,
+          result,
+          blocked,
+          call.name,
+        );
+        if (blocked) {
+          hookBlock = hookMessage(result);
+          break;
+        }
+      }
+    }
+
     // AGT-8: gate a write/edit to a governed file before it runs (spec-first
     // ART-4). A block is a denied tool result (PERM-3 shape), never a crash.
     let gateBlock: string | null = null;
     if (
       action === "allow" &&
+      hookBlock === null &&
       deps.spec &&
       (call.name === "write" || call.name === "edit")
     ) {
@@ -302,7 +361,13 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
 
     let output: string;
     let isError = false;
-    if (gateBlock !== null) {
+    // AGT-21: post_tool hooks run for executed tools only — ran-and-threw
+    // counts, blocks/denials/unknown/invalid do not.
+    let executed = false;
+    if (hookBlock !== null) {
+      output = `blocked by hook: ${hookBlock}`;
+      isError = true;
+    } else if (gateBlock !== null) {
       output = `blocked: ${gateBlock}`;
       isError = true;
     } else if (action === "deny") {
@@ -317,6 +382,7 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
         output = `invalid input: ${parsed.error.message}`;
         isError = true;
       } else {
+        executed = true;
         try {
           output = toolImpl.run(call.input, deps.ctx);
           if (!isError && (call.name === "write" || call.name === "edit"))
@@ -332,6 +398,44 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
         }
       }
     }
+    if (executed) {
+      for (const hook of matchingHooks(hooks, "post_tool", call.name)) {
+        const result = runHook(
+          hook,
+          {
+            event: "post_tool",
+            session_id: deps.sessionId,
+            tool: call.name,
+            input: call.input,
+            output,
+            is_error: isError,
+          },
+          deps.ctx.cwd,
+        );
+        head = recordHookRun(
+          deps.db,
+          deps.sessionId,
+          head,
+          result,
+          false,
+          call.name,
+        );
+        if (result.failure !== null) continue;
+        // AGT-21: exactly one newline separates output and hook line — a
+        // trailing newline in the output (every bash stdout) is the separator.
+        const sep = output.endsWith("\n") ? "" : "\n";
+        if (result.exitCode === 2) {
+          output += `${sep}[hook] ${hookMessage(result)}`;
+          isError = true;
+        } else if (result.stdout.trim() !== "")
+          output += `${sep}[hook] ${result.stdout.trim()}`;
+      }
+    }
+    // SEC-8: one redaction point — every string that reaches the tool_result
+    // (tool output, thrown message, block message, hook appends) passes here
+    // before it is recorded or observed.
+    const redacted = redactSecrets(output);
+    output = redacted.text;
     head = appendEvent(deps.db, {
       session_id: deps.sessionId,
       parent_id: head,
@@ -341,6 +445,7 @@ const resolveTools = (deps: StepDeps, chain: SessionEvent[]): StepResult => {
         name: call.name,
         output,
         is_error: isError,
+        ...(redacted.hits.length > 0 ? { redactions: redacted.hits } : {}),
       },
     }).id;
     deps.onToolResult?.(call.name, !isError, output);
@@ -729,6 +834,18 @@ export const step = async (deps: StepDeps): Promise<StepResult> => {
         String(meta.payload.task_id),
         fresh,
       );
+    // AGT-20: session_end hooks, recorded on the chain (the assistant message
+    // is the head — nothing appends between it and here on the done path).
+    if (deps.hooks && deps.hooks.length > 0) {
+      let endHead = assistant.id;
+      for (const r of runSessionHooks(
+        deps.hooks,
+        "session_end",
+        deps.sessionId,
+        deps.ctx.cwd,
+      ))
+        endHead = recordHookRun(deps.db, deps.sessionId, endHead, r, false);
+    }
     endSession(deps.db, deps.sessionId);
     return { status: "done", text };
   }
