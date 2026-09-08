@@ -22,6 +22,7 @@ import {
   budgetPane,
   emptyState,
   headerLine,
+  promptGlyph,
   tickerLine,
   transcriptEntryLines,
   type ViewLine,
@@ -242,6 +243,31 @@ export const createSurface = (
     }
   };
 
+  // UX-49: an active search suspends tail-follow and scrolls the current hit's
+  // first node into view (node offset within the content); clearing the
+  // search resumes follow. Like the follow clamp, the scroll lands one layout
+  // behind on the frame that adds the node — the next update corrects it.
+  let searchWasActive = false;
+  const scrollToSearch = (model: ChatModel): void => {
+    const hit =
+      model.search === null ? undefined : model.search.hits[model.search.at];
+    if (hit === undefined) {
+      if (searchWasActive) {
+        // Resume at the tail now: leaving scrollTop at the hit would read as
+        // a user scroll-up on the next setBody and release follow again.
+        following = true;
+        scroll.scrollTop = Number.MAX_SAFE_INTEGER;
+        lastFollowClamp = scroll.scrollTop;
+      }
+      searchWasActive = false;
+      return;
+    }
+    searchWasActive = true;
+    following = false;
+    const target = bodyNodes.get(`e${hit}-md`) ?? bodyNodes.get(`e${hit}-l0`);
+    if (target) scroll.scrollTo(Math.max(0, target.node.y - scroll.content.y));
+  };
+
   const update = (model: ChatModel): void => {
     const width = renderer.width;
     const h = headerLine(model);
@@ -254,8 +280,9 @@ export const createSurface = (
       [{ role: "dim", text: sided(tick.left, tick.right, width) }],
       env,
     );
+    // UX-45: the continuation glyph while a multi-line message composes.
     prompt.content = styledFrom(
-      [{ role: "accent", text: ` ${CHAT_THEME.glyphs.user} ` }],
+      [{ role: "accent", text: ` ${promptGlyph(model)} ` }],
       env,
     );
     setRail(model);
@@ -307,6 +334,7 @@ export const createSurface = (
         },
       ),
     );
+    scrollToSearch(model);
   };
 
   return { input, update };

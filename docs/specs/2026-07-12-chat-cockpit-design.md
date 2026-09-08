@@ -128,7 +128,21 @@ it: hints are session events on the chain, validated against the same schema.
    adequate today (PERM-4's menu carries provenance per UX-P3). The viz
    "error shockwave" state has no tier-2 counterpart — folded into UX-36's
    tier-1 deferral (recorded).
-7. *(gated, later)* **chat-genui-hints** — `ui_hint` events.
+7. **chat-devpack** — landed 2026-09-08 (UX-44..49, UX-34 amended): ctrl-c
+   turn interrupt (abort signal into `runTurn`; the loop throws on the SDK's
+   `abort` part so nothing appends) + turn-boundary bell; composer history,
+   backslash continuation, tab slash-completion (menu gains a filter);
+   `/export` markdown transcript; edit/write results as `diff` widgets
+   (tool-call input plumbed through `onToolStart`'s third argument — the
+   T2.2(b) deferral closes; exact-block snippet, LCS deferred as a ponytail
+   ceiling); `/fork /compact /compare /sessions` via the `session` CLI
+   function (`session list` added); `/find` transcript search with
+   `n`/`N` cycling; the tree rail memoized on the head id. Recorded:
+   switching the live chat to another session stays `--continue`; the
+   divergence skill did not run for this slice (built by a worktree fork
+   without subagent access) — predicates pinned in-clause, auditor asked to
+   judge; interrupt keeps partial streamed text on screen (view only).
+8. *(gated, later)* **chat-genui-hints** — `ui_hint` events.
 
 ## Verification
 

@@ -248,9 +248,18 @@
     {
       "id": "E2-1",
       "title": "Chat TUI pack: ctrl+c turn interrupt, input history, multi-line, slash autocomplete, /export, bell, edit/write diff widgets, /fork /compact /compare /sessions, transcript search, /inbox /stats /hooks /permissions, tree-pane memoization",
-      "state": "open",
-      "clauses": [],
-      "completed_at": null
+      "state": "in_progress",
+      "clauses": [
+        "UX-44",
+        "UX-45",
+        "UX-46",
+        "UX-47",
+        "UX-48",
+        "UX-49",
+        "UX-34"
+      ],
+      "completed_at": null,
+      "notes": "part 1 landed (UX-44..49, UX-34 memo); part 2 (/inbox /stats /hooks /permissions) after wave-1 merge"
     },
     {
       "id": "E2-2",

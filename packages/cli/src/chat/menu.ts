@@ -1,7 +1,8 @@
 // UX-38: the shell-owned command menu — bordered panel + SelectRenderable
 // over MENU_ITEMS (the PERM-4 ask-menu precedent). Enter runs the selected
 // command through the same submit path as typing it; esc closes without
-// exiting the chat.
+// exiting the chat. UX-45: an optional prefix filter narrows the rows (tab
+// completion with several candidates).
 
 import {
   BoxRenderable,
@@ -21,12 +22,19 @@ export interface CommandMenu {
   close: () => void;
 }
 
+export const menuRows = (
+  filter: string,
+): { command: string; description: string }[] =>
+  MENU_ITEMS.filter((m) => m.command.startsWith(filter));
+
 export const createCommandMenu = (
   renderer: CliRenderer,
   env: Env,
   onRun: (command: string) => void,
   onClose: () => void,
+  filter = "",
 ): CommandMenu => {
+  const rows = menuRows(filter);
   const panel = new BoxRenderable(renderer, {
     id: "cmd-menu",
     border: true,
@@ -38,7 +46,7 @@ export const createCommandMenu = (
   const surface = resolveColor("surface", env);
   const select = new SelectRenderable(renderer, {
     id: "cmd-menu-select",
-    options: MENU_ITEMS.map((m) => ({
+    options: rows.map((m) => ({
       name: m.command,
       description: m.description,
       value: m.command,
@@ -46,7 +54,7 @@ export const createCommandMenu = (
     showDescription: true,
     ...(dim !== null ? { descriptionColor: dim } : {}),
     ...(surface !== null ? { focusedBackgroundColor: surface } : {}),
-    height: MENU_ITEMS.length * 2,
+    height: rows.length * 2,
   });
   const hintText = `↑↓ move ${CHAT_THEME.glyphs.sep} enter run ${CHAT_THEME.glyphs.sep} esc close`;
   const hint = new TextRenderable(renderer, {

@@ -31,6 +31,7 @@ import {
   Session,
   SessionEvent,
   SessionEventKind,
+  SessionListResult,
   SessionTreeNode,
   SharedSessionEvent,
   SharedStepEvent,
@@ -921,6 +922,23 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
       ingested: count,
       changed: count,
       discrepancies: count,
+      schema_version: fc.constant(1),
+    }),
+  ],
+  SessionListResult: [
+    SessionListResult,
+    fc.record({
+      sessions: fc.array(
+        fc.record({
+          id: ulid,
+          status: fc.constantFrom("complete", "incomplete", "degraded"),
+          started_at: isoUtc,
+          ended_at: fc.option(isoUtc, { nil: null }),
+          steps: count,
+          cost_micro_usd: fc.option(count, { nil: null }),
+        }),
+        { maxLength: 4 },
+      ),
       schema_version: fc.constant(1),
     }),
   ],

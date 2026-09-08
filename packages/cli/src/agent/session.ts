@@ -8,10 +8,11 @@ import {
   promoteSession,
 } from "@obligato/agent";
 import { DEFAULT_DB_PATH, openDb } from "@obligato/kernel";
-import { SessionTreeNode } from "@obligato/schemas";
+import { SessionListResult, SessionTreeNode } from "@obligato/schemas";
 import { z } from "zod";
 import { parseArgs } from "../args.js";
 import { treeDepth } from "../chat/view.js";
+import { table } from "../components/render.js";
 import { write } from "../components/sink.js";
 import { emitJson } from "../output/json.js";
 import { fail } from "./common.js";
@@ -37,6 +38,73 @@ export const sessionCommand = (argv: string[]): void => {
     }
     for (const n of nodes)
       write(`${"  ".repeat(treeDepth(nodes, n))}${n.label}`);
+    return;
+  }
+
+  if (sub === "list") {
+    // UX-48: native sessions newest first (rowid desc); cost null when any
+    // step is unpriced (PROV-3) — SUM over an empty group is NULL → 0 steps.
+    const limit = typeof named.limit === "string" ? Number(named.limit) : 20;
+    if (!Number.isInteger(limit) || limit < 1)
+      fail("--limit must be a positive integer");
+    const rows = db
+      .query(
+        `SELECT s.id, s.status, s.started_at, s.ended_at,
+                COUNT(e.id) AS steps,
+                SUM(e.cost_micro_usd) AS cost,
+                COUNT(e.id) - COUNT(e.cost_micro_usd) AS unknowns
+         FROM session s LEFT JOIN step_event e ON e.session_id = s.id
+         WHERE s.runner = 'native'
+         GROUP BY s.id ORDER BY s.rowid DESC LIMIT ?`,
+      )
+      .all(limit) as {
+      id: string;
+      status: string;
+      started_at: string;
+      ended_at: string | null;
+      steps: number;
+      cost: number | null;
+      unknowns: number;
+    }[];
+    const result = SessionListResult.parse({
+      sessions: rows.map((r) => ({
+        id: r.id,
+        status: r.status,
+        started_at: r.started_at,
+        ended_at: r.ended_at,
+        steps: r.steps,
+        cost_micro_usd: r.unknowns > 0 ? null : (r.cost ?? 0),
+      })),
+      schema_version: 1,
+    });
+    if (named.json === true) {
+      emitJson(result);
+      return;
+    }
+    if (result.sessions.length === 0) {
+      write("no native sessions — obligato chat");
+      return;
+    }
+    write(
+      table(
+        [
+          { header: "session" },
+          { header: "status" },
+          { header: "started" },
+          { header: "steps", align: "right" },
+          { header: "cost", align: "right" },
+        ],
+        result.sessions.map((s) => [
+          s.id,
+          s.status,
+          s.started_at,
+          String(s.steps),
+          s.cost_micro_usd === null
+            ? "n/a"
+            : `$${(s.cost_micro_usd / 1_000_000).toFixed(4)}`,
+        ]),
+      ),
+    );
     return;
   }
 
@@ -93,7 +161,7 @@ export const sessionCommand = (argv: string[]): void => {
   }
 
   fail(
-    `unknown session subcommand: ${sub ?? "(none)"} (have: tree, fork, compare, compact)`,
+    `unknown session subcommand: ${sub ?? "(none)"} (have: tree, list, fork, compare, compact)`,
   );
 };
 

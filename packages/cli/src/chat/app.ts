@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
-import { basename } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import {
   answerPermission,
   appendEvent,
@@ -26,6 +27,7 @@ import {
   askProvenanceLabel,
   askRuleOf,
   type ChatEffect,
+  type ChatKey,
   type ChatModel,
   type ChatMsg,
   classifyError,
@@ -35,7 +37,7 @@ import {
   update,
 } from "./model.js";
 import { createSurface } from "./surface.js";
-import { treePaneLines } from "./view.js";
+import { transcriptMarkdown, treePaneLines, type ViewLine } from "./view.js";
 
 // UX-39: fatal errors restore the terminal before exiting — an upstream crash
 // mid-render (createOptimizedBuffer, 2026-07-20) left mouse-tracking escapes
@@ -65,6 +67,33 @@ export const fatalGuard = (
   };
 };
 
+// UX-44: BEL unless OBLIGATO_NO_BELL is present (presence semantics, UX-29).
+export const bellBytes = (env: Record<string, string | undefined>): string =>
+  env.OBLIGATO_NO_BELL !== undefined ? "" : "\x07";
+
+// UX-46: write the transcript markdown, creating parents; returns the path.
+export const writeExport = (model: ChatModel, path: string): string => {
+  const abs = resolve(path);
+  mkdirSync(dirname(abs), { recursive: true });
+  writeFileSync(abs, transcriptMarkdown(model));
+  return abs;
+};
+
+// UX-34 (amended): the tree pane source memoized on the session head id —
+// redraws (deltas, ticks) never query the store; a head change recomputes once.
+export const memoizedTreeSource = (
+  getHead: () => string | null,
+  compute: () => ViewLine[],
+): (() => ViewLine[]) => {
+  let cached: { head: string | null; lines: ViewLine[] } | null = null;
+  return () => {
+    const head = getHead();
+    if (cached === null || cached.head !== head)
+      cached = { head, lines: compute() };
+    return cached.lines;
+  };
+};
+
 // UX-14: thin OpenTUI shell over the pure reducer in model.ts. The shell
 // only feeds ChatMsg events and executes ChatEffects; every state
 // transition is reducer-owned and headlessly testable.
@@ -90,6 +119,10 @@ export const chatCommand = async (
           return { sessionId: created.sessionId, head: created.rootEventId };
         })();
   let head: string | null = startHead;
+  // UX-48: the SES-3 head after a store-mutating command (fork/compact).
+  const refreshHead = (): void => {
+    head = currentHead(listEvents(setup.deps.db, sessionId)) ?? head;
+  };
 
   const renderer = await createCliRenderer({ exitOnCtrlC: false });
   // UX-39: recorded wiring-untested — the guard function carries all behavior.
@@ -125,21 +158,31 @@ export const chatCommand = async (
       contextWindow: setup.entry.context_window,
       repoName: basename(setup.root),
       branch,
+      sessionId,
     },
     Object.keys(slash),
   );
 
   // UX-34: the rail tree pane reads the live chain through the same builder
-  // as `obligato session tree` (F-085).
-  const surface = createSurface(renderer, process.env, () => {
-    const events = listEvents(setup.deps.db, sessionId);
-    return treePaneLines(buildSessionTree(events, currentHead(events)));
-  });
+  // as `obligato session tree` (F-085), memoized on the head id (amended).
+  const surface = createSurface(
+    renderer,
+    process.env,
+    memoizedTreeSource(
+      () => head,
+      () => {
+        const events = listEvents(setup.deps.db, sessionId);
+        return treePaneLines(buildSessionTree(events, currentHead(events)));
+      },
+    ),
+  );
   const { input } = surface;
   input.focus();
 
   let askMenu: SelectRenderable | null = null;
   let cmdMenu: CommandMenu | null = null;
+  // UX-44: one controller per drive(); null while idle.
+  let turnAbort: AbortController | null = null;
   const redraw = (): void => {
     surface.update(model);
     // UX-31: focus follows the reducer — transcript focus blurs the input so
@@ -150,8 +193,8 @@ export const chatCommand = async (
   };
 
   // UX-38: at most one command menu mounts at a time — a second open request
-  // while mounted is a no-op.
-  const openMenu = (): void => {
+  // while mounted is a no-op. UX-45: an optional prefix filter.
+  const openMenu = (filter = ""): void => {
     if (cmdMenu?.mounted() || askMenu) return;
     input.blur();
     cmdMenu = createCommandMenu(
@@ -166,6 +209,7 @@ export const chatCommand = async (
         cmdMenu = null;
         input.focus();
       },
+      filter,
     );
   };
 
@@ -235,46 +279,83 @@ export const chatCommand = async (
   };
 
   const drive = async (): Promise<void> => {
-    const result = await runTurn({
-      ...setup.deps,
-      sessionId,
-      onDelta: (text) => dispatch({ type: "delta", text }),
-      onToolStart: (name, arg) => dispatch({ type: "tool_start", name, arg }),
-      onToolResult: (name, ok, output) =>
-        dispatch({ type: "tool_result", name, ok, output: output ?? "" }),
-      onStepCost: (costMicroUsd) =>
-        dispatch({ type: "step_cost", costMicroUsd }),
-    });
-    const chain = reconstruct(listEvents(setup.deps.db, sessionId));
-    head = chain[chain.length - 1]?.id ?? head;
-    if (result.status === "paused" && result.reason.startsWith("permission:")) {
-      const request = [...chain]
-        .reverse()
-        .find((e) => e.kind === "permission_request");
-      if (request) {
-        dispatch({
-          type: "paused",
-          ask: {
-            requestId: request.id,
-            tool: String(request.payload.tool),
-            arg: String(request.payload.arg),
-            rule: askRuleOf(request.payload.rule),
-          },
-        });
-        showAsk();
-        return;
+    const controller = new AbortController();
+    turnAbort = controller;
+    try {
+      const result = await runTurn({
+        ...setup.deps,
+        sessionId,
+        abort: controller.signal,
+        onDelta: (text) => dispatch({ type: "delta", text }),
+        onToolStart: (name, arg, callInput) =>
+          dispatch({
+            type: "tool_start",
+            name,
+            arg,
+            ...(callInput !== undefined ? { input: callInput } : {}),
+          }),
+        onToolResult: (name, ok, output) =>
+          dispatch({ type: "tool_result", name, ok, output: output ?? "" }),
+        onStepCost: (costMicroUsd) =>
+          dispatch({ type: "step_cost", costMicroUsd }),
+      });
+      refreshHead();
+      if (
+        result.status === "paused" &&
+        result.reason.startsWith("permission:")
+      ) {
+        const chain = reconstruct(listEvents(setup.deps.db, sessionId));
+        const request = [...chain]
+          .reverse()
+          .find((e) => e.kind === "permission_request");
+        if (request) {
+          dispatch({
+            type: "paused",
+            ask: {
+              requestId: request.id,
+              tool: String(request.payload.tool),
+              arg: String(request.payload.arg),
+              rule: askRuleOf(request.payload.rule),
+            },
+          });
+          showAsk();
+          return;
+        }
       }
+      dispatch({
+        type: "turn_done",
+        status: result.status === "done" ? "done" : "paused",
+        ...(result.status === "paused" ? { reason: result.reason } : {}),
+      });
+    } catch (err) {
+      // UX-44: classify by our own signal, never the error's shape.
+      refreshHead();
+      if (controller.signal.aborted) dispatch({ type: "interrupted" });
+      else dispatch({ type: "error", message: (err as Error).message });
+    } finally {
+      if (turnAbort === controller) turnAbort = null;
     }
-    dispatch({
-      type: "turn_done",
-      status: result.status === "done" ? "done" : "paused",
-      ...(result.status === "paused" ? { reason: result.reason } : {}),
-    });
   };
 
   const runEffect = async (effect: ChatEffect): Promise<void> => {
     if (effect.type === "menu") {
-      openMenu();
+      openMenu(effect.filter ?? "");
+    } else if (effect.type === "bell") {
+      process.stderr.write(bellBytes(process.env));
+    } else if (effect.type === "set_input") {
+      input.value = effect.text;
+    } else if (effect.type === "export") {
+      // UX-46: default under the repo's .obligato/exports.
+      try {
+        const written = writeExport(
+          model,
+          effect.path ??
+            join(setup.root, ".obligato", "exports", `${sessionId}.md`),
+        );
+        dispatch({ type: "info", text: `exported → ${written}` });
+      } catch (err) {
+        dispatch({ type: "error", message: (err as Error).message });
+      }
     } else if (effect.type === "exit") {
       clearInterval(tickTimer);
       renderer.destroy();
@@ -286,9 +367,7 @@ export const chatCommand = async (
         kind: "user_message",
         payload: { text: effect.text },
       });
-      await drive().catch((err) =>
-        dispatch({ type: "error", message: (err as Error).message }),
-      );
+      await drive();
     } else if (effect.type === "answer_permission") {
       answerPermission(
         setup.deps.db,
@@ -297,9 +376,7 @@ export const chatCommand = async (
         effect.decision,
         effect.always,
       );
-      await drive().catch((err) =>
-        dispatch({ type: "error", message: (err as Error).message }),
-      );
+      await drive();
     } else if (effect.type === "dispatch") {
       const target = slash[`/${effect.command}`];
       if (!target) {
@@ -321,9 +398,14 @@ export const chatCommand = async (
       }) as typeof process.stdout.write;
       try {
         await target(effect.argv);
+      } catch (err) {
+        captured.push((err as Error).message);
       } finally {
         process.stdout.write = original;
       }
+      // UX-48: fork/compact moved the SES-3 head — continue from it.
+      if (effect.command === "fork" || effect.command === "compact")
+        refreshHead();
       dispatch({ type: "info", text: captured.join("").trimEnd() });
     } else if (effect.type === "list_models") {
       // UX-17: the listing is the exported registry function's return value.
@@ -356,8 +438,7 @@ export const chatCommand = async (
         effect.id,
         head ?? undefined,
       );
-      const chain = reconstruct(listEvents(setup.deps.db, sessionId));
-      head = chain[chain.length - 1]?.id ?? head;
+      refreshHead();
       dispatch({ type: "model_switched", to: effect.id });
     }
   };
@@ -369,6 +450,11 @@ export const chatCommand = async (
   });
   renderer.keyInput.on("keypress", (key: { name?: string; ctrl?: boolean }) => {
     if (key.ctrl === true && key.name === "c") {
+      // UX-44: a running turn is interrupted; an idle chat exits.
+      if (model.busy && turnAbort !== null) {
+        turnAbort.abort();
+        return;
+      }
       clearInterval(tickTimer);
       renderer.destroy();
       process.exit(0);
@@ -384,17 +470,31 @@ export const chatCommand = async (
       return;
     }
     if (askMenu || cmdMenu?.mounted() === true) return; // menus own the keys
-    // UX-31: tab always toggles focus; j/k/enter go to the reducer only while
-    // transcript-focused (otherwise they type into the input normally).
-    if (key.name === "tab") dispatch({ type: "key", key: "tab" });
-    else if (
-      model.focus === "transcript" &&
-      (key.name === "j" || key.name === "k" || key.name === "return")
-    )
+    // UX-31/UX-45: tab and the history arrows carry the composer text; the
+    // reducer decides between focus toggle, completion, and recall.
+    if (key.name === "tab" || key.name === "up" || key.name === "down") {
       dispatch({
         type: "key",
-        key: key.name === "return" ? "enter" : key.name,
+        key: key.name as ChatKey,
+        input: input.value,
       });
+      return;
+    }
+    // UX-31/UX-49: j/k/enter/n/N go to the reducer only while
+    // transcript-focused (otherwise they type into the input normally).
+    if (model.focus !== "transcript") return;
+    const transcriptKeys: Record<string, ChatKey> = {
+      j: "j",
+      k: "k",
+      return: "enter",
+      n: "n",
+      N: "N",
+    };
+    const mapped =
+      key.name === "n" && (key as { shift?: boolean }).shift === true
+        ? "N"
+        : transcriptKeys[key.name ?? ""];
+    if (mapped !== undefined) dispatch({ type: "key", key: mapped });
   });
   redraw();
 };
