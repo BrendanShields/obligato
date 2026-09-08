@@ -203,9 +203,8 @@ export const answerPermission = (
   }).id;
   if (always && decision === "allow") {
     // PERM-2 × PERM-6: a guard-provenance ask persists an arg-literal allow —
-    // a wildcard-free glob is strictly more specific than the guard under the
-    // (tool, arg) ranking, so the identical command proceeds while a
-    // different guarded command still asks.
+    // it outranks the guard by PERM-6's exact-literal rule, so the identical
+    // command proceeds while a different guarded command still asks.
     const arg = isGuardRule(request.payload.rule)
       ? { arg: String(request.payload.arg) }
       : {};

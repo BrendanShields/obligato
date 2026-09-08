@@ -72,4 +72,48 @@ describe("PERM-2: ask flow lives entirely in session events; always-allow is a s
       false,
     );
   });
+
+  it("guard flow (PERM-6 amendment): always-allow on a guard ask records the literal arg; the identical guard-prefix command proceeds without a new request; a different guarded command still asks", async () => {
+    const same = "git reset --hard";
+    const other = "git reset --hard HEAD~1";
+    const bash = (id: string, command: string) =>
+      toolCallResponse([{ id, name: "bash", input: { command } }]);
+    const f = fixture([
+      bash("g1", same),
+      bash("g2", same),
+      bash("g3", other),
+      textResponse("done"),
+    ]);
+    f.deps.rules = [{ tool: "bash", action: "allow" }];
+    expect((await runTurn(f.deps)).status).toBe("paused");
+    const request = listEvents(f.db, f.sessionId).find(
+      (e) => e.kind === "permission_request",
+    );
+    expect(request?.payload.arg).toBe(same);
+    answerPermission(f.db, f.sessionId, request?.id as string, "allow", true);
+    const scoped = listEvents(f.db, f.sessionId).find(
+      (e) => e.kind === "session_meta" && e.payload.scoped_rule !== undefined,
+    );
+    // revert-check: drop the arg from the scoped rule → g2 re-asks (3 requests).
+    expect(scoped?.payload.scoped_rule).toEqual({
+      tool: "bash",
+      arg: same,
+      action: "allow",
+    });
+    expect((await runTurn(f.deps)).status).toBe("paused");
+    const events = listEvents(f.db, f.sessionId);
+    expect(
+      events
+        .filter((e) => e.kind === "permission_request")
+        .map((e) => e.payload.arg),
+    ).toEqual([same, other]);
+    expect(
+      events.filter(
+        (e) => e.kind === "tool_result" && e.payload.tool_call_id === "g2",
+      ),
+    ).toHaveLength(1);
+    expect(existsSync(join(f.dir, ".obligato", "permissions.json"))).toBe(
+      false,
+    );
+  }, 30_000);
 });

@@ -108,7 +108,23 @@ export const evaluateGuarded = (
   rules: PermissionRule[],
   tool: string,
   arg: string,
-): PermissionVerdict => evaluate([...rules, ...DEFAULT_GUARDS], tool, arg);
+): PermissionVerdict => {
+  const verdict = evaluate([...rules, ...DEFAULT_GUARDS], tool, arg);
+  if (verdict.rule === null || !isGuardRule(verdict.rule)) return verdict;
+  // PERM-6 exact-literal rule (re-audit 2026-09-08): a wildcard-free
+  // operator/session arg equal to the call's primary argument outranks any
+  // guard — literalChars ties the moment a command equals a guard's literal
+  // prefix (`git reset --hard` vs `git reset --hard*`), and PERM-1's tie →
+  // ask would re-ask after an "always allow". Glob-vs-glob ties keep PERM-1.
+  const exact = rules.filter(
+    (r) =>
+      r.arg !== undefined &&
+      !/[*?]/.test(r.arg) &&
+      r.arg === arg &&
+      matches(r.tool, tool),
+  );
+  return exact.length > 0 ? evaluate(exact, tool, arg) : verdict;
+};
 
 export const decide = (
   rules: PermissionRule[],

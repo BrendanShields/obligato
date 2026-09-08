@@ -1022,6 +1022,21 @@
       "status": "fixed",
       "id": "F-233",
       "fix_commit": "d3ed14d479b28b89fb37d30dfc5752fb6bf522e9"
+    },
+    {
+      "task": "E1-1",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "PERM-2",
+        "PERM-6"
+      ],
+      "summary": "arg-literal always-allow rule tied with the guard on literalChars whenever the command equals the guard literal prefix (git reset --hard, rm -rf /, rm -rf ~, chmod -R 777, mkfs, dd if=) — PERM-1 tie → ask re-asked after always allow; the discriminating arm used a long argument and could not see the tie",
+      "root_cause": "design_bug",
+      "fix": "PERM-6 exact-literal rule in evaluateGuarded: a wildcard-free operator/session arg equal to the call primary arg outranks any guard; ranking pinned exact-literal > (tool,arg) literalChars > tie→ask; PERM-2 wording corrected; guard-prefix fixtures in PERM-6 and PERM-2 tests",
+      "status": "fixed",
+      "id": "F-241",
+      "fix_commit": null
     }
   ]
 }

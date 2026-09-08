@@ -69,6 +69,37 @@ describe("PERM-6: shipped destructive-command guards rank under PERM-1 with oper
     });
   });
 
+  it("exact-literal rule: a wildcard-free operator arg equal to the command beats the guard even on a literalChars tie; a same-glob allow still ties to ask; an exact-literal deny denies", () => {
+    const literal = { tool: "bash", arg: "rm -rf /", action: "allow" as const };
+    // revert-check: drop the exact-literal branch → 8 = 8 ties and this reads ask.
+    expect(evaluateGuarded([literal], "bash", "rm -rf /")).toEqual({
+      action: "allow",
+      rule: literal,
+    });
+    expect(
+      evaluateGuarded(
+        [{ tool: "bash", arg: "rm -rf /*", action: "allow" }],
+        "bash",
+        "rm -rf /",
+      ).action,
+    ).toBe("ask");
+    const literalDeny = { tool: "bash", arg: "mkfs", action: "deny" as const };
+    expect(evaluateGuarded([literalDeny], "bash", "mkfs")).toEqual({
+      action: "deny",
+      rule: literalDeny,
+    });
+    // A literal for a different command changes nothing for this one.
+    expect(
+      isGuard(
+        evaluateGuarded(
+          [{ tool: "bash", arg: "git reset --hard", action: "allow" }],
+          "bash",
+          "git reset --hard HEAD~1",
+        ).rule,
+      ),
+    ).toBe(true);
+  });
+
   it("table: every shipped pattern's canonical command asks with a guard; its benign sibling falls to the default", () => {
     for (const row of TABLE) {
       const g = evaluateGuarded([], "bash", row.guard);
@@ -168,5 +199,37 @@ describe("PERM-6: shipped destructive-command guards rank under PERM-1 with oper
     );
     expect(executed).toHaveLength(2);
     expect(existsSync(join(f.dir, "same.marker"))).toBe(true);
+  }, 30_000);
+
+  it("guard-prefix command: always-allow on `git reset --hard` lets the identical command proceed (a literalChars tie) while `git reset --hard HEAD~1` still asks", async () => {
+    const same = "git reset --hard";
+    const other = "git reset --hard HEAD~1";
+    const call = (id: string, command: string) =>
+      toolCallResponse([{ id, name: "bash", input: { command } }]);
+    const f = fixture([
+      call("p6f1", same),
+      call("p6f2", same),
+      call("p6f3", other),
+      textResponse("ok"),
+    ]);
+    f.deps.rules = [{ tool: "bash", action: "allow" }];
+    expect((await runTurn(f.deps)).status).toBe("paused");
+    const first = listEvents(f.db, f.sessionId).find(
+      (e) => e.kind === "permission_request",
+    );
+    answerPermission(f.db, f.sessionId, first?.id as string, "allow", true);
+    // revert-check: drop the exact-literal rule → the second identical call
+    // ties with the guard and raises a request (3 total, p6f2 never runs).
+    expect((await runTurn(f.deps)).status).toBe("paused");
+    const events = listEvents(f.db, f.sessionId);
+    const requests = events.filter((e) => e.kind === "permission_request");
+    expect(requests.map((r) => r.payload.arg)).toEqual([same, other]);
+    const ran = events.filter(
+      (e) =>
+        e.kind === "tool_result" &&
+        ["p6f1", "p6f2"].includes(String(e.payload.tool_call_id)) &&
+        e.payload.is_error === false,
+    );
+    expect(ran).toHaveLength(2);
   }, 30_000);
 });
