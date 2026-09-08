@@ -1018,7 +1018,7 @@
       "fix": "narrowing recorded in TEL-8's clause text and here; lands when AGT-7 obligation runs persist a per-task cost row",
       "source": "session",
       "status": "deferred:tel-8-tpac-attribution",
-      "id": "F-233",
+      "id": "F-240",
       "fix_commit": null
     }
   ]
