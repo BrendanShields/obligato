@@ -43,7 +43,14 @@ export interface HookPayload {
   is_error?: boolean;
 }
 
-export type HookFailure = "timeout" | "spawn_error" | `exit:${number}`;
+export type HookFailure =
+  | "timeout"
+  | "spawn_error"
+  | `spawn_error:${string}`
+  | `exit:${number}`;
+
+// AGT-22: output past this cap is a spawn-class failure (ENOBUFS).
+export const HOOK_MAX_BUFFER = 10 * 1024 * 1024;
 
 export interface HookResult {
   hook: HookDefinition;
@@ -69,20 +76,26 @@ export const runHook = (
     input: JSON.stringify(payload),
     timeout: hook.timeout_ms ?? DEFAULT_TIMEOUT_MS,
     env: { ...process.env, OBLIGATO_SESSION_ID: payload.session_id },
-    maxBuffer: 10 * 1024 * 1024,
+    maxBuffer: HOOK_MAX_BUFFER,
   });
   const durationMs = Math.max(0, Math.round(performance.now() - started));
-  const timedOut =
-    (r.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT" ||
-    r.signal === "SIGTERM";
-  const exitCode = r.status;
+  const err = r.error as NodeJS.ErrnoException | undefined;
+  // AGT-22: only ETIMEDOUT is a timeout — a bare SIGTERM (maxBuffer overflow
+  // = ENOBUFS, or an external kill) is a spawn-class failure, not a timeout.
+  const timedOut = err?.code === "ETIMEDOUT";
+  // Bun reports `status: undefined` on a spawn error where node reports null.
+  const exitCode = r.status ?? null;
   const failure: HookFailure | null = timedOut
     ? "timeout"
-    : r.error !== undefined || exitCode === null
-      ? "spawn_error"
-      : exitCode === 0 || exitCode === 2
-        ? null
-        : `exit:${exitCode}`;
+    : err !== undefined
+      ? err.code !== undefined
+        ? `spawn_error:${err.code}`
+        : "spawn_error"
+      : exitCode === null
+        ? "spawn_error"
+        : exitCode === 0 || exitCode === 2
+          ? null
+          : `exit:${exitCode}`;
   return {
     hook,
     exitCode: timedOut ? null : exitCode,

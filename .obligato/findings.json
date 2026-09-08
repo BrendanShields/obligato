@@ -1007,6 +1007,21 @@
       "status": "fixed",
       "id": "F-230",
       "fix_commit": "4ae755dfdd61870c2512c9f1c936d2f175dd415c"
+    },
+    {
+      "task": "E1-1",
+      "source": "clause-auditor",
+      "severity": "violation",
+      "clauses": [
+        "PERM-2",
+        "PERM-6"
+      ],
+      "summary": "PERM-2 always-allow appended a bare {tool, allow} scoped rule that PERM-6 guards outrank, so after always-allow on a guard ask the identical guarded command re-asked — PERM-2 obligation false for guarded commands, neither clause recorded it",
+      "root_cause": "spec_contradiction",
+      "fix": "answerPermission persists {tool, arg: <exact primary arg>, allow} when the request provenance is a guard (isGuardRule); sessionRules carries arg; PERM-2 amended, PERM-6 pinned, discriminating arm in PERM-6 test",
+      "status": "fixed",
+      "id": "F-233",
+      "fix_commit": null
     }
   ]
 }

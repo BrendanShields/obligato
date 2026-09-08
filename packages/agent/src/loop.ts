@@ -18,7 +18,7 @@ import { assembleContext } from "./context.ts";
 import { redactSecrets } from "./guardrails.ts";
 import { hookMessage, matchingHooks, runHook } from "./hooks.ts";
 import { costOf, type Usage } from "./llm/registry.ts";
-import { evaluate, evaluateGuarded } from "./permissions.ts";
+import { evaluate, evaluateGuarded, isGuardRule } from "./permissions.ts";
 import {
   escalateStep,
   newSessionBudget,
@@ -170,10 +170,15 @@ export const validatePauseReason = (reason: string): string => {
 const sessionRules = (chain: SessionEvent[]): PermissionRule[] =>
   chain
     .filter((e) => e.kind === "session_meta" && e.payload.scoped_rule)
-    .map((e) => ({
-      tool: String((e.payload.scoped_rule as { tool: string }).tool),
-      action: "allow" as const,
-    }));
+    .map((e) => {
+      const r = e.payload.scoped_rule as { tool: string; arg?: string };
+      return {
+        tool: String(r.tool),
+        // PERM-2 × PERM-6: a guard-ask "always" carries the literal arg.
+        ...(r.arg !== undefined ? { arg: String(r.arg) } : {}),
+        action: "allow" as const,
+      };
+    });
 
 // PERM-2: the answer to a permission_request, appended to the chain. The
 // "always" form additionally appends the session-scoped allow rule event.
@@ -197,12 +202,23 @@ export const answerPermission = (
     payload: { request_id: requestId, decision, tool: request.payload.tool },
   }).id;
   if (always && decision === "allow") {
+    // PERM-2 × PERM-6: a guard-provenance ask persists an arg-literal allow —
+    // a wildcard-free glob is strictly more specific than the guard under the
+    // (tool, arg) ranking, so the identical command proceeds while a
+    // different guarded command still asks.
+    const arg = isGuardRule(request.payload.rule)
+      ? { arg: String(request.payload.arg) }
+      : {};
     head = appendEvent(db, {
       session_id: sessionId,
       parent_id: head,
       kind: "session_meta",
       payload: {
-        scoped_rule: { tool: String(request.payload.tool), action: "allow" },
+        scoped_rule: {
+          tool: String(request.payload.tool),
+          ...arg,
+          action: "allow",
+        },
       },
     }).id;
   }
