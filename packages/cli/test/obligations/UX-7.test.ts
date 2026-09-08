@@ -38,7 +38,8 @@ describe("UX-7: bare obligato on a TTY opens the launcher; non-TTY prints plain 
       width: 80,
       height: 24,
     });
-    const { menu } = buildLauncher(renderer, () => {});
+    // UX-43: zero inbox items → the launcher starts in this menu.
+    const { menu } = buildLauncher(renderer, () => {}, []);
     await renderOnce();
     expect(menu.options.length).toBe(WIZARDS.length);
     // revert-check: drop `flexGrow: 1` on the menu in launcher.ts → the select

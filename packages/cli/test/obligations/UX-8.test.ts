@@ -23,7 +23,7 @@ describe("UX-8: wizards dispatch through the same entry function as the typed co
       calls.push(argv);
     };
     try {
-      let m = createModel();
+      let m = createModel([]);
       m = selectSpec(m, spec("eval ablate"));
       m = answerField(m, "acme-pack");
       m = answerField(m, "suites/seed");
@@ -47,7 +47,7 @@ describe("UX-8: wizards dispatch through the same entry function as the typed co
       calls.push(argv);
     };
     try {
-      let m = createModel();
+      let m = createModel([]);
       m = selectSpec(m, spec("route explain"));
       m = answerField(m, "");
       expect(m.state).toBe("done");
@@ -59,7 +59,7 @@ describe("UX-8: wizards dispatch through the same entry function as the typed co
   });
 
   it("required blank field does not advance the wizard", () => {
-    let m = createModel();
+    let m = createModel([]);
     m = selectSpec(m, spec("eval ablate"));
     const before = m;
     m = answerField(m, "   ");
@@ -74,7 +74,7 @@ describe("UX-8: wizards dispatch through the same entry function as the typed co
       calls.push(argv);
     };
     try {
-      let m = createModel();
+      let m = createModel([]);
       m = selectSpec(m, spec("eval ablate"));
       m = answerField(m, "acme-pack");
       m = cancel(m);

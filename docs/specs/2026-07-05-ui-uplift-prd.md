@@ -188,6 +188,8 @@ states exist, it shall list each state with its count and dispatch its named ver
 on selection; with none it shall render the command menu. *Obligation:* reducer
 test — seeded actionable states produce one row per state with count and verb;
 selection dispatches through the shared table; empty store yields the menu model.
+*Landed 2026-09-08 as UX-43* (rows are per item, not per state — drift is the one
+collapsed kind; the overhead sparkline was not built: no per-row need, recorded).
 
 **T2.2 Chat transcript legibility pack** — three compounding upgrades to
 `obligato chat`: (a) tool results over N lines fold to a one-line summary naming the
@@ -367,6 +369,8 @@ shall carry its evidence summary and exactly one verb, and an empty inbox shall 
 so in one line. *Obligation:* seeded store with one item of each kind renders each
 with evidence + single verb and validates the inbox schema; empty store renders one
 line; the launcher home consumes the same view function (identity test).
+*Landed 2026-09-08 as UX-42* (seven kinds; signals and expired auth recorded as
+exclusions — no `signal` table exists and credentials live outside the store).
 
 **T3.6 Routing observatory** — make the bandit legible: current `routing_weight`
 per feature-bucket × model as a labeled heat grid, the recent `routing_decision`

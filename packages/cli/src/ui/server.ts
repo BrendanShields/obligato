@@ -4,6 +4,7 @@ import {
   benchView,
   DEFAULT_DB_PATH,
   evalView,
+  inboxView,
   loopView,
   openDb,
   telemetryView,
@@ -12,6 +13,7 @@ import {
 import {
   UiBenchView,
   UiEvalView,
+  UiInboxView,
   UiLoopView,
   UiTelemetryView,
   UiTraceView,
@@ -48,6 +50,12 @@ const routes: Record<
     build: (ctx) => loopView(ctx.db, ctx.changelogPath),
   },
   "/api/trace": { schema: UiTraceView, build: (ctx) => traceView(ctx.db) },
+  // UX-42: the attention queue — same kernel view as `obligato inbox` and the
+  // launcher home (UX-43); the clock is the request time.
+  "/api/inbox": {
+    schema: UiInboxView,
+    build: (ctx) => inboxView(ctx.db, new Date().toISOString()),
+  },
 };
 
 interface RouteCtx {

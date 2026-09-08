@@ -41,6 +41,7 @@ import {
   TraceLink,
   UiBenchView,
   UiEvalView,
+  UiInboxView,
   UiLoopView,
   UiTelemetryView,
   UiTraceView,
@@ -978,6 +979,33 @@ const arbs: Record<string, [z.ZodType, fc.Arbitrary<unknown>]> = {
           rows: fc.array(benchTaskRow, { maxLength: 3 }),
         }),
         { maxLength: 2 },
+      ),
+    }),
+  ],
+  UiInboxView: [
+    UiInboxView,
+    fc.record({
+      empty_verb: nonEmpty,
+      items: fc.array(
+        fc.record({
+          kind: fc.constantFrom(
+            "proposal_review",
+            "divergence",
+            "drift",
+            "budget_pause",
+            "auto_revert",
+            "quarantined",
+            "paused_session",
+          ),
+          id: nonEmpty,
+          summary: nonEmpty,
+          age_seconds: fc.option(count, { nil: null }),
+          verb: nonEmpty.map(
+            (s) => `obligato ${s.trim() === "" ? "x" : s.trim()}`,
+          ),
+          count: fc.option(fc.integer({ min: 1, max: 1000 }), { nil: null }),
+        }),
+        { maxLength: 4 },
       ),
     }),
   ],

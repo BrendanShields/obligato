@@ -245,9 +245,12 @@
     {
       "id": "E1-3",
       "title": "Attention queue: kernel inbox view (T3.5), obligato inbox --json, GET /api/inbox, launcher home rows (T2.1) dispatching through COMMANDS",
-      "state": "in_progress",
-      "clauses": [],
-      "completed_at": null
+      "state": "completed",
+      "clauses": [
+        "UX-42",
+        "UX-43"
+      ],
+      "completed_at": "2026-09-08T12:45:02Z"
     },
     {
       "id": "E2-1",

@@ -9,6 +9,7 @@ export * from "./evaltask.ts";
 export * from "./excavate.ts";
 export * from "./flaky.ts";
 export * from "./generators.ts";
+export * from "./inbox.ts";
 export * from "./loop.ts";
 export * from "./metrics.ts";
 export * from "./monitor.ts";
